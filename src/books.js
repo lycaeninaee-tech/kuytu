@@ -18,8 +18,14 @@ async function openLibrary(q) {
   return (j.docs || []).map(d => ({ id: 'ol_' + String(d.key).replace('/works/', ''), title: d.title || '', author: (d.author_name || []).join(', '), cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '', pages: d.number_of_pages_median || 0, year: String(d.first_publish_year || ''), publisher: '' }));
 }
 export async function searchBooks(q) {
+  // Google bazen sorguyla ilgisiz kitaplar döndürür; ad ya da yazarda aranan kelime geçmeyenler elenir
+  const norm = s => s.toLocaleLowerCase('tr');
+  const words = norm(q).split(/\s+/).filter(w => w.length > 2);
+  const related = b => words.some(w => norm(b.title + ' ' + b.author).includes(w));
   let list = [];
-  try { list = await googleBooks(q); } catch (e) {}
+  try { list = (await googleBooks(q)).filter(related); } catch (e) {}
   if (!list.length) list = await openLibrary(q);
+  // Türkçe adı kayıtlı olmayan kitaplar için en uzun kelimeyle (çoğu zaman özel ad) bir kez daha denenir
+  if (!list.length && words.length > 1) list = await openLibrary(words.slice().sort((a, b) => b.length - a.length)[0]);
   return list.filter(b => b.title);
 }
