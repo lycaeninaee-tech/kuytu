@@ -1,7 +1,9 @@
 // Kitap arama: önce Google Books (Türkçe kapsamı daha iyi), sonuç gelmezse ya da kota dolarsa Open Library
+import { BOOKS_KEY } from './config.js';
+
 const https = u => (u ? u.replace(/^http:/, 'https:') : '');
 async function googleBooks(q) {
-  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=16&printType=books`);
+  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=16&printType=books&key=${BOOKS_KEY}`);
   if (!res.ok) throw new Error('google');
   const j = await res.json();
   return (j.items || []).map(it => {
