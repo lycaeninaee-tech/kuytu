@@ -23,15 +23,17 @@ export function panel(list) {
   while (rows.length < 3) rows.push([]);
   return rows.map((r, i) => `<div class="raf">${r.map(spine).join('')}${i === rows.length - 1 ? `<span class="deco">${PLANT}</span>` : i === 0 ? `<span class="deco cream">${CAT}</span>` : ''}</div>`).join('');
 }
+// Seçim yapılmadıysa kitaplık ilk dolu rafla açılır
+const secNow = S => S.rafSec || ['okudum', 'sirada', 'kalp'].find(k => sections[k](homeBooks(S)).length) || 'okudum';
 const listNow = S => {
   if (S.libTab === 'odunc') return S.shelf.filter(b => b.lentTo);
   if (S.libTab === 'istek') return S.shelf.filter(b => b.wish);
-  return sections[S.rafSec || 'okudum'](homeBooks(S));
+  return sections[secNow(S)](homeBooks(S));
 };
 // Raf değişince raflar derinden öne gelir; yalnızca seçimde oynar, her yenilemede değil
 export const playPanel = () => { const p = document.getElementById('raf-panel'); if (p) p.classList.add('go'); };
-export function viewLibrary(S, enter) {
-  const tab = S.libTab || 'evde', sec = S.rafSec || 'okudum', home = homeBooks(S), lent = S.shelf.filter(b => b.lentTo), now = listNow(S);
+export function viewLibrary(S, enter, clubMissing = 0) {
+  const tab = S.libTab || 'evde', sec = secNow(S), home = homeBooks(S), lent = S.shelf.filter(b => b.lentTo), now = listNow(S);
   const tabs = [['evde', N.tabHome], ['odunc', N.tabLent], ['istek', N.tabWish]].map(([k, l]) => `<button type="button" class="${tab === k ? 'on' : ''}" data-act="libtab" data-v="${k}">${l}</button>`).join('');
   const secs = [['okudum', N.secRead], ['sirada', N.secNext], ['kalp', N.secHeart]].map(([k, l]) => `<button type="button" class="tab ${sec === k ? 'on' : ''}" data-act="rafsec" data-v="${k}">${l}<span>${sections[k](home).length}</span></button>`).join('');
   const side = tab === 'evde' ? `<div class="tabs">${secs}</div><p class="lbl">${N.enterHint}</p>`
@@ -39,6 +41,7 @@ export function viewLibrary(S, enter) {
     : `<p class="muted">${N.wishHint}</p>`;
   return `<div class="lib">
     <div class="lib-side"><h1>${N.lib}</h1><div class="seg" role="group">${tabs}</div>${side}
+      ${clubMissing ? `<button type="button" class="btn ghost" data-act="importclub">${N.importClub} (${clubMissing})</button>` : ''}
       <div class="lib-btn"><button type="button" class="btn" data-act="scan">${N.scan}</button><a class="btn ghost" href="#ara">${T.navSearch}</a></div></div>
     ${arch(`<div class="glow"></div><div class="lamba"><svg viewBox="0 0 80 172" aria-hidden="true"><path d="M40 0V112" stroke="#a8865a" stroke-width="2"/><path fill="#a8865a" d="M14 150C16 124 28 112 40 112S64 124 66 150Z"/><ellipse cx="40" cy="151" rx="26" ry="5" fill="#f2b84b"/></svg></div>
       <div class="cam">${S.shelf.length} ${N.bookWord} · ${lent.length} ${N.lentWord}</div>${MOON}${star('24%', '16%', 16)}${star('66%', '12%', 12, 1.3)}

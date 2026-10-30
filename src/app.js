@@ -12,7 +12,7 @@ import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, s
 import { shareRecap } from './takip.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
-import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow } from './clubview.js';
+import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks } from './clubview.js';
 
 
 const S = { user: null, profile: undefined, shelf: [], sessions: [], quotes: [], reveal: new Set(), mode: 'login', view: 'bugun', bookId: null, results: null, searching: false, armed: false, moods: new Set() };
@@ -120,7 +120,7 @@ function render() {
   else {
     const enter = S.enter, inClub = S.view === 'k' || S.view === 'kb';
     S.enter = false;
-    v.innerHTML = header() + (inClub ? clubTabs() : '') + ({ bugun: () => viewToday(S, clubNow()), raf: () => viewLibrary(S, enter), ara: viewSearch, okuma: () => viewOkuma(S), profil: () => viewProfile(S), kulup: viewClubs, davet: viewInvite, k: () => viewClub(S.clubTab), kb: () => viewClubBook(S.bookId) }[S.view])();
+    v.innerHTML = header() + (inClub ? clubTabs() : '') + ({ bugun: () => viewToday(S, clubNow()), raf: () => viewLibrary(S, enter, clubMissing()), ara: viewSearch, okuma: () => viewOkuma(S), profil: () => viewProfile(S), kulup: viewClubs, davet: viewInvite, k: () => viewClub(S.clubTab), kb: () => viewClubBook(S.bookId) }[S.view])();
   }
   updateCard();
   enhance(v);
@@ -137,7 +137,7 @@ function route() {
     if (S.user) { openClub(decodeURIComponent(id)); try { localStorage.setItem('kuytu-club', decodeURIComponent(id)); } catch (e) {} }
     S.clubTab = ['ay', 'kitaplar', 'oneriler', 'uyeler'].includes(sub) ? sub : 'ay';
     if (sub === 'b' && bid && S.club) { S.view = 'kb'; S.bookId = decodeURIComponent(bid); openNotes(S.bookId); }
-  } else if (S.view === 'bugun' && S.user && activeClub()) openClub(activeClub());
+  } else if ((S.view === 'bugun' || S.view === 'raf') && S.user && activeClub()) openClub(activeClub());
   else if (S.club) closeClub();
   if (view === 'davet' && id && S.user && S.profile) { loadInvite(decodeURIComponent(id)); return; }
   S.armed = false;
@@ -187,6 +187,7 @@ document.addEventListener('click', e => {
   if (a === 'wish') { const b = shelfBook(S.bookId); updateShelf(uid, b.id, { wish: !b.wish }).catch(fail); }
   if (a === 'lendback') updateShelf(uid, S.bookId, { lentTo: '', lentAt: '' }).catch(fail);
   if (a === 'scan') scanBarcode().then(code => { if (code === null) toast(TN.scanNo); else if (code) runSearch(code); }).catch(fail);
+  if (a === 'importclub') importClubBooks().then(() => toast(TN.imported)).catch(fail);
   if (a === 'quick') { S.quick = !S.quick; render(); }
   if (a === 'qdel') remove(`users/${uid}/quotes/${el.dataset.id}`).catch(fail);
   if (a === 'onbmood') { const m = el.dataset.v; if (S.moods.has(m)) S.moods.delete(m); else S.moods.add(m); render(); }

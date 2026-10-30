@@ -14,5 +14,6 @@ export const PLANT = '<svg class="plant" viewBox="0 0 70 104" aria-hidden="true"
 export const WAVE = '<svg class="wave" viewBox="0 0 220 12" aria-hidden="true"><path d="M2 8C30 1 52 12 82 7S136 2 164 8S204 9 218 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 // İç içe halkalar kemerin derinliğini verir; en içteki katman içeriği taşır
 export const arch = (inner, cls = '') => `<div class="ring r1 ${cls}"><div class="ring r2"><div class="ring r3"><div class="ring r4">${inner}</div></div></div></div>`;
-// Sayfanın arkasındaki ışık o anki kitabın rengini alır
-export const setAmbient = title => document.documentElement.style.setProperty('--amb', title ? `hsl(${hueOf(title)} 68% 62%)` : '#f2b84b');
+// Sayfanın arkasındaki ışık kitaba göre değişir, ama hep Kuytu'nun sıcak tonlarında kalır
+const WARM = ['#f2b84b', '#e0a35f', '#d98a5b', '#c9a27a', '#a9b58f'];
+export const setAmbient = title => document.documentElement.style.setProperty('--amb', title ? WARM[hueOf(title) % WARM.length] : WARM[0]);
