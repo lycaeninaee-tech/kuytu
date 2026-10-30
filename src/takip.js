@@ -12,7 +12,7 @@ document.addEventListener('toggle', e => { if (e.target.dataset && e.target.data
 
 const bars = (rows, fmt) => {
   const max = Math.max(1, ...rows.map(r => r[1]));
-  return `<ul class="hbars">${rows.map(([k, v]) => `<li><span>${esc(k)}</span><span class="bar"><i style="width:${Math.round(v / max * 100)}%"></i></span><span class="v">${esc(fmt(v))}</span></li>`).join('')}</ul>`;
+  return `<ul class="hbars">${rows.map(([k, v, text]) => `<li><span>${esc(k)}</span><span class="bar"><i style="width:${Math.round(v / max * 100)}%"></i></span><span class="v">${esc(text || fmt(v))}</span></li>`).join('')}</ul>`;
 };
 export function streaks(days) {
   const has = k => days.has(k);
@@ -98,10 +98,10 @@ export async function shareRecap(state) {
 }
 export function viewTakip(state) {
   const mine = state.sessions, prof = state.profile || {};
-  let saved = null;
-  try { saved = localStorage.getItem('kuytu-metric'); } catch (e) {}
-  const pg = (saved || (mine.some(s => s.pages) ? 'pages' : 'min')) === 'pages';
+  // Sayfa ve dakika tek ekranda: grafikler sayfa kaydı varsa sayfaya göre çizilir, yazılarda ikisi birlikte görünür
+  const pg = mine.some(s => s.pages);
   state.metricNow = pg ? 'pages' : 'min';
+  const both = list => { const p = list.reduce((a, s) => a + (s.pages || 0), 0), m = Math.round(list.reduce((a, s) => a + (s.seconds || 0), 0) / 60); return [p ? p + ' sayfa' : '', m ? m + ' dk' : ''].filter(Boolean).join(' · ') || '–'; };
   const val = s => (pg ? s.pages || 0 : s.seconds || 0), fmt = v => (pg ? v + ' sayfa' : dk(v));
   const days = new Set(), byDay = {};
   mine.forEach(s => { const k = sessDay(s); if (k) { days.add(k); byDay[k] = (byDay[k] || 0) + val(s); } });
@@ -114,11 +114,12 @@ export function viewTakip(state) {
     const v = byDay[dayKey(d)] || 0, lvl = !v ? 0 : v < cuts[0] ? 1 : v < cuts[1] ? 2 : v < cuts[2] ? 3 : 4;
     return `<button type="button" tabindex="-1" class="l${lvl}" data-act="heatday" data-v="${dayKey(d)}" title="${esc(d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }))}: ${esc(fmt(v))}"></button>`;
   }).join('');
-  const parts = PARTS.map(([k, a, b]) => [k, mine.filter(s => { const h = new Date(s.at).getHours(), x = h < 5 ? h + 24 : h; return x >= a && x < b; }).reduce((t, s) => t + val(s), 0)]);
-  const week = WEEK.map((k, i) => [k, mine.filter(s => (new Date(s.at).getDay() + 6) % 7 === i).reduce((t, s) => t + val(s), 0)]);
+  const row = (k, list) => [k, list.reduce((t, s) => t + val(s), 0), both(list)];
+  const parts = PARTS.map(([k, a, b]) => row(k, mine.filter(s => { const h = new Date(s.at).getHours(), x = h < 5 ? h + 24 : h; return x >= a && x < b; })));
+  const week = WEEK.map((k, i) => row(k, mine.filter(s => (new Date(s.at).getDay() + 6) % 7 === i)));
   const per = {};
-  mine.forEach(s => { per[s.title || '?'] = (per[s.title || '?'] || 0) + val(s); });
-  const books = Object.entries(per).filter(e => e[1]).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  mine.forEach(s => { (per[s.title || '?'] = per[s.title || '?'] || []).push(s); });
+  const books = Object.entries(per).map(([k, l]) => row(k, l)).filter(r => r[1]).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const has = parts.some(p => p[1]);
   const topP = parts.slice().sort((a, b) => b[1] - a[1])[0], topD = WEEK_LONG[week.indexOf(week.slice().sort((a, b) => b[1] - a[1])[0])];
   const timed = mine.filter(s => s.pages && s.seconds);
@@ -132,13 +133,13 @@ export function viewTakip(state) {
   const shown = state.logAll ? mine : mine.slice(0, 8);
   const amount = s => [s.pages ? s.pages + ' sayfa' : '', s.seconds ? dk(s.seconds) : ''].filter(Boolean).join(' · ');
   const open = k => (opened[k] ? ' open' : '');
-  return `<div class="pagehead"><div><p class="label">${T.track}</p><h2>${T.habit}</h2></div><div class="seg"><button type="button" class="${pg ? 'on' : ''}" data-act="metric" data-v="pages">${T.pageTab}</button><button type="button" class="${pg ? '' : 'on'}" data-act="metric" data-v="min">${T.minTab}</button></div></div>
+  return `<div class="pagehead"><div><p class="label">${T.track}</p><h2>${T.habit}</h2></div></div>
     <div class="habit">
     ${pace(state, mine)}
     <div class="statrow three">
-      <div><b>${esc(fmt(monthV))}</b><span>${T.thisMonth}</span></div>
+      <div><b>${esc(both(mList))}</b><span>${T.thisMonth}</span></div>
       <div><b>${now} gün</b><span>${T.streak}</span></div>
-      <div><b>${wkN}${goal ? ' / ' + goal : ''} ${unit}</b><span>${T.thisWeek}</span></div>
+      <div><b>${esc(both(mine.filter(s => wk.includes(sessDay(s)))))}</b><span>${T.thisWeek}${goal ? ' · ' + T.goal + ' ' + goal + ' ' + unit : ''}</span></div>
     </div>
     <details class="logbox" data-k="log"${open('log')}><summary class="btn">${T.logTitle}</summary>${logForm(state)}</details>
     <section class="surface"><h3>${T.last30}</h3>${chart(byDay, pg)}</section>

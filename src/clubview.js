@@ -6,7 +6,7 @@ import { watchCol, watchDoc, add, patch, remove, createClub, makeInvite, getInvi
 
 const GENERIC_Q = ['Kitabın sonu sana tatmin edici geldi mi? Seni şaşırttı mı?', 'En çok hangi karakterle bağ kurdun, neden?', 'Karakterlerin kararları sana inandırıcı geldi mi?', 'Ana karakter kitabın başından sonuna nasıl değişti?', 'Olayların altında bu kitap sence aslında ne anlatıyor?', 'Hikâye bittikten sonra karakterlere ne olduğunu düşünüyorsun?', 'Sesli okumak istediğin bir bölüm var mı? Neden o bölüm?', 'Bu kitabı kime önerirdin?'];
 const CLUB_STATUS = [['okunuyor', 'Okunuyor'], ['sirada', 'Sırada'], ['tamamlandi', 'Bitti']];
-const NOTE_KINDS = [['own', 'Notlar'], ['quote', 'Alıntılar'], ['question', 'Sorular'], ['meeting', 'Toplantı']];
+const NOTE_KINDS = [['own', 'Notlar'], ['quote', 'Alıntılar'], ['question', 'Sorular'], ['meeting', 'Toplantı'], ['info', 'Bilgiler']];
 let S, toast, fail, render, coverHTML;
 export function initClubs(ctx) { ({ S, toast, fail, render, coverHTML } = ctx); }
 
@@ -63,6 +63,12 @@ export function viewInvite() {
 }
 const tabs = active => `<nav class="ctabs">${[['ay', T.tabNow], ['kitaplar', T.tabBooks], ['oneriler', T.tabSugg], ['uyeler', T.tabMembers]].map(([k, l]) => `<a href="#k/${encodeURIComponent(C().id)}/${k}" class="${active === k ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
 const bookLink = b => `#k/${encodeURIComponent(C().id)}/b/${encodeURIComponent(b.id)}`;
+// Taşınan kitaplarda yazar notu ve ilginç bilgiler
+const bookInfo = b => {
+  const x = b.bilgi || {}, list = x.notlar || [];
+  if (!x.yazarNot && !list.length && !x.orijinal) return '';
+  return `<details class="more"><summary>${T.aboutBook}</summary><div class="surface">${x.orijinal ? `<p class="muted small">${T.original}: ${esc(x.orijinal)}</p>` : ''}${x.yazarNot ? `<p>${esc(x.yazarNot)}</p>` : ''}${list.length ? `<ul class="timeline">${list.map(t => `<li><p>${esc(t)}</p></li>`).join('')}</ul>` : ''}</div></details>`;
+};
 const avgRate = b => { const v = Object.values(b.ratings || {}); return v.length ? `<p class="muted small">${T.avg}: ${(v.reduce((a, x) => a + x, 0) / v.length).toFixed(1)}</p>` : ''; };
 const bookTile = b => `<a class="tile" href="${bookLink(b)}">${coverHTML(b)}<span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || '')}</span></a>`;
 // Sıra, üyelerin katılım sırasıyla döner: son kitabı ekleyenden sonraki üye seçer
@@ -132,6 +138,7 @@ export function viewClubBook(bid) {
       <form id="cb-meet" class="pagebar"><label>${T.date}<input name="d" type="date" value="${esc(b.meetingDate || '')}"></label><label>${T.time}<input name="t" type="time" value="${esc(b.meetingTime || '')}"></label><label>${T.place}<input name="pl" maxlength="80" value="${esc(b.meetingPlace || '')}"></label><button class="btn ghost" type="submit">${T.save}</button></form>
       ${b.meetingDate ? `<div class="seg"><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'y' ? 'on' : ''}" data-act="crsvp" data-v="y">${T.yes}</button><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'n' ? 'on' : ''}" data-act="crsvp" data-v="n">${T.no}</button></div>` : ''}` : ''}
     </div></section>
+    ${bookInfo(b)}
     <nav class="ctabs">${NOTE_KINDS.concat(photosOn ? [['photo', T.photos]] : []).map(([k, l]) => `<button type="button" class="${kind === k ? 'on' : ''}" data-act="ckind" data-v="${k}">${l}</button>`).join('')}</nav>
     ${kind === 'photo' ? photoTab(w) : `<ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div>${n.spoiler && n.by !== S.user.uid && !S.reveal.has(n.id) ? `<button class="linkbtn" type="button" data-act="creveal" data-id="${esc(n.id)}">${T.spoiler}</button>` : `<p>${esc(n.text)}</p>`}<p class="muted small">${n.spoiler ? `<span class="pill">${T.spoilerTag}</span> ` : ''}${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
     ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}`}
