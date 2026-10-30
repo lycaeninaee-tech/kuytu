@@ -3,12 +3,26 @@ import { $, esc } from './util.js';
 import { TC as T } from './strings.js';
 import { searchBooks } from './books.js';
 import { addToShelf } from './shelf.js';
+import { book3d, setAmbient } from './parts.js';
 import { watchCol, watchDoc, add, patch, remove, createClub, makeInvite, getInvite, joinClub, leaveClub } from './clubs.js';
 
 const GENERIC_Q = ['Kitabın sonu sana tatmin edici geldi mi? Seni şaşırttı mı?', 'En çok hangi karakterle bağ kurdun, neden?', 'Karakterlerin kararları sana inandırıcı geldi mi?', 'Ana karakter kitabın başından sonuna nasıl değişti?', 'Olayların altında bu kitap sence aslında ne anlatıyor?', 'Hikâye bittikten sonra karakterlere ne olduğunu düşünüyorsun?', 'Sesli okumak istediğin bir bölüm var mı? Neden o bölüm?', 'Bu kitabı kime önerirdin?'];
 const CLUB_STATUS = [['okunuyor', 'Okunuyor'], ['sirada', 'Sırada'], ['tamamlandi', 'Bitti'], ['birakildi', 'Bırakıldı']];
 let S, toast, fail, render, coverHTML;
 export function initClubs(ctx) { ({ S, toast, fail, render, coverHTML } = ctx); }
+// Kişinin kitaplığında henüz olmayan kulüp kitapları; yalnızca kopyalanır, kulüp verisi değişmez
+// Aynı kitap farklı yazılmış olabilir (Narsis, Narziss); yazar ve başlığın başı tutuyorsa yeniden eklenmez
+const sameBook = (x, b) => x.id === b.id || x.title === b.title || (!!b.author && x.author === b.author && (x.title || '').slice(0, 3) === (b.title || '').slice(0, 3));
+const missing = () => (S.club ? S.club.books.filter(b => b.status !== 'birakildi' && !S.shelf.some(x => sameBook(x, b))) : []);
+export const clubMissing = () => missing().length;
+export const importClubBooks = () => Promise.all(missing().map(b => addToShelf(S.user.uid, { id: b.id, title: b.title, author: b.author || '', cover: b.cover && b.cover.length < 2000 ? b.cover : '', pages: b.pages || 0, year: b.year || '', publisher: b.publisher || '' }, { okunuyor: 'okuyorum', tamamlandi: 'okudum' }[b.status] || 'istiyorum')));
+// Bugün ekranı için etkin kulübün özeti
+export function clubNow() {
+  const c = S.club;
+  if (!c || !c.doc) return null;
+  const b = c.books.find(x => x.status === 'okunuyor') || c.books.find(x => x.status === 'sirada') || null;
+  return { id: c.id, name: c.doc.name, book: b, rs: b ? readers().map(r => ({ name: r.name, pct: pctOf(b, r) })) : [] };
+}
 
 const C = () => S.club;
 const me = () => (C().members || []).find(m => m.uid === S.user.uid);
@@ -100,6 +114,7 @@ function viewHome() {
   const c = C(), b = c.books.find(x => x.status === 'okunuyor') || c.books.find(x => x.status === 'sirada');
   if (!b) return `<div class="pagehead"><div><p class="label">${esc(c.doc.name)}</p><h1>${T.tabNow}</h1></div></div><p class="empty-note">${T.noCurrent}</p>`;
   openNotes(b.id);
+  setAmbient(b.title);
   const rs = readers(), id = encodeURIComponent(b.id);
   const notes = c.notes.filter(n => !n.spoiler && n.kind !== 'info' && !n.auto), quotes = c.notes.filter(n => n.kind === 'quote' && !n.spoiler);
   const left = b.meetingDate ? daysLeft(b.meetingDate) : null, avgP = rs.length ? Math.round(rs.reduce((a, r) => a + pctOf(b, r), 0) / rs.length) : 0;
@@ -108,7 +123,7 @@ function viewHome() {
   const meta = [b.pickedBy ? b.pickedBy + ' ' + T.picked : '', b.year, b.pages ? b.pages + ' sayfa' : '', b.genre].filter(Boolean).map(esc).join(' · ');
   return `<section class="stage">
       <div class="stage-bg" style="${bg(b)}"></div>
-      <div class="stage-cover tilt">${coverHTML(b)}</div>
+      <div class="stage-cover">${book3d(b, 170)}</div>
       <div class="stage-text"><p class="eyebrow">${esc(monthTR(b.month) || T.tabNow)} · ${T.nowReading}</p>
         <h1 class="display">${emLast(b.title)}</h1><p class="stage-author">${esc(b.author || '')}</p><p class="stage-meta">${meta}</p>
         <div class="stage-readers">${rs.map((r, i) => `<span class="sr-one">${ringAvatar(r, pctOf(b, r), i)}<span><b>${esc(r.name)}</b><small>%${pctOf(b, r)}</small></span></span>`).join('')}</div>
@@ -207,7 +222,7 @@ export function viewClubBook(bid) {
     ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}
     ${qGeneric ? `<button class="btn ghost" type="button" data-act="cgeneric">${T.generic}</button>` : ''}`;
   return `<a class="small crumb" href="#k/${encodeURIComponent(c.id)}/kitaplar">← ${T.library}</a>
-    <section class="stage book-stage"><div class="stage-bg" style="${bg(b)}"></div><div class="stage-cover tilt">${coverHTML(b)}</div>
+    <section class="stage book-stage"><div class="stage-bg" style="${bg(b)}"></div><div class="stage-cover">${book3d(b, 150)}</div>
       <div class="stage-text"><p class="eyebrow">${esc((CLUB_STATUS.find(s => s[0] === b.status) || ['', ''])[1])}${b.month ? ' · ' + esc(monthTR(b.month)) : ''}</p><h1 class="display">${emLast(b.title)}</h1><p class="stage-author">${esc(b.author || '')}</p><p class="stage-meta">${esc([b.pickedBy ? b.pickedBy + ' ' + T.picked : '', b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}${avg(b) ? ' ' + stars(avg(b)) : ''}</p></div></section>
     <nav class="subtabs">${tabsAll.map(([k, l]) => `<button type="button" class="${kind === k ? 'on' : ''}" data-act="ckind" data-v="${k}">${l}${count(k) ? `<span class="n">${count(k)}</span>` : ''}</button>`).join('')}</nav>
     <div class="book-grid">${body}</div>`;

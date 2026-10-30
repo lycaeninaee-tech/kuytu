@@ -1,10 +1,12 @@
 // Okuma köşesi: zamanlayıcı, tam ekran oda, ışık, ortam sesi ve müzik
 import { $, esc, dayKey, sessDay } from './util.js';
 import { TK as T } from './strings.js';
+import { book3d, MOON, star, CAT } from './parts.js';
 
 export const MODES = [['serbest', '∞', 'Serbest okuma', 0, 0], ['k15', '15', 'Kısa tur · 15 / 3', 15, 3], ['p25', '25', 'Pomodoro · 25 / 5', 25, 5], ['p50', '50', 'Derin odak · 50 / 10', 50, 10], ['ozel', '+', 'Özel döngü', 0, 0], ['sayac', '↓', 'Geri sayım', 0, 0]];
 let timer = null, pref = 'p25', roomLight = 'alaca', sound = 'off', acx = null, src = null, onFinish = () => {}, custom = { f: 30, b: 5, c: 30 };
 export const setOnFinish = fn => { onFinish = fn; };
+export const timerOn = () => !!timer;
 try {
   timer = JSON.parse(localStorage.getItem('kuytu-timer') || 'null');
   pref = localStorage.getItem('kuytu-mode') || 'p25';
@@ -105,8 +107,9 @@ function timerBody() {
     const chip = (kind, now, v, t) => `<button type="button" data-act="roomopt" data-kind="${kind}" data-v="${v}" aria-pressed="${now === v}">${t}</button>`;
     return `<div class="room${timer.focus && timer.phase === 'break' ? ' is-break' : ''}" data-light="${esc(roomLight)}">
       <span class="lamp" aria-hidden="true"></span>
+      <span class="room-sky room-only" aria-hidden="true">${MOON}${star('22%', '16%', 18)}${star('74%', '12%', 13, 1.2)}${star('84%', '30%', 15, 2.3)}</span><span class="room-cat room-only" aria-hidden="true">${CAT}</span>
       <div class="rtop"><span>${esc(sub())}</span><span>${T.today} ${today} dk</span></div>
-      <div class="rmid"><div class="digits" id="digits">${label()}</div><p class="rtitle">${esc(b.title || timer.title || '')}</p><p class="rauthor">${esc(b.author || '')}</p></div>
+      <div class="rmid"><div class="room-book room-only">${book3d({ title: b.title || timer.title || '', cover: b.cover }, 130)}</div><div class="digits" id="digits">${label()}</div><p class="rtitle">${esc(b.title || timer.title || '')}</p><p class="rauthor">${esc(b.author || '')}</p></div>
       <div class="rfoot"><div class="rline"><i id="tline" style="--pct:${pct().toFixed(4)}"></i></div>
       <div class="rbot">
         <div class="chips room-only"><span>${T.light}</span>${chip('light', roomLight, 'gun', T.day)}${chip('light', roomLight, 'alaca', T.dusk)}${chip('light', roomLight, 'gece', T.night)}</div>
