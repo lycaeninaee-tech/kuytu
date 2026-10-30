@@ -256,3 +256,11 @@ select { width: 100%; min-width: 0; padding: 11px 14px; font: inherit; color: va
 .check { width: 26px; height: 26px; padding: 0; color: transparent; background: none; border: 1px solid var(--olive); border-radius: 50%; cursor: pointer; }
 .check.on { color: var(--cream); background: var(--olive); }
 .book-body form { width: 100%; }
+
+.f-ozel, .f-sayac { display: none; }
+.f-ozel { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.surface:has(input[value="ozel"]:checked) .f-ozel { display: grid; }
+.surface:has(input[value="sayac"]:checked) .f-sayac { display: grid; }
+.check-row { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.check-row input { width: auto; }
+.share { justify-self: start; }
