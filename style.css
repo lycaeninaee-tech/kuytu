@@ -590,7 +590,7 @@ main { position: relative; max-width: 1180px; padding-top: max(16px, env(safe-ar
 .in-room #timer-card { align-content: stretch; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .room-sky .moon { top: 72px; left: 16%; margin: 0; }
 .room-sky { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-.room-cat { position: fixed; left: 24px; bottom: 0; color: #e0cdaa; }
+.room-cat { position: fixed; left: 24px; bottom: 84px; color: #e0cdaa; pointer-events: none; }
 .room-cat .cat { color: #e0cdaa; } .room-cat .cat .eye { stroke: #2f2e2e; }
 .room[data-light="gun"] .room-cat, .room[data-light="gun"] .room-cat .cat { color: #2f2e2e; }
 .room[data-light="gun"] .room-cat .cat .eye { stroke: #f5efe7; }
