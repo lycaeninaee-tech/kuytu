@@ -2,6 +2,7 @@
 import { $, esc } from './util.js';
 import { TC as T } from './strings.js';
 import { searchBooks } from './books.js';
+import { addToShelf } from './shelf.js';
 import { watchCol, watchDoc, add, patch, remove, createClub, makeInvite, getInvite, joinClub, leaveClub } from './clubs.js';
 
 const GENERIC_Q = ['Kitabın sonu sana tatmin edici geldi mi? Seni şaşırttı mı?', 'En çok hangi karakterle bağ kurdun, neden?', 'Karakterlerin kararları sana inandırıcı geldi mi?', 'Ana karakter kitabın başından sonuna nasıl değişti?', 'Olayların altında bu kitap sence aslında ne anlatıyor?', 'Hikâye bittikten sonra karakterlere ne olduğunu düşünüyorsun?', 'Sesli okumak istediğin bir bölüm var mı? Neden o bölüm?', 'Bu kitabı kime önerirdin?'];
@@ -173,7 +174,7 @@ export function viewClub(tab) {
 const BOOK_TABS = [['genel', 'Genel'], ['own', 'Notlar'], ['quote', 'Alıntılar'], ['question', 'Sorular'], ['meeting', 'Toplantı'], ['info', 'Yazar ve bilgi']];
 function bookGeneral(b, w) {
   const rs = readers();
-  return `<section class="surface"><h3>${T.status}</h3>${w ? `<div class="seg wrap">${CLUB_STATUS.map(([k, l]) => `<button type="button" class="${b.status === k ? 'on' : ''}" data-act="cstatus" data-v="${k}">${l}</button>`).join('')}</div>` : ''}
+  return `<section class="surface"><h3>${T.status}</h3>${S.shelf.some(x => x.id === b.id || x.title === b.title) ? `<p class="muted small">${T.onMyShelf}</p>` : `<button class="btn ghost share" type="button" data-act="cshelf">${T.toShelf}</button>`}${w ? `<div class="seg wrap">${CLUB_STATUS.map(([k, l]) => `<button type="button" class="${b.status === k ? 'on' : ''}" data-act="cstatus" data-v="${k}">${l}</button>`).join('')}</div>` : ''}
       <h3>${T.rate}</h3><div class="rate" role="group" aria-label="${T.rate}">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="${((b.ratings || {})[S.user.uid] || 0) >= n ? 'on' : ''}" data-act="crate" data-v="${n}" aria-label="${n}">★</button>`).join('')}</div>${avg(b) ? `<p class="muted small">${T.avg}: ${avg(b).toFixed(1)}</p>` : ''}</section>
     <section class="surface"><h3>${T.clubProgress}</h3><ul class="hbars">${rs.map(r => `<li><span>${esc(r.name)}</span><span class="bar"><i style="width:${pctOf(b, r)}%"></i></span><span class="v">%${pctOf(b, r)}</span></li>`).join('')}</ul>
       ${w ? `<form id="cb-prog" class="pagebar"><label>${T.myProgress}<input name="p" type="number" min="0" max="100" value="${(b.progress || {})[S.user.uid] || 0}"></label><button class="btn ghost" type="submit">${T.save}</button></form>` : ''}</section>
@@ -262,6 +263,7 @@ export function clubClick(a, el) {
   if (a === 'crole') patch(`${base}/members/${el.dataset.id}`, { role: el.dataset.v }).catch(fail);
   if (a === 'ckick') remove(`${base}/members/${el.dataset.id}`).catch(fail);
   if (a === 'cleave') leaveClub(u.uid, C().id).then(() => { location.hash = '#kulup'; }).catch(fail);
+  if (a === 'cshelf') { const b = C().books.find(x => x.id === bid); addToShelf(u.uid, { id: b.id, title: b.title, author: b.author || '', cover: b.cover && b.cover.length < 2000 ? b.cover : '', pages: b.pages || 0, year: b.year || '', publisher: b.publisher || '' }, b.status === 'okunuyor' ? 'okuyorum' : 'istiyorum').then(() => { toast(T.addedOk); render(); }).catch(fail); }
   if (a === 'cstatus') patch(`${base}/books/${bid}`, { status: el.dataset.v }).catch(fail);
   if (a === 'crate') patch(`${base}/books/${bid}`, { ratings: { [u.uid]: Number(el.dataset.v) } }).catch(fail);
   if (a === 'crsvp') patch(`${base}/books/${el.dataset.id || bid}`, { rsvp: { [u.uid]: el.dataset.v } }).catch(fail);
