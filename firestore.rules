@@ -2,28 +2,55 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function mem(c) { return /databases/$(database)/documents/clubs/$(c)/members/$(request.auth.uid); }
+    function isMember(c) { return signedIn() && exists(mem(c)); }
+    function canWrite(c) { return isMember(c) && get(mem(c)).data.role != 'izleyici'; }
+    function isOwner(c) { return signedIn() && get(/databases/$(database)/documents/clubs/$(c)).data.ownerId == request.auth.uid; }
 
+    // Kişisel veriler yalnızca sahibine açık; arkadaş aşamasında genişler
     match /users/{uid} {
-      allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
-      // Raf şimdilik yalnızca sahibine açık; arkadaş aşamasında genişler
-      match /sessions/{id} {
-        allow read, write: if signedIn() && request.auth.uid == uid;
-      }
-      match /shelf/{bookId} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+      match /{sub}/{id} {
         allow read, write: if signedIn() && request.auth.uid == uid;
       }
     }
-    // Kullanıcı adları benzersiz: sahibi oluşturur ve siler, değiştirilemez
     match /usernames/{name} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid && name.matches('^[a-z0-9_]{3,20}$');
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
-    // Ortak katalog: üyeler ekler, kimse değiştiremez
     match /catalog/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() < 300;
+    }
+    // Davetler listelenemez, yalnızca kodu bilen okuyabilir
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow create: if isOwner(request.resource.data.clubId);
+      allow delete: if isOwner(resource.data.clubId);
+    }
+    match /clubs/{c} {
+      allow read: if isMember(c);
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      match /members/{m} {
+        allow read: if isMember(c);
+        allow create: if signedIn() && m == request.auth.uid && ((request.resource.data.role == 'kurucu' && getAfter(/databases/$(database)/documents/clubs/$(c)).data.ownerId == request.auth.uid) || (request.resource.data.role == 'uye' && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.clubId == c));
+        allow update: if isOwner(c);
+        allow delete: if signedIn() && (m == request.auth.uid || isOwner(c));
+      }
+      match /books/{b} {
+        allow read: if isMember(c);
+        allow write: if canWrite(c);
+        match /notes/{n} {
+          allow read: if isMember(c);
+          allow write: if canWrite(c);
+        }
+      }
+      match /suggestions/{s} {
+        allow read: if isMember(c);
+        allow write: if canWrite(c);
+      }
     }
   }
 }
