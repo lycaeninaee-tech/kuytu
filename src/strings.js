@@ -59,3 +59,19 @@ export const T = {
     'auth/popup-closed-by-user': 'Google penceresi kapatıldı.',
   },
 };
+
+// Okuma köşesi ve Takip
+export const TK = {
+  free: 'Serbest okuma', focus: 'Odak', rest: 'Mola', rounds: 'tur bitti', today: 'Bugün', todayLow: 'bugün',
+  light: 'Işık', day: 'Gündüz', dusk: 'Alacakaranlık', night: 'Gece', sound: 'Ses', quiet: 'Sessiz', rain: 'Yağmur', fire: 'Şömine',
+  shrink: 'Küçült', enter2: 'Odaya dön', finish: 'Bitir ve kaydet', reset: 'Sıfırla', ask: 'Bugün ne kadar <em>okuyoruz?</em>',
+  needBook: 'Önce rafına bir kitap ekle.', findBook: 'Kitap ara', book: 'Kitap', enter: 'Odaya gir', music: 'Müzik', moveMusic: 'Müzik çaları taşı',
+  musicHint: 'Spotify ya da YouTube bağlantını ekle, okurken burada çalsın.', link: 'Bağlantı', save: 'Kaydet',
+  done: 'Oturum bitti', minutesWord: 'dakika', howMany: 'Kaç sayfa okudun?', skip: 'Geç',
+  track: 'Takip', habit: 'Okuma <em>alışkanlığım</em>', pageTab: 'Sayfa', minTab: 'Dakika', reading: 'Şu an okuduğun',
+  addPages: 'Kalan sayfayı görmek için kitabın sayfa sayısını gir.', openBook: 'Kitabı aç', finished: 'Kitabı bitirdin.', perDay: 'Son 7 günde günde ortalama', perDay2: 'sayfa okudun; bu hızla', perDay3: 'günde bitirirsin.', noPace: 'Sayfa ekledikçe bitiş tahminin burada görünecek.', leftPages: 'sayfa kaldı',
+  logTitle: 'Okuduğunu ekle', logHint: 'Okuma köşesi dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', pagesRead: 'Sayfa', minutes: 'Süre (dk)', date: 'Tarih', time: 'Saat', pageWord: 'sayfa',
+  thisMonth: 'Bu ay', streak: 'Şu anki seri', best: 'En uzun seri', speed: 'Okuma hızın', last30: 'Son 30 gün', lastWeeks: 'Son 26 hafta', heatHint: 'Bir güne tıklayınca o gün için kayıt ekleyebilirsin.',
+  weekGoal: 'Haftalık hedef', goal: 'Hedef', noGoal: 'Henüz hedef yok', dayParts: 'Günün saatleri', weekDays: 'Haftanın günleri', byBook: 'Kitaplara göre', noRecord: 'Henüz kayıt yok.', records: 'Kayıtlarım', manual: 'elle', sure: 'Silinsin mi?', del: 'Sil', showAll: 'Tümünü göster',
+  needAmount: 'Sayfa ya da süre yaz.', tooBig: 'Sayfa ya da süre çok büyük görünüyor.', future: 'İleri tarihli kayıt eklenemez.', badDate: 'Tarihi kontrol et.', added: 'eklendi', saved: 'Kaydedildi', navRoom: 'Okuma köşesi', navTrack: 'Takip',
+};
