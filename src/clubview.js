@@ -5,8 +5,7 @@ import { searchBooks } from './books.js';
 import { watchCol, watchDoc, add, patch, remove, createClub, makeInvite, getInvite, joinClub, leaveClub } from './clubs.js';
 
 const GENERIC_Q = ['Kitabın sonu sana tatmin edici geldi mi? Seni şaşırttı mı?', 'En çok hangi karakterle bağ kurdun, neden?', 'Karakterlerin kararları sana inandırıcı geldi mi?', 'Ana karakter kitabın başından sonuna nasıl değişti?', 'Olayların altında bu kitap sence aslında ne anlatıyor?', 'Hikâye bittikten sonra karakterlere ne olduğunu düşünüyorsun?', 'Sesli okumak istediğin bir bölüm var mı? Neden o bölüm?', 'Bu kitabı kime önerirdin?'];
-const CLUB_STATUS = [['okunuyor', 'Okunuyor'], ['sirada', 'Sırada'], ['tamamlandi', 'Bitti']];
-const NOTE_KINDS = [['own', 'Notlar'], ['quote', 'Alıntılar'], ['question', 'Sorular'], ['meeting', 'Toplantı'], ['info', 'Bilgiler']];
+const CLUB_STATUS = [['okunuyor', 'Okunuyor'], ['sirada', 'Sırada'], ['tamamlandi', 'Bitti'], ['birakildi', 'Bırakıldı']];
 let S, toast, fail, render, coverHTML;
 export function initClubs(ctx) { ({ S, toast, fail, render, coverHTML } = ctx); }
 
@@ -61,57 +60,106 @@ export function viewInvite() {
   return `<section class="surface invite"><p class="label">${T.invited}</p><h2>${esc(i.data.clubName)}</h2>
     ${already ? `<a class="btn" href="#k/${encodeURIComponent(i.data.clubId)}">${T.goClub}</a>` : `<button class="btn" type="button" data-act="cjoin">${T.join}</button>`}</section>`;
 }
-const tabs = active => `<nav class="ctabs">${[['ay', T.tabNow], ['kitaplar', T.tabBooks], ['oneriler', T.tabSugg], ['uyeler', T.tabMembers]].map(([k, l]) => `<a href="#k/${encodeURIComponent(C().id)}/${k}" class="${active === k ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
-const bookLink = b => `#k/${encodeURIComponent(C().id)}/b/${encodeURIComponent(b.id)}`;
-// Taşınan kitaplarda yazar notu ve ilginç bilgiler
-const bookInfo = b => {
-  const x = b.bilgi || {}, list = x.notlar || [];
-  if (!x.yazarNot && !list.length && !x.orijinal) return '';
-  return `<details class="more"><summary>${T.aboutBook}</summary><div class="surface">${x.orijinal ? `<p class="muted small">${T.original}: ${esc(x.orijinal)}</p>` : ''}${x.yazarNot ? `<p>${esc(x.yazarNot)}</p>` : ''}${list.length ? `<ul class="timeline">${list.map(t => `<li><p>${esc(t)}</p></li>`).join('')}</ul>` : ''}</div></details>`;
-};
-const avgRate = b => { const v = Object.values(b.ratings || {}); return v.length ? `<p class="muted small">${T.avg}: ${(v.reduce((a, x) => a + x, 0) / v.length).toFixed(1)}</p>` : ''; };
-const bookTile = b => `<a class="tile" href="${bookLink(b)}">${coverHTML(b)}<span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || '')}</span></a>`;
-// Sıra, üyelerin katılım sırasıyla döner: son kitabı ekleyenden sonraki üye seçer
+const bookLink = (b, tab) => `#k/${encodeURIComponent(C().id)}/b/${encodeURIComponent(b.id)}`;
+// Çok kelimeli başlıklarda son kelime italik ve vurgu renginde
+const emLast = s => { const w = esc(s || '').split(' '); return w.length > 1 ? w.slice(0, -1).join(' ') + ' <em>' + w[w.length - 1] + '</em>' : w[0]; };
+const monthTR = m => { if (!m) return ''; const [y, mo] = m.split('-').map(Number); return new Date(y, mo - 1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }); };
+const lslug = n => n.toLocaleLowerCase('tr').replace(/ş/g, 's').replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u');
+// Okuyucular: üyeler ve taşınan verideki henüz katılmamış kişiler
+function readers() {
+  const ms = C().members.slice().sort((a, b) => (a.joinedAt || '').localeCompare(b.joinedAt || '')).map(m => ({ name: m.name.split(' ')[0], key: m.uid }));
+  const legacy = ((C().doc || {}).legacyMembers || []).filter(n => !ms.some(m => m.name === n)).map(n => ({ name: n, key: lslug(n) }));
+  return ms.concat(legacy);
+}
+const color = i => `var(--m${(i % 3) + 1})`;
+const ringAvatar = (r, pct, i) => `<span class="ravatar" style="--p:${pct};--c:${color(i)}" title="${esc(r.name)}: %${pct}"><span class="av">${esc(r.name.charAt(0).toLocaleUpperCase('tr'))}</span></span>`;
+const pctOf = (b, r) => (b.progress || {})[r.key] || 0;
+function bigRing(pct, label) {
+  return `<div class="bigring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50" class="br-track"/><circle cx="60" cy="60" r="50" class="br-fill" pathLength="100" style="stroke-dashoffset:${100 - pct}"/></svg><div class="br-t"><b><span data-count="${pct}">${pct}</span>%</b><span>${esc(label)}</span></div></div>`;
+}
+const avg = b => { const v = Object.values(b.ratings || {}); return v.length ? v.reduce((a, x) => a + x, 0) / v.length : 0; };
+const stars = n => (n ? `<span class="stars">${'★'.repeat(Math.round(n))}</span>` : '');
+const bg = b => (b.cover ? `background-image:url('${esc(b.cover)}')` : 'background:var(--forest)');
+const railItem = b => `<a class="rail-item tilt" href="${bookLink(b)}"><span class="rail-cover">${coverHTML(b)}</span><span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || '—')}</span>${stars(avg(b))}</a>`;
 function nextPicker() {
-  const ms = C().members.slice().sort((a, b) => (a.joinedAt || '').localeCompare(b.joinedAt || ''));
-  if (!ms.length) return '';
-  const last = C().books.slice().sort((a, b) => (b.at || '').localeCompare(a.at || ''))[0];
-  const i = last ? ms.findIndex(m => m.uid === last.addedBy) : -1;
-  return ms[(i + 1) % ms.length].name;
+  const rs = readers();
+  if (!rs.length) return { name: '', order: [] };
+  const last = C().books.filter(b => b.pickedBy).sort((a, b) => (b.month || b.at || '').localeCompare(a.month || a.at || ''))[0];
+  const i = last ? rs.findIndex(r => r.name === last.pickedBy.split(' ')[0]) : -1;
+  return { name: rs[(i + 1) % rs.length].name, order: rs.map(r => r.name) };
 }
 const daysLeft = d => Math.round((new Date(d + 'T00:00:00') - new Date(new Date().setHours(0, 0, 0, 0))) / 86400000);
-function tabNow() {
-  const b = C().books.find(x => x.status === 'okunuyor');
-  if (!b) return `<p class="empty-note">${T.noCurrent}</p><p class="muted">${T.nextPicker}: <b>${esc(nextPicker())}</b></p>`;
-  openNotes(b.id);
-  const notes = C().notes.filter(n => !n.spoiler), quotes = notes.filter(n => n.kind === 'quote');
-  const left = b.meetingDate ? daysLeft(b.meetingDate) : null;
-  const extra = `<div class="statrow three">
-      ${left !== null && left >= 0 ? `<div><b>${left === 0 ? T.meetToday : left + ' ' + T.days}</b><span>${T.meeting}</span></div>` : ''}
-      <div><b>${esc(nextPicker())}</b><span>${T.nextPicker}</span></div>
-    </div>
-    ${quotes.length ? `<div class="quotes" aria-label="${T.quotes}"><div>${quotes.concat(quotes).map(n => `<span>“${esc(n.text)}”</span>`).join('')}</div></div>` : ''}
-    ${notes.length ? `<section class="surface"><h3>${T.recent}</h3><ul class="timeline">${notes.slice(-5).reverse().map(n => `<li><b>${esc(n.byName || '')}</b><p>${esc(n.text)}</p></li>`).join('')}</ul></section>` : ''}`;
-  const yes = C().members.filter(m => (b.rsvp || {})[m.uid] === 'y');
-  return `<section class="surface now">${coverHTML(b)}<div class="now-body"><p class="label">${esc(b.month || T.nowReading)}</p><h2>${esc(b.title)}</h2><p class="muted">${esc(b.author || '')}</p>
-      <ul class="hbars">${C().members.map(m => { const p = (b.progress || {})[m.uid] || 0; return `<li><span>${esc(m.name)}</span><span class="bar"><i style="width:${p}%"></i></span><span class="v">%${p}</span></li>`; }).join('')}</ul>
-      ${b.meetingDate ? `<p><b>${T.meeting}:</b> ${esc(dateTR(b.meetingDate))}${b.meetingTime ? ' · ' + esc(b.meetingTime) : ''}${b.meetingPlace ? ' · ' + esc(b.meetingPlace) : ''}</p><p class="muted small">${T.coming}: ${yes.map(m => esc(m.name)).join(', ') || '–'}</p>` : `<p class="muted">${T.noMeeting}</p>`}
-      <a class="btn" href="${bookLink(b)}">${T.openBook}</a></div></section>${extra}`;
+const calendarLink = b => `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(C().doc.name + ': ' + b.title)}&dates=${b.meetingDate.replace(/-/g, '')}/${b.meetingDate.replace(/-/g, '')}&location=${encodeURIComponent(b.meetingPlace || '')}`;
+function rsvpBlock(b) {
+  const mine = (b.rsvp || {})[S.user.uid];
+  const yes = readers().filter(r => (b.rsvp || {})[r.key] === 'y');
+  return `<div class="seg"><button type="button" class="${mine === 'y' ? 'on' : ''}" data-act="crsvp" data-v="y" data-id="${esc(b.id)}">${T.yes}</button><button type="button" class="${mine === 'n' ? 'on' : ''}" data-act="crsvp" data-v="n" data-id="${esc(b.id)}">${T.no}</button></div><p class="muted small">${T.coming}: ${yes.map(r => esc(r.name)).join(', ') || '–'}</p>`;
 }
+function viewHome() {
+  const c = C(), b = c.books.find(x => x.status === 'okunuyor') || c.books.find(x => x.status === 'sirada');
+  if (!b) return `<div class="pagehead"><div><p class="label">${esc(c.doc.name)}</p><h1>${T.tabNow}</h1></div></div><p class="empty-note">${T.noCurrent}</p>`;
+  openNotes(b.id);
+  const rs = readers(), id = encodeURIComponent(b.id);
+  const notes = c.notes.filter(n => !n.spoiler && n.kind !== 'info' && !n.auto), quotes = c.notes.filter(n => n.kind === 'quote' && !n.spoiler);
+  const left = b.meetingDate ? daysLeft(b.meetingDate) : null, avgP = rs.length ? Math.round(rs.reduce((a, r) => a + pctOf(b, r), 0) / rs.length) : 0;
+  const np = nextPicker(), others = c.books.filter(x => x.id !== b.id);
+  const top = c.sugg.slice().sort((x, y) => Object.keys(y.votes || {}).length - Object.keys(x.votes || {}).length)[0];
+  const meta = [b.pickedBy ? b.pickedBy + ' ' + T.picked : '', b.year, b.pages ? b.pages + ' sayfa' : '', b.genre].filter(Boolean).map(esc).join(' · ');
+  return `<section class="stage">
+      <div class="stage-bg" style="${bg(b)}"></div>
+      <div class="stage-cover tilt">${coverHTML(b)}</div>
+      <div class="stage-text"><p class="eyebrow">${esc(monthTR(b.month) || T.tabNow)} · ${T.nowReading}</p>
+        <h1 class="display">${emLast(b.title)}</h1><p class="stage-author">${esc(b.author || '')}</p><p class="stage-meta">${meta}</p>
+        <div class="stage-readers">${rs.map((r, i) => `<span class="sr-one">${ringAvatar(r, pctOf(b, r), i)}<span><b>${esc(r.name)}</b><small>%${pctOf(b, r)}</small></span></span>`).join('')}</div>
+        <div class="actions"><a class="btn light" href="${bookLink(b)}">${T.openBook}</a><a class="btn glass" href="${bookLink(b)}" data-act="ckind" data-v="question">${T.questions}</a></div></div>
+    </section>
+    <div class="bento">
+      <section class="box box-meet"><p class="eyebrow-dark">${T.meeting}</p>
+        ${b.meetingDate ? `<p class="mega">${left > 0 ? `<span data-count="${left}">${left}</span><small>${T.days}</small>` : left === 0 ? T.meetToday : T.meetDone}</p><p class="line">${esc(dateTR(b.meetingDate))}${b.meetingTime ? ' · ' + esc(b.meetingTime) : ''}${b.meetingPlace ? ' · ' + esc(b.meetingPlace) : ''}</p>${left >= 0 ? rsvpBlock(b) : ''}<div class="actions"><a class="btn ghost" href="${esc(calendarLink(b))}" target="_blank" rel="noopener">${T.toCal}</a></div>` : `<p class="mega soft">${T.noDate}</p><p class="line">${T.noMeeting}</p><div class="actions"><a class="btn ghost" href="${bookLink(b)}">${T.addDate}</a></div>`}
+      </section>
+      <section class="box"><p class="eyebrow-dark">${T.clubProgress}</p>${bigRing(avgP, T.average)}
+        <ul class="hbars">${rs.map(r => `<li><span>${esc(r.name)}</span><span class="bar"><i style="width:${pctOf(b, r)}%"></i></span><span class="v">%${pctOf(b, r)}</span></li>`).join('')}</ul></section>
+      <section class="box"><p class="eyebrow-dark">${T.nextPicker}</p><p class="next-name">${esc(np.name)}</p><p class="muted small">${T.willPick}</p>
+        <p class="order">${np.order.map(n => `<span class="${n === np.name ? 'on' : ''}">${esc(n)}</span>`).join('<span>→</span>')}</p>
+        ${top ? `<a class="toppick" href="#k/${encodeURIComponent(c.id)}/oneriler"><span class="label">${T.topSugg}</span><b>${esc(top.title)}</b><span class="muted small">${esc(top.author || '')}</span></a>` : ''}</section>
+    </div>
+    ${quotes.length ? `<section class="marquee" aria-label="${T.quotes}"><div class="mq-track">${quotes.concat(quotes, quotes, quotes).map(n => `<figure><blockquote>“${esc(n.text)}”</blockquote><figcaption>${esc(n.byName || '')}</figcaption></figure>`).join('')}</div></section>` : ''}
+    ${others.length ? `<section class="rail-section"><div class="rail-head"><h2 class="sec-title">${T.onShelf}</h2><a class="linkbtn" href="#k/${encodeURIComponent(c.id)}/kitaplar">${T.allBooks} →</a></div><div class="rail">${others.map(railItem).join('')}</div></section>` : ''}
+    <section class="rail-section"><h2 class="sec-title">${T.recent}</h2>${notes.length ? `<ol class="timeline">${notes.slice(-5).reverse().map(n => `<li><b>${esc(n.byName || '')}</b><p>${esc(n.text)}</p></li>`).join('')}</ol>` : `<p class="muted">${T.noNotes}</p>`}</section>`;
+}
+function spotlight(b) {
+  const rs = readers(), left = b.meetingDate ? daysLeft(b.meetingDate) : null;
+  return `<section class="spotlight"><div class="stage-bg" style="${bg(b)}"></div><div class="stage-cover tilt">${coverHTML(b)}</div>
+    <div class="spot-body"><p class="eyebrow">${T.nowReading}${b.month ? ' · ' + esc(monthTR(b.month)) : ''}${left !== null && left >= 0 ? ' · ' + left + ' ' + T.days : ''}</p><h2 class="spot-title">${emLast(b.title)}</h2><p class="stage-author">${esc(b.author || '')}</p>
+    <ul class="spot-readers">${rs.map((r, i) => `<li style="--c:${color(i)}"><span>${esc(r.name)}</span><span class="sp-bar"><i style="width:${pctOf(b, r)}%"></i></span><b>%${pctOf(b, r)}</b></li>`).join('')}</ul>
+    <div class="actions"><a class="btn light" href="${bookLink(b)}">${T.openBook}</a></div></div></section>`;
+}
+const polaroid = b => { const h = [...String(b.id)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); return `<a class="polaroid" href="${bookLink(b)}" style="--rot:${(h % 9) - 4}deg"><span class="pol-img">${coverHTML(b)}</span><span class="pol-cap">${esc(b.title)}</span>${stars(avg(b))}</a>`; };
 const searchBox = to => (canWrite() ? `<form class="searchbar" id="cb-search" data-to="${to}"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="btn" type="submit">${T.search}</button></form>
   ${C().results === 'fail' ? `<p class="muted">${T.searchFail}</p>` : C().results ? `<ul class="results">${C().results.map((b, i) => `<li>${coverHTML(b)}<div><b>${esc(b.title)}</b><p class="muted small">${esc([b.author, b.year].filter(Boolean).join(' · '))}</p></div><button class="btn ghost" type="button" data-act="cadd" data-to="${to}" data-i="${i}">${T.add}</button></li>`).join('')}</ul>` : ''}` : '');
-function tabBooks() {
-  const done = C().books.filter(b => b.status === 'tamamlandi');
-  return `<div class="statrow three"><div><b>${done.length}</b><span>${T.statDone}</span></div><div><b>${done.reduce((a, b) => a + (Number(b.pages) || 0), 0)}</b><span>${T.statPages}</span></div></div>${searchBox('books')}${CLUB_STATUS.map(([k, l]) => { const list = C().books.filter(b => b.status === k); return list.length ? `<section class="row"><h3>${l} <span>${list.length}</span></h3><div class="grid">${list.map(bookTile).join('')}</div></section>` : ''; }).join('')}`;
+function viewLibrary() {
+  const c = C(), done = c.books.filter(b => b.status === 'tamamlandi'), cur = c.books.find(b => b.status === 'okunuyor');
+  const rated = c.books.filter(b => avg(b)), best = rated.slice().sort((a, b) => avg(b) - avg(a))[0];
+  const score = rated.length ? (rated.reduce((a, b) => a + avg(b), 0) / rated.length).toFixed(1).replace('.', ',') : '–';
+  const pagesRead = done.reduce((a, b) => a + (Number(b.pages) || 0), 0);
+  const rail = (k, title, cls = '') => { const list = c.books.filter(b => b.status === k); return list.length ? `<section class="rail-section"><h2 class="sec-title">${title} <span class="count">${list.length}</span></h2><div class="rail ledge ${cls}">${list.map(railItem).join('')}</div></section>` : ''; };
+  return `<div class="pagehead"><div><p class="label">${c.books.length} ${T.bookWord}</p><h1>${T.library}</h1></div><a class="btn ghost" href="#k/${encodeURIComponent(c.id)}/uyeler">${T.tabMembers}</a></div>
+    <details class="more add-book"><summary class="btn">${T.addBook}</summary>${searchBox('books')}</details>
+    <div class="numbers"><div><b data-count="${done.length}">${done.length}</b><span>${T.statDone}</span></div><div><b data-count="${pagesRead}">${pagesRead}</b><span>${T.statPages}</span></div><div><b>${score}</b><span>${T.avg}</span></div><div><b class="t">${esc(best ? best.title : '–')}</b><span>${T.favorite}</span></div></div>
+    ${cur ? spotlight(cur) : ''}
+    ${rail('sirada', T.waiting)}
+    ${done.length ? `<section class="rail-section"><h2 class="sec-title">${T.readBooks} <span class="count">${done.length}</span></h2><div class="collage">${done.map(polaroid).join('')}</div></section>` : ''}
+    ${rail('birakildi', T.dropped)}`;
 }
 function tabSugg() {
-  const rows = C().sugg.slice().sort((a, b) => Object.keys(b.votes || {}).length - Object.keys(a.votes || {}).length);
-  return `${searchBox('sugg')}<ul class="results">${rows.map(s => { const v = Object.keys(s.votes || {}).length, mine = (s.votes || {})[S.user.uid]; return `<li>${coverHTML(s)}<div><b>${esc(s.title)}</b><p class="muted small">${esc([s.author, s.byName].filter(Boolean).join(' · '))}</p></div>
+  const rows = C().sugg.slice().sort((a, b) => Object.keys(b.votes || {}).length - Object.keys(a.votes || {}).length), np = nextPicker();
+  return `<div class="pagehead"><div><p class="label">${esc(np.name)} ${T.pickNext}</p><h1>${T.tabSugg}</h1></div></div>${searchBox('sugg')}<ul class="results">${rows.map(s => { const v = Object.keys(s.votes || {}).length, mine = (s.votes || {})[S.user.uid]; return `<li>${coverHTML(s)}<div><b>${esc(s.title)}</b><p class="muted small">${esc([s.author, s.byName].filter(Boolean).join(' · '))}</p></div>
     <div class="ractions">${canWrite() ? `<button class="btn ${mine ? '' : 'ghost'}" type="button" data-act="cvote" data-id="${esc(s.id)}">♥ ${v}</button><button class="btn ghost" type="button" data-act="cadopt" data-id="${esc(s.id)}">${T.adopt}</button>` : `<span class="muted">♥ ${v}</span>`}</div></li>`; }).join('') || `<li class="muted">${T.noSugg}</li>`}</ul>`;
 }
 function tabMembers() {
   const link = C().doc.inviteCode ? `${location.origin}${location.pathname}#davet/${C().doc.inviteCode}` : '';
-  return `${isOwner() ? `<section class="surface"><h3>${T.inviteTitle}</h3><p class="muted small">${T.inviteHint}</p>${link ? `<input id="inv-link" readonly value="${esc(link)}" aria-label="${T.inviteTitle}"><div class="ractions left"><button class="btn" type="button" data-act="ccopy">${T.copy}</button><button class="btn ghost" type="button" data-act="cinvite">${T.newLink}</button></div>` : `<button class="btn" type="button" data-act="cinvite">${T.makeLink}</button>`}</section>` : ''}
+  return `<div class="pagehead"><div><p class="label">${esc(C().doc.name)}</p><h1>${T.tabMembers}</h1></div></div>
+    ${isOwner() ? `<section class="surface"><h3>${T.inviteTitle}</h3><p class="muted small">${T.inviteHint}</p>${link ? `<input id="inv-link" readonly value="${esc(link)}" aria-label="${T.inviteTitle}"><div class="ractions left"><button class="btn" type="button" data-act="ccopy">${T.copy}</button><button class="btn ghost" type="button" data-act="cinvite">${T.newLink}</button></div>` : `<button class="btn" type="button" data-act="cinvite">${T.makeLink}</button>`}</section>` : ''}
     <ul class="memberlist">${C().members.map(m => `<li><b>${esc(m.name)}</b><span class="muted">@${esc(m.username)}</span><span class="pill">${esc({ kurucu: T.owner, uye: T.member, izleyici: T.viewer }[m.role] || '')}</span>
       ${isOwner() && m.role !== 'kurucu' ? `<button class="linkbtn small" type="button" data-act="crole" data-id="${esc(m.uid)}" data-v="${m.role === 'izleyici' ? 'uye' : 'izleyici'}">${m.role === 'izleyici' ? T.makeMember : T.makeViewer}</button><button class="linkbtn small" type="button" data-act="ckick" data-id="${esc(m.uid)}">${T.kick}</button>` : ''}</li>`).join('')}</ul>
     ${!isOwner() ? `<button class="linkbtn small" type="button" data-act="cleave">${T.leave}</button>` : ''}`;
@@ -120,31 +168,49 @@ export function viewClub(tab) {
   const c = C();
   if (!c || c.doc === undefined) return `<p class="muted">${T.loading}</p>`;
   if (!c.doc) return `<section class="surface"><h2>${T.noAccess}</h2><a href="#kulup">${T.backClubs}</a></section>`;
-  return `<div class="pagehead"><div><p class="label">${T.club}</p><h2>${esc(c.doc.name)}</h2></div></div>${tabs(tab)}${{ ay: tabNow, kitaplar: tabBooks, oneriler: tabSugg, uyeler: tabMembers }[tab]()}`;
+  return { ay: viewHome, kitaplar: viewLibrary, oneriler: tabSugg, uyeler: tabMembers }[tab]();
+}
+const BOOK_TABS = [['genel', 'Genel'], ['own', 'Notlar'], ['quote', 'Alıntılar'], ['question', 'Sorular'], ['meeting', 'Toplantı'], ['info', 'Yazar ve bilgi']];
+function bookGeneral(b, w) {
+  const rs = readers();
+  return `<section class="surface"><h3>${T.status}</h3>${w ? `<div class="seg wrap">${CLUB_STATUS.map(([k, l]) => `<button type="button" class="${b.status === k ? 'on' : ''}" data-act="cstatus" data-v="${k}">${l}</button>`).join('')}</div>` : ''}
+      <h3>${T.rate}</h3><div class="rate" role="group" aria-label="${T.rate}">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="${((b.ratings || {})[S.user.uid] || 0) >= n ? 'on' : ''}" data-act="crate" data-v="${n}" aria-label="${n}">★</button>`).join('')}</div>${avg(b) ? `<p class="muted small">${T.avg}: ${avg(b).toFixed(1)}</p>` : ''}</section>
+    <section class="surface"><h3>${T.clubProgress}</h3><ul class="hbars">${rs.map(r => `<li><span>${esc(r.name)}</span><span class="bar"><i style="width:${pctOf(b, r)}%"></i></span><span class="v">%${pctOf(b, r)}</span></li>`).join('')}</ul>
+      ${w ? `<form id="cb-prog" class="pagebar"><label>${T.myProgress}<input name="p" type="number" min="0" max="100" value="${(b.progress || {})[S.user.uid] || 0}"></label><button class="btn ghost" type="submit">${T.save}</button></form>` : ''}</section>
+    <section class="surface"><h3>${T.meeting}</h3>${w ? `<form id="cb-meet" class="pagebar"><label>${T.date}<input name="d" type="date" value="${esc(b.meetingDate || '')}"></label><label>${T.time}<input name="t" type="time" value="${esc(b.meetingTime || '')}"></label><label>${T.place}<input name="pl" maxlength="80" value="${esc(b.meetingPlace || '')}"></label><button class="btn ghost" type="submit">${T.save}</button></form>` : ''}${b.meetingDate ? rsvpBlock(b) : `<p class="muted">${T.noMeeting}</p>`}</section>`;
+}
+function bookInfo(b) {
+  const x = b.bilgi || {}, list = x.notlar || [], notes = C().notes.filter(n => n.kind === 'info');
+  const rows = [[T.original, x.orijinal], [T.publisher, b.publisher], [T.year, b.year], [T.pagesWord, b.pages], [T.genre, b.genre]].filter(r => r[1]);
+  return `${x.yazarNot ? `<section class="surface"><h3>${esc(b.author || '')}</h3><p>${esc(x.yazarNot)}</p></section>` : ''}
+    ${rows.length ? `<section class="surface"><h3>${T.imprint}</h3><dl class="facts">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></section>` : ''}
+    ${list.length ? `<section class="surface"><h3>${T.facts}</h3><ul class="timeline">${list.map(t => `<li><p>${esc(t)}</p></li>`).join('')}</ul></section>` : ''}
+    ${notes.length ? `<section class="surface"><h3>${T.intro}</h3><ul class="timeline">${notes.map(n => `<li><p>${esc(n.text)}</p></li>`).join('')}</ul></section>` : ''}
+    ${!x.yazarNot && !rows.length && !list.length && !notes.length ? `<p class="muted">${T.noInfo}</p>` : ''}`;
 }
 export function viewClubBook(bid) {
   const c = C();
   if (!c || c.doc === undefined) return `<p class="muted">${T.loading}</p>`;
   const b = c.books.find(x => x.id === bid);
   if (!c.doc || !b) return `<section class="surface"><h2>${T.noAccess}</h2><a href="#kulup">${T.backClubs}</a></section>`;
-  const photosOn = !!c.doc.photosEnabled;
-  const kind = S.noteKind === 'photo' && !photosOn ? 'own' : S.noteKind || 'own', list = c.notes.filter(n => n.kind === kind), w = canWrite();
+  const photosOn = !!c.doc.photosEnabled, w = canWrite();
+  const tabsAll = BOOK_TABS.concat(photosOn ? [['photo', T.photos]] : []);
+  const kind = tabsAll.some(t => t[0] === S.noteKind) ? S.noteKind : 'genel';
+  const list = c.notes.filter(n => n.kind === kind), count = k => c.notes.filter(n => n.kind === k).length;
   const qGeneric = kind === 'question' && w && !b.genericAdded;
-  return `<a class="small" href="#k/${encodeURIComponent(c.id)}/kitaplar">← ${esc(c.doc.name)}</a>
-    <section class="book">${coverHTML(b)}<div class="book-body"><h2>${esc(b.title)}</h2><p class="muted">${esc([b.author, b.year, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p>
-      <div class="rate" role="group" aria-label="${T.rate}">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="${((b.ratings || {})[S.user.uid] || 0) >= n ? 'on' : ''}" data-act="crate" data-v="${n}" aria-label="${n}">★</button>`).join('')}</div>${avgRate(b)}
-      ${w ? `<div class="seg wrap">${CLUB_STATUS.map(([k, l]) => `<button type="button" class="${b.status === k ? 'on' : ''}" data-act="cstatus" data-v="${k}">${l}</button>`).join('')}</div>
-      <form id="cb-prog" class="pagebar"><label>${T.myProgress}<input name="p" type="number" min="0" max="100" value="${(b.progress || {})[S.user.uid] || 0}"></label><button class="btn ghost" type="submit">${T.save}</button></form>
-      <form id="cb-meet" class="pagebar"><label>${T.date}<input name="d" type="date" value="${esc(b.meetingDate || '')}"></label><label>${T.time}<input name="t" type="time" value="${esc(b.meetingTime || '')}"></label><label>${T.place}<input name="pl" maxlength="80" value="${esc(b.meetingPlace || '')}"></label><button class="btn ghost" type="submit">${T.save}</button></form>
-      ${b.meetingDate ? `<div class="seg"><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'y' ? 'on' : ''}" data-act="crsvp" data-v="y">${T.yes}</button><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'n' ? 'on' : ''}" data-act="crsvp" data-v="n">${T.no}</button></div>` : ''}` : ''}
-    </div></section>
-    ${bookInfo(b)}
-    <nav class="ctabs">${NOTE_KINDS.concat(photosOn ? [['photo', T.photos]] : []).map(([k, l]) => `<button type="button" class="${kind === k ? 'on' : ''}" data-act="ckind" data-v="${k}">${l}</button>`).join('')}</nav>
-    ${kind === 'photo' ? photoTab(w) : `<ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div>${n.spoiler && n.by !== S.user.uid && !S.reveal.has(n.id) ? `<button class="linkbtn" type="button" data-act="creveal" data-id="${esc(n.id)}">${T.spoiler}</button>` : `<p>${esc(n.text)}</p>`}<p class="muted small">${n.spoiler ? `<span class="pill">${T.spoilerTag}</span> ` : ''}${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
-    ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}`}
+  let body;
+  if (kind === 'genel') body = bookGeneral(b, w);
+  else if (kind === 'info') body = bookInfo(b);
+  else if (kind === 'photo') body = photoTab(w);
+  else body = `<ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div>${n.spoiler && n.by !== S.user.uid && !S.reveal.has(n.id) ? `<button class="linkbtn" type="button" data-act="creveal" data-id="${esc(n.id)}">${T.spoiler}</button>` : `<p>${esc(n.text)}</p>`}<p class="muted small">${n.spoiler ? `<span class="pill">${T.spoilerTag}</span> ` : ''}${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
+    ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}
     ${qGeneric ? `<button class="btn ghost" type="button" data-act="cgeneric">${T.generic}</button>` : ''}`;
+  return `<a class="small crumb" href="#k/${encodeURIComponent(c.id)}/kitaplar">← ${T.library}</a>
+    <section class="stage book-stage"><div class="stage-bg" style="${bg(b)}"></div><div class="stage-cover tilt">${coverHTML(b)}</div>
+      <div class="stage-text"><p class="eyebrow">${esc((CLUB_STATUS.find(s => s[0] === b.status) || ['', ''])[1])}${b.month ? ' · ' + esc(monthTR(b.month)) : ''}</p><h1 class="display">${emLast(b.title)}</h1><p class="stage-author">${esc(b.author || '')}</p><p class="stage-meta">${esc([b.pickedBy ? b.pickedBy + ' ' + T.picked : '', b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}${avg(b) ? ' ' + stars(avg(b)) : ''}</p></div></section>
+    <nav class="subtabs">${tabsAll.map(([k, l]) => `<button type="button" class="${kind === k ? 'on' : ''}" data-act="ckind" data-v="${k}">${l}${count(k) ? `<span class="n">${count(k)}</span>` : ''}</button>`).join('')}</nav>
+    <div class="book-grid">${body}</div>`;
 }
-
 function photoTab(w) {
   return `${w ? `<label class="btn ghost photo-add">${T.addPhoto}<input id="cb-photo" type="file" accept="image/*" hidden></label>` : ''}
     <div class="album">${C().photos.map(p => `<figure><img src="${esc(p.data)}" alt="" loading="lazy"><figcaption class="muted small">${esc(p.byName || '')}${p.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelphoto" data-id="${esc(p.id)}">${T.del}</button>` : ''}</figcaption></figure>`).join('') || `<p class="muted">${T.noPhotos}</p>`}</div>`;
@@ -198,9 +264,9 @@ export function clubClick(a, el) {
   if (a === 'cleave') leaveClub(u.uid, C().id).then(() => { location.hash = '#kulup'; }).catch(fail);
   if (a === 'cstatus') patch(`${base}/books/${bid}`, { status: el.dataset.v }).catch(fail);
   if (a === 'crate') patch(`${base}/books/${bid}`, { ratings: { [u.uid]: Number(el.dataset.v) } }).catch(fail);
-  if (a === 'crsvp') patch(`${base}/books/${bid}`, { rsvp: { [u.uid]: el.dataset.v } }).catch(fail);
+  if (a === 'crsvp') patch(`${base}/books/${el.dataset.id || bid}`, { rsvp: { [u.uid]: el.dataset.v } }).catch(fail);
   if (a === 'creveal') { S.reveal.add(el.dataset.id); render(); }
-  if (a === 'ckind') { S.noteKind = el.dataset.v; render(); }
+  if (a === 'ckind') { S.noteKind = el.dataset.v; if (el.tagName !== 'A') render(); }
   if (a === 'cdone') { const n = C().notes.find(x => x.id === el.dataset.id); patch(`${base}/books/${bid}/notes/${n.id}`, { done: !n.done }).catch(fail); }
   if (a === 'cdelphoto') remove(`${base}/books/${bid}/photos/${el.dataset.id}`).catch(fail);
   if (a === 'cdelnote') remove(`${base}/books/${bid}/notes/${el.dataset.id}`).catch(fail);
