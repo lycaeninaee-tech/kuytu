@@ -173,7 +173,8 @@ export function clubClick(a, el) {
   if (a === 'creveal') { S.reveal.add(el.dataset.id); render(); }
   if (a === 'ckind') { S.noteKind = el.dataset.v; render(); }
   if (a === 'cdone') { const n = C().notes.find(x => x.id === el.dataset.id); patch(`${base}/books/${bid}/notes/${n.id}`, { done: !n.done }).catch(fail); }
-  if (a === 'cdelphoto') remove(` remove(`${base}/books/${bid}/notes/${el.dataset.id}`).catch(fail);
+  if (a === 'cdelphoto') remove(`${base}/books/${bid}/photos/${el.dataset.id}`).catch(fail);
+  if (a === 'cdelnote') remove(`${base}/books/${bid}/notes/${el.dataset.id}`).catch(fail);
   if (a === 'cgeneric') {
     const at = Date.now();
     Promise.all(GENERIC_Q.map((text, i) => add(`${base}/books/${bid}/notes`, { kind: 'question', text, by: u.uid, byName: T.genericBy, done: false, at: new Date(at + i).toISOString() }))).then(() => patch(`${base}/books/${bid}`, { genericAdded: true })).catch(fail);
