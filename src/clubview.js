@@ -3,7 +3,7 @@ import { $, esc } from './util.js';
 import { TC as T } from './strings.js';
 import { searchBooks } from './books.js';
 import { addToShelf } from './shelf.js';
-import { book3d, setAmbient } from './parts.js';
+import { book3d, setAmbient, arch, star, MOON, CAT } from './parts.js';
 import { watchCol, watchDoc, add, patch, remove, createClub, makeInvite, getInvite, joinClub, leaveClub } from './clubs.js';
 
 const GENERIC_Q = ['Kitabın sonu sana tatmin edici geldi mi? Seni şaşırttı mı?', 'En çok hangi karakterle bağ kurdun, neden?', 'Karakterlerin kararları sana inandırıcı geldi mi?', 'Ana karakter kitabın başından sonuna nasıl değişti?', 'Olayların altında bu kitap sence aslında ne anlatıyor?', 'Hikâye bittikten sonra karakterlere ne olduğunu düşünüyorsun?', 'Sesli okumak istediğin bir bölüm var mı? Neden o bölüm?', 'Bu kitabı kime önerirdin?'];
@@ -116,7 +116,7 @@ function viewHome() {
   openNotes(b.id);
   setAmbient(b.title);
   const rs = readers(), id = encodeURIComponent(b.id);
-  const notes = c.notes.filter(n => !n.spoiler && n.kind !== 'info' && !n.auto), quotes = c.notes.filter(n => n.kind === 'quote' && !n.spoiler);
+  const notes = c.notes.filter(n => !n.spoiler && n.kind !== 'info' && n.kind !== 'room' && !n.auto), quotes = c.notes.filter(n => n.kind === 'quote' && !n.spoiler);
   const left = b.meetingDate ? daysLeft(b.meetingDate) : null, avgP = rs.length ? Math.round(rs.reduce((a, r) => a + pctOf(b, r), 0) / rs.length) : 0;
   const np = nextPicker(), others = c.books.filter(x => x.id !== b.id);
   const top = c.sugg.slice().sort((x, y) => Object.keys(y.votes || {}).length - Object.keys(x.votes || {}).length)[0];
@@ -186,7 +186,7 @@ export function viewClub(tab) {
   if (!c.doc) return `<section class="surface"><h2>${T.noAccess}</h2><a href="#kulup">${T.backClubs}</a></section>`;
   return { ay: viewHome, kitaplar: viewLibrary, oneriler: tabSugg, uyeler: tabMembers }[tab]();
 }
-const BOOK_TABS = [['genel', 'Genel'], ['own', 'Notlar'], ['quote', 'Alıntılar'], ['question', 'Sorular'], ['meeting', 'Toplantı'], ['info', 'Yazar ve bilgi']];
+const BOOK_TABS = [['genel', 'Genel'], ['room', 'Bölüm odaları'], ['own', 'Notlar'], ['quote', 'Alıntılar'], ['question', 'Sorular'], ['meeting', 'Toplantı'], ['info', 'Yazar ve bilgi']];
 function bookGeneral(b, w) {
   const rs = readers();
   return `<section class="surface"><h3>${T.status}</h3>${S.shelf.some(x => x.id === b.id || x.title === b.title) ? `<p class="muted small">${T.onMyShelf}</p>` : `<button class="btn ghost share" type="button" data-act="cshelf">${T.toShelf}</button>`}${w ? `<div class="seg wrap">${CLUB_STATUS.map(([k, l]) => `<button type="button" class="${b.status === k ? 'on' : ''}" data-act="cstatus" data-v="${k}">${l}</button>`).join('')}</div>` : ''}
@@ -204,6 +204,38 @@ function bookInfo(b) {
     ${notes.length ? `<section class="surface"><h3>${T.intro}</h3><ul class="timeline">${notes.map(n => `<li><p>${esc(n.text)}</p></li>`).join('')}</ul></section>` : ''}
     ${!x.yazarNot && !rows.length && !list.length && !notes.length ? `<p class="muted">${T.noInfo}</p>` : ''}`;
 }
+// Bölüm odaları: oda listesi kitap belgesinde (rooms), mesajlar notes altında kind 'room' ve oda sırasıyla durur
+// Kişi bir bölümü bitirdiğini söyleyince o odaya kadar kapılar açılır; izleyici kitap belgesine yazamadığı için bu oturumda açılır
+const viewerRead = {};
+const readOf = (b, w) => (w ? (b.roomRead || {})[S.user.uid] : viewerRead[b.id]) || 0;
+const roomMsgs = i => C().notes.filter(n => n.kind === 'room' && n.room === i);
+const roomForm = () => `<details class="more add-book"><summary class="btn ghost">${T.addRooms}</summary><form class="surface" id="cb-rooms"><label>${T.roomCount}<input name="n" type="number" min="1" max="200" value="1"></label><label>${T.roomName}<input name="t" maxlength="80"></label><button class="btn" type="submit">${T.add}</button></form></details>`;
+function roomDoors(b, w) {
+  const rooms = b.rooms || [], read = readOf(b, w), catAt = Math.min(read, rooms.length - 1);
+  if (!rooms.length) return `<section class="room-empty">${MOON}${star('18%', '30%', 16)}${star('76%', '22%', 12, 1.2)}<h3>${T.noRooms}</h3><p>${T.roomsHint}</p></section>${w ? roomForm() : ''}`;
+  const rs = readers();
+  return `<p class="muted small">${T.roomsHint}</p>
+    <ol class="doors">${rooms.map((t, i) => {
+    const open = i < read, n = roomMsgs(i).length, inside = rs.filter(r => ((b.roomRead || {})[r.key] || 0) > i);
+    const last = w && i === rooms.length - 1 && !n;
+    return `<li class="door ${open ? 'open' : 'shut'}"><div class="door-frame">${arch(`${open ? star('24%', '22%', 12) + star('68%', '34%', 9, 1.1) : MOON}<b class="door-n">${i + 1}</b>${i === catAt ? CAT : ''}`)}</div>
+      <p class="door-t">${esc(t)}</p><p class="muted small">${n ? n + ' ' + T.msgWord : T.roomQuiet}${inside.length ? ' · ' + inside.map(r => esc(r.name)).join(', ') : ''}</p>
+      ${open ? `<button class="btn ghost" type="button" data-act="croom" data-i="${i}">${T.enterRoom}</button>` : `<button class="btn" type="button" data-act="croomread" data-i="${i}">${T.finishedRoom}</button>`}
+      ${last ? `<button class="linkbtn small" type="button" data-act="croomdel">${T.del}</button>` : ''}</li>`;
+  }).join('')}</ol>${w ? roomForm() : ''}`;
+}
+function roomInside(b, i, w) {
+  const rs = readers().filter(r => ((b.roomRead || {})[r.key] || 0) > i), list = roomMsgs(i).sort((x, y) => (x.at || '').localeCompare(y.at || ''));
+  return `<button class="linkbtn small crumb" type="button" data-act="croomout">← ${T.allRooms}</button>
+    <section class="room-head">${MOON}${star('12%', '26%', 14)}${star('30%', '62%', 9, 0.8)}${star('62%', '20%', 11, 1.6)}<p class="eyebrow">${i + 1}. ${T.roomWord}</p><h2>${emLast(b.rooms[i])}</h2><p class="room-who">${rs.map(r => esc(r.name)).join(', ')}</p>${CAT}</section>
+    <ul class="notes">${list.map(n => `<li><div><p>${esc(n.text)}</p><p class="muted small">${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
+    ${w ? `<form class="surface" id="cb-room"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><button class="btn" type="submit">${T.add}</button></form>` : ''}
+    <button class="linkbtn small" type="button" data-act="croomunread" data-i="${i}">${T.notFinished}</button>`;
+}
+function roomTab(b, w) {
+  const r = C().room, i = r && r.bid === b.id ? r.i : -1;
+  return i >= 0 && i < (b.rooms || []).length && i < readOf(b, w) ? roomInside(b, i, w) : roomDoors(b, w);
+}
 export function viewClubBook(bid) {
   const c = C();
   if (!c || c.doc === undefined) return `<p class="muted">${T.loading}</p>`;
@@ -218,6 +250,7 @@ export function viewClubBook(bid) {
   if (kind === 'genel') body = bookGeneral(b, w);
   else if (kind === 'info') body = bookInfo(b);
   else if (kind === 'photo') body = photoTab(w);
+  else if (kind === 'room') body = roomTab(b, w);
   else body = `<ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div>${n.spoiler && n.by !== S.user.uid && !S.reveal.has(n.id) ? `<button class="linkbtn" type="button" data-act="creveal" data-id="${esc(n.id)}">${T.spoiler}</button>` : `<p>${esc(n.text)}</p>`}<p class="muted small">${n.spoiler ? `<span class="pill">${T.spoilerTag}</span> ` : ''}${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
     ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}
     ${qGeneric ? `<button class="btn ghost" type="button" data-act="cgeneric">${T.generic}</button>` : ''}`;
@@ -285,6 +318,15 @@ export function clubClick(a, el) {
   if (a === 'creveal') { S.reveal.add(el.dataset.id); render(); }
   if (a === 'ckind') { S.noteKind = el.dataset.v; if (el.tagName !== 'A') render(); }
   if (a === 'cdone') { const n = C().notes.find(x => x.id === el.dataset.id); patch(`${base}/books/${bid}/notes/${n.id}`, { done: !n.done }).catch(fail); }
+  if (a === 'croom') { C().room = { bid, i: Number(el.dataset.i) }; render(); }
+  if (a === 'croomout') { C().room = null; render(); }
+  if (a === 'croomread' || a === 'croomunread') {
+    const b = C().books.find(x => x.id === bid), i = Number(el.dataset.i), done = a === 'croomread' ? Math.max(readOf(b, canWrite()), i + 1) : i;
+    C().room = a === 'croomread' ? { bid, i } : null;
+    if (canWrite()) patch(`${base}/books/${bid}`, { roomRead: { [u.uid]: done } }).catch(fail);
+    else { viewerRead[bid] = done; render(); }
+  }
+  if (a === 'croomdel') { const b = C().books.find(x => x.id === bid); patch(`${base}/books/${bid}`, { rooms: b.rooms.slice(0, -1) }).catch(fail); }
   if (a === 'cdelphoto') remove(`${base}/books/${bid}/photos/${el.dataset.id}`).catch(fail);
   if (a === 'cdelnote') remove(`${base}/books/${bid}/notes/${el.dataset.id}`).catch(fail);
   if (a === 'cgeneric') {
@@ -310,6 +352,17 @@ export async function clubSubmit(id, f, target) {
   }
   if (id === 'cb-prog') { await patch(`${base}/books/${bid}`, { progress: { [u.uid]: Math.min(100, Math.max(0, Number(f.p.value) || 0)) } }); toast(T.saved); return true; }
   if (id === 'cb-meet') { await patch(`${base}/books/${bid}`, { meetingDate: f.d.value, meetingTime: f.t.value, meetingPlace: f.pl.value.trim() }); toast(T.saved); return true; }
+  if (id === 'cb-rooms') {
+    const rooms = (C().books.find(x => x.id === bid).rooms || []).slice(), n = Math.min(200 - rooms.length, Math.max(1, Number(f.n.value) || 1)), t = f.t.value.trim();
+    for (let i = 0; i < n; i++) rooms.push(n === 1 && t ? t : `${rooms.length + 1}. ${T.chapter}`);
+    await patch(`${base}/books/${bid}`, { rooms });
+    return true;
+  }
+  if (id === 'cb-room') {
+    await add(`${base}/books/${bid}/notes`, { kind: 'room', room: C().room.i, text: f.text.value.trim(), by: u.uid, byName: S.profile.name, done: false, at: new Date().toISOString() });
+    f.text.value = '';
+    return true;
+  }
   if (id === 'cb-note') {
     await add(`${base}/books/${bid}/notes`, { kind: S.noteKind || 'own', text: f.text.value.trim(), spoiler: f.spoiler.checked, by: u.uid, byName: S.profile.name, done: false, at: new Date().toISOString() });
     f.text.value = '';

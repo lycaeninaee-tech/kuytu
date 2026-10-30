@@ -644,4 +644,27 @@ main { position: relative; max-width: 1180px; padding-top: max(16px, env(safe-ar
 .stage-cover .cover { transform: none; box-shadow: inset 6px 0 10px rgba(0, 0, 0, 0.2); }
 .searchbar { flex-wrap: wrap; }
 .subtabs { background: transparent; }
+/* Bölüm odaları: her bölüm bir kemerli kapı, kedi kişinin sıradaki kapısında bekler */
+.doors { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 24px 16px; }
+.door { display: grid; gap: 6px; align-content: start; justify-items: center; text-align: center; min-width: 0; }
+.door-frame { width: 100%; max-width: 150px; height: 190px; }
+.door .ring { padding: 7px 7px 0; }
+.door .r4 { align-items: center; padding: 0 8px 8px; }
+.door.open .r4 { background: radial-gradient(circle at 50% 88%, #f2b84b, #a8703a 46%, var(--deep) 92%); }
+.door .moon { top: 26px; width: 26px; margin-left: -13px; opacity: 0.8; }
+.door-n { position: absolute; left: 0; right: 0; top: 46%; font: 500 34px var(--font-display); color: #e0cdaa; }
+.door.open .door-n { color: var(--deep); }
+.door .cat { position: relative; width: 50px; color: #e0cdaa; } .door .cat .eye { stroke: #2f2e2e; }
+.door.open .cat { color: #2f2e2e; } .door.open .cat .eye { stroke: #f5efe7; }
+.door-t { font: 500 16px var(--font-display); color: var(--forest); overflow-wrap: anywhere; }
+.door .btn { padding: 8px 14px; font-size: 13px; }
+.door .linkbtn { justify-self: center; }
+.book-grid .add-book > summary { padding: 9px 18px; }
+.room-empty, .room-head { position: relative; overflow: hidden; display: grid; gap: 6px; padding: 76px 22px 26px; text-align: center; color: var(--cream); background: linear-gradient(160deg, var(--deep), var(--forest)); border-radius: 30px; }
+.room-empty h3, .room-head h2 { color: var(--cream); font-size: clamp(26px, 5vw, 36px); overflow-wrap: anywhere; }
+.room-empty p { max-width: 30em; margin-inline: auto; color: #d9dfd6; }
+.room-head em { color: #e0cdaa; }
+.room-who { min-height: 1.4em; font-size: 13px; color: #d9dfd6; }
+.room-head .cat { position: absolute; right: 16px; bottom: 0; width: 64px; color: #e0cdaa; } .room-head .cat .eye { stroke: #2f2e2e; }
+@media (max-width: 480px) { .room-head { padding-bottom: 54px; } }
 @media (prefers-reduced-motion: reduce) { .amb i, .mq, .ring, .glow, .lamba, .mote, .tw, .tail, .b3, .pn.go, .card-in .card-book, .card-in .fis, .kart::after, .stamp.big { animation: none; } .mote { display: none; } }

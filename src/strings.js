@@ -84,6 +84,7 @@ export const TC = {
   searchHint: 'Kitap adı, yazar ya da ISBN', search: 'Ara', searchFail: 'Arama şu an çalışmıyor.', add: 'Ekle', adopt: 'Kitaplığa al', noSugg: 'Henüz öneri yok.', addedOk: 'Eklendi',
   inviteTitle: 'Davet bağlantısı', inviteHint: 'Bu bağlantıya sahip herkes üye olarak katılabilir; yalnızca güvendiğin kişilerle paylaş.', copy: 'Kopyala', newLink: 'Yeni bağlantı üret', makeLink: 'Bağlantı oluştur', linkReady: 'Bağlantı hazır', copied: 'Kopyalandı',
   makeMember: 'Üye yap', makeViewer: 'İzleyici yap', kick: 'Çıkar', leave: 'Kulüpten ayrıl', noAccess: 'Bu kulübü göremiyorsun.', club: 'Kulüp',
+  noRooms: 'Kapılar henüz yapılmadı', roomsHint: 'Her bölümün bir odası var. Bölümü bitirince kapısı açılır, kimse sana sonrasını söyleyemez.', addRooms: 'Oda ekle', roomCount: 'Kaç oda?', roomName: 'Oda adı (tek oda eklerken)', msgWord: 'mesaj', roomQuiet: 'Henüz sessiz', enterRoom: 'İçeri gir', finishedRoom: 'Bitirdim, kapıyı aç', allRooms: 'Tüm odalar', roomWord: 'oda', notFinished: 'Bu bölümü henüz bitirmedim', chapter: 'Bölüm',
   myProgress: 'İlerlemem (%)', date: 'Tarih', time: 'Saat', place: 'Yer', save: 'Kaydet', saved: 'Kaydedildi', yes: 'Geliyorum', no: 'Gelemiyorum', discussed: 'Konuşuldu', del: 'Sil', noNotes: 'Henüz bir şey yazılmadı.', write: 'Yaz', generic: 'Her kitaba uyan 8 soruyu ekle', genericBy: 'Genel soru',
 };
 
