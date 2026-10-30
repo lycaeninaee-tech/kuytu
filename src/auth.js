@@ -6,7 +6,7 @@ import { FIREBASE } from './config.js';
 export const configured = !!FIREBASE.apiKey;
 const app = configured ? initializeApp(FIREBASE) : null;
 const auth = app ? getAuth(app) : null;
-const fs = app ? getFirestore(app) : null;
+export const fs = app ? getFirestore(app) : null;
 
 export const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 export const onUser = cb => onAuthStateChanged(auth, cb);
