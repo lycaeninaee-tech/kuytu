@@ -32,7 +32,7 @@ function viewLanding() {
 }
 function viewUsername() {
   return `<section class="landing"><h2>${T.chooseTitle}</h2>
-    <form class="panel" id="name-form"><label>${T.username}<input name="username" required autocomplete="username" maxlength="20" pattern="[a-z0-9_]{3,20}"></label>
+    <form class="panel" id="name-form"><label>${T.username}<input name="username" required autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="ornek_okur"></label>
     <p class="muted small">${T.chooseHelp}</p><button class="btn" type="submit">${T.save}</button></form></section>`;
 }
 function viewHome() {
@@ -66,6 +66,12 @@ document.addEventListener('click', e => {
     resetPassword(email).then(() => toast(T.resetSent)).catch(fail);
   }
 });
+// Kullanıcı adı yazılırken düzeltilir: Türkçe harf, büyük harf ve boşluk hata vermesin
+const TR = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' };
+const cleanUsername = s => s.toLocaleLowerCase('tr').replace(/[çğıöşü]/g, c => TR[c]).replace(/[\s.-]+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 20);
+document.addEventListener('input', e => {
+  if (e.target.name === 'username') e.target.value = cleanUsername(e.target.value);
+});
 document.addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target.elements;
@@ -75,7 +81,7 @@ document.addEventListener('submit', async e => {
       else await loginEmail(f.email.value.trim(), f.pass.value);
     }
     if (e.target.id === 'name-form') {
-      const username = f.username.value.trim().toLowerCase();
+      const username = cleanUsername(f.username.value);
       if (!USERNAME_RE.test(username)) return toast(T.badUsername);
       await claimUsername(S.user, username);
     }
