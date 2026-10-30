@@ -7,6 +7,9 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if signedIn() && request.auth.uid == uid;
       // Raf şimdilik yalnızca sahibine açık; arkadaş aşamasında genişler
+      match /sessions/{id} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
       match /shelf/{bookId} {
         allow read, write: if signedIn() && request.auth.uid == uid;
       }
