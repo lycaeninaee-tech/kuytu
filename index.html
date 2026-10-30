@@ -14,5 +14,18 @@
 <main id="view"></main>
 <div class="toast" id="toast" role="status" hidden></div>
 <script type="module" src="src/app.js"></script>
+<script>
+// Yeni sürüm yayınlanınca sayfa bir kez kendiliğinden yenilenir (ilk kurulumda değil)
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloaded) { reloaded = true; location.reload(); }
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {});
+}
+</script>
 </body>
 </html>
