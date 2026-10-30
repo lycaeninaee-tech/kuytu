@@ -11,3 +11,5 @@ Kitap Kulübü'nün herkese açık sürümü (çalışma adı Kuytu). Arayüz me
 - Kulüp üyeliği `clubs/{id}/members/{uid}` (rol: kurucu, uye, izleyici); kişinin listesi `users/{uid}/clubs`. Davet `invites/{kod}`, yalnızca kodla okunur. Kurallar `firestore.rules` içinde; Firebase konsolunda da yayımlanmalı.
 - Henüz taşınmadı: fotoğraflar (Storage/Blaze ister), ses notları.
 - Fotoğraflar herkese açık bir özellik değil: yalnızca `photosEnabled: true` olan kulüpte sekme görünür ve yazma izni izinli e-postalarda (kullanıcının kararı: Kuytu herkese açık, foto yalnızca kendi kulüpleri için). Veriler `clubs/{c}/books/{b}/photos`, küçültülmüş JPEG data URL, Storage ve Blaze yok. İzinli e-posta listesi yalnızca konsoldaki kurallarda; repodaki `firestore.rules` yer tutucu içerir, olduğu gibi yayımlanmaz.
+- Eski siteden veriler "Kitap Kulübü" kulübüne kopyalandı (2026-10-30): 4 kitap, 54 not, 6 oturum. Ebrar ve Şebnem'in ilerleme, puan ve katılım bilgileri eski slug anahtarlarıyla duruyor; üye olunca uid'lerine eşlenmeli. Eski proje silinmedi.
+- github.io adresi eski siteyle aynı origin; önbellek ve localStorage adları `kuytu-` önekiyle ayrı tutulmalı.
