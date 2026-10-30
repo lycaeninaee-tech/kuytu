@@ -427,3 +427,9 @@ select { width: 100%; min-width: 0; padding: 11px 14px; font: inherit; color: va
 @keyframes vt-out { to { opacity: 0; transform: translateY(-8px); } }
 @keyframes vt-in { from { opacity: 0; transform: translateY(14px); } }
 @media (prefers-reduced-motion: reduce) { .stage-bg, .stage-cover, .mq-track { animation: none; } .rv { opacity: 1; transform: none; } }
+
+/* Kulüp ve Okumam alanları */
+.space { display: inline-flex; flex: none; padding: 3px; gap: 2px; background: var(--forest-soft); border-radius: 999px; }
+.space a { padding: 6px 14px; font: 600 13px var(--font-body); color: var(--forest); text-decoration: none; border-radius: 999px; transition: background 0.25s, color 0.25s; }
+.space a.on { color: var(--cream); background: var(--forest); }
+@media (max-width: 640px) { .top { justify-content: space-between; } .brand { font-size: 0; gap: 0; } }
