@@ -58,9 +58,18 @@ const activeClub = () => {
   try { saved = localStorage.getItem('kuytu-club'); } catch (e) {}
   return (list.find(c => c.id === saved) || list.find(c => c.name === 'Kitap Kulübü') || list[0] || {}).id || '';
 };
-const header = () => { const a = activeClub(), k = '#k/' + encodeURIComponent(a); return `<header class="top"><a class="brand" href="${a ? k + '/ay' : '#raf'}">${LOGO}KUYTU</a>
-  <nav class="nav">${a ? `<a href="${k}/ay" class="${(S.view === 'k' && S.clubTab === 'ay') ? 'on' : ''}">${ICON.ay}${TK.navHome}</a><a href="${k}/kitaplar" class="${(S.view === 'k' && S.clubTab === 'kitaplar') || S.view === 'kb' ? 'on' : ''}">${ICON.raf}${TK.navLibrary}</a><a href="${k}/oneriler" class="${S.view === 'k' && S.clubTab === 'oneriler' ? 'on' : ''}">${ICON.kalp}${TK.navSugg}</a>` : `<a href="#raf" class="${S.view === 'raf' ? 'on' : ''}">${ICON.raf}${T.navShelf}</a><a href="#kulup" class="${S.view === 'kulup' ? 'on' : ''}">${ICON.kulup}${TK.navClubs}</a>`}<a href="#oda" class="${S.view === 'oda' ? 'on' : ''}">${ICON.oda}${TK.navRoom}</a><a href="#takip" class="${S.view === 'takip' ? 'on' : ''}">${ICON.takip}${TK.navTrack}</a></nav>
-  <a class="me" href="#profil" aria-label="${TP.title}">${esc((S.profile.name || "?").charAt(0).toLocaleUpperCase("tr"))}</a></header>`; };
+// İki ayrı alan: kulüp sayfaları ve kişinin kendi okuması. Üstteki geçiş alanı, menü yalnızca o alanın sayfalarını değiştirir
+const header = () => {
+  const a = activeClub(), k = '#k/' + encodeURIComponent(a), club = ['k', 'kb', 'kulup', 'davet'].includes(S.view);
+  const link = (href, on, icon, text) => `<a href="${href}" class="${on ? 'on' : ''}">${icon}${text}</a>`;
+  const tab = t => S.view === 'k' && S.clubTab === t;
+  const clubNav = a ? link(k + '/ay', tab('ay'), ICON.ay, TK.navHome) + link(k + '/kitaplar', tab('kitaplar') || S.view === 'kb', ICON.raf, TK.navLibrary) + link(k + '/oneriler', tab('oneriler'), ICON.kalp, TK.navSugg) + link(k + '/uyeler', tab('uyeler'), ICON.kulup, TK.navMembers) : link('#kulup', true, ICON.kulup, TK.navClubs);
+  const meNav = link('#raf', S.view === 'raf' || S.view === 'kitap', ICON.raf, T.navShelf) + link('#ara', S.view === 'ara', ICON.ara, T.navSearch) + link('#oda', S.view === 'oda', ICON.oda, TK.navRoom) + link('#takip', S.view === 'takip', ICON.takip, TK.navTrack);
+  return `<header class="top"><a class="brand" href="${a ? k + '/ay' : '#raf'}">${LOGO}KUYTU</a>
+  <div class="space" role="group"><a href="${a ? k + '/ay' : '#kulup'}" class="${club ? 'on' : ''}">${TK.spaceClub}</a><a href="#raf" class="${club ? '' : 'on'}">${TK.spaceMe}</a></div>
+  <nav class="nav">${club ? clubNav : meNav}</nav>
+  <a class="me" href="#profil" aria-label="${TP.title}">${esc((S.profile.name || '?').charAt(0).toLocaleUpperCase('tr'))}</a></header>`;
+};
 const tile = b => `<a class="tile" href="#kitap/${encodeURIComponent(b.id)}">${coverHTML(b)}<span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || T.unknownAuthor)}</span>${b.rating ? `<span class="stars">${'★'.repeat(b.rating)}</span>` : ''}</a>`;
 function viewShelf() {
   const needsVerify = S.user.providerData.some(p => p.providerId === 'password') && !S.user.emailVerified;
