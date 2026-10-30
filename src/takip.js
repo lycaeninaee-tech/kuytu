@@ -6,12 +6,15 @@ const WEEK = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 const WEEK_LONG = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 const PARTS = [['Sabah', 5, 12], ['Öğleden sonra', 12, 17], ['Akşam', 17, 22], ['Gece', 22, 29]];
 const HEAT_WEEKS = 26;
+// Açık bırakılan bölümler sayfa yenilenince kapanmasın
+const opened = {};
+document.addEventListener('toggle', e => { if (e.target.dataset && e.target.dataset.k) opened[e.target.dataset.k] = e.target.open; }, true);
 
 const bars = (rows, fmt) => {
   const max = Math.max(1, ...rows.map(r => r[1]));
   return `<ul class="hbars">${rows.map(([k, v]) => `<li><span>${esc(k)}</span><span class="bar"><i style="width:${Math.round(v / max * 100)}%"></i></span><span class="v">${esc(fmt(v))}</span></li>`).join('')}</ul>`;
 };
-function streaks(days) {
+export function streaks(days) {
   const has = k => days.has(k);
   const d = new Date();
   if (!has(dayKey(d))) d.setDate(d.getDate() - 1);
@@ -128,26 +131,29 @@ export function viewTakip(state) {
   const goal = (pg ? prof.goalPages : prof.goalMin) || 0, unit = pg ? 'sayfa' : 'dk';
   const shown = state.logAll ? mine : mine.slice(0, 8);
   const amount = s => [s.pages ? s.pages + ' sayfa' : '', s.seconds ? dk(s.seconds) : ''].filter(Boolean).join(' · ');
+  const open = k => (opened[k] ? ' open' : '');
   return `<div class="pagehead"><div><p class="label">${T.track}</p><h2>${T.habit}</h2></div><div class="seg"><button type="button" class="${pg ? 'on' : ''}" data-act="metric" data-v="pages">${T.pageTab}</button><button type="button" class="${pg ? '' : 'on'}" data-act="metric" data-v="min">${T.minTab}</button></div></div>
     <div class="habit">
-    ${has ? `<p class="insight">En çok <b>${esc(topP[0].toLocaleLowerCase('tr-TR'))}</b> saatlerinde ve <b>${esc(topD)}</b> günleri okuyorsun.</p>` : ''}
     ${pace(state, mine)}
-    ${logForm(state)}
-    <div class="statrow">
+    <div class="statrow three">
       <div><b>${esc(fmt(monthV))}</b><span>${T.thisMonth}</span></div>
       <div><b>${now} gün</b><span>${T.streak}</span></div>
-      <div><b>${best} gün</b><span>${T.best}</span></div>
-      <div><b>${speed ? speed + ' s/sa' : '–'}</b><span>${T.speed}</span></div>
+      <div><b>${wkN}${goal ? ' / ' + goal : ''} ${unit}</b><span>${T.thisWeek}</span></div>
     </div>
-    ${mList.length ? `<button class="btn ghost share" type="button" data-act="recapshare">${T.shareRecap}</button>` : ''}
+    <details class="logbox" data-k="log"${open('log')}><summary class="btn">${T.logTitle}</summary>${logForm(state)}</details>
     <section class="surface"><h3>${T.last30}</h3>${chart(byDay, pg)}</section>
-    <section class="surface"><h3>${T.lastWeeks}</h3><div class="heat">${cells}</div><p class="muted small">${T.heatHint}</p></section>
-    <div class="grid2">
-      <section class="surface"><h3>${T.weekGoal}</h3><p class="bignum">${wkN} <small>${unit}</small></p><p class="muted small">${goal ? T.goal + ' ' + goal + ' ' + unit : T.noGoal}</p><div class="meter"><span style="width:${goal ? Math.min(100, wkN / goal * 100) : 0}%"></span></div><div class="goalrow"><input id="goal" type="number" min="0" value="${goal || ''}" aria-label="${T.weekGoal}"><button class="btn ghost" type="button" data-act="gsave">${T.save}</button></div></section>
-      <section class="surface"><h3>${T.dayParts}</h3>${bars(parts, fmt)}</section>
-      <section class="surface"><h3>${T.weekDays}</h3>${bars(week, fmt)}</section>
-      <section class="surface"><h3>${T.byBook}</h3>${books.length ? bars(books, fmt) : `<p class="muted small">${T.noRecord}</p>`}</section>
-    </div>
-    ${mine.length ? `<section class="surface"><h3>${T.records}</h3><ul class="loglist">${shown.map(s => `<li><span class="d">${esc(new Date(s.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}</span><span class="t">${esc(s.title || '')}${s.manual ? `<em>${T.manual}</em>` : ''}</span><b>${esc(amount(s))}</b><button type="button" class="linkbtn small" data-act="delsess" data-id="${esc(s.id)}">${state.armed === s.id ? T.sure : T.del}</button></li>`).join('')}</ul>${mine.length > shown.length ? `<button type="button" class="linkbtn" data-act="logall">${T.showAll} (${mine.length})</button>` : ''}</section>` : ''}
+    ${has ? `<p class="insight">En çok <b>${esc(topP[0].toLocaleLowerCase('tr-TR'))}</b> saatlerinde ve <b>${esc(topD)}</b> günleri okuyorsun.</p>` : ''}
+    <details class="more" data-k="more"${open('more')}><summary>${T.details}</summary><div class="habit">
+      <section class="surface"><h3>${T.lastWeeks}</h3><div class="heat">${cells}</div><p class="muted small">${T.heatHint}</p></section>
+      <div class="statrow"><div><b>${best} gün</b><span>${T.best}</span></div><div><b>${speed ? speed + ' s/sa' : '–'}</b><span>${T.speed}</span></div></div>
+      <div class="grid2">
+        <section class="surface"><h3>${T.weekGoal}</h3><div class="meter"><span style="width:${goal ? Math.min(100, wkN / goal * 100) : 0}%"></span></div><div class="goalrow"><input id="goal" type="number" min="0" value="${goal || ''}" placeholder="${unit}" aria-label="${T.weekGoal}"><button class="btn ghost" type="button" data-act="gsave">${T.save}</button></div></section>
+        <section class="surface"><h3>${T.dayParts}</h3>${bars(parts, fmt)}</section>
+        <section class="surface"><h3>${T.weekDays}</h3>${bars(week, fmt)}</section>
+        <section class="surface"><h3>${T.byBook}</h3>${books.length ? bars(books, fmt) : `<p class="muted small">${T.noRecord}</p>`}</section>
+      </div>
+      ${mine.length ? `<section class="surface"><h3>${T.records}</h3><ul class="loglist">${shown.map(s => `<li><span class="d">${esc(new Date(s.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}</span><span class="t">${esc(s.title || '')}${s.manual ? `<em>${T.manual}</em>` : ''}</span><b>${esc(amount(s))}</b><button type="button" class="linkbtn small" data-act="delsess" data-id="${esc(s.id)}">${state.armed === s.id ? T.sure : T.del}</button></li>`).join('')}</ul>${mine.length > shown.length ? `<button type="button" class="linkbtn" data-act="logall">${T.showAll} (${mine.length})</button>` : ''}</section>` : ''}
+      ${mList.length ? `<button class="btn ghost share" type="button" data-act="recapshare">${T.shareRecap}</button>` : ''}
+    </div></details>
     </div>`;
 }

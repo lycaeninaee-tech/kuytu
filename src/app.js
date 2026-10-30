@@ -1,4 +1,5 @@
-import { T, TK } from './strings.js';
+import { T, TK, TP } from './strings.js';
+import { viewProfile, profileSubmit } from './profile.js';
 import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
 import { searchBooks } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
@@ -51,7 +52,7 @@ function viewUsername() {
 }
 const header = () => `<header class="top"><a class="brand" href="#raf">${LOGO}KUYTU</a>
   <nav class="nav"><a href="#raf" class="${S.view === 'raf' ? 'on' : ''}">${ICON.raf}${T.navShelf}</a><a href="#ara" class="${S.view === 'ara' ? 'on' : ''}">${ICON.ara}${T.navSearch}</a><a href="#kulup" class="${['kulup', 'k', 'kb', 'davet'].includes(S.view) ? 'on' : ''}">${ICON.kulup}${TK.navClubs}</a><a href="#oda" class="${S.view === 'oda' ? 'on' : ''}">${ICON.oda}${TK.navRoom}</a><a href="#takip" class="${S.view === 'takip' ? 'on' : ''}">${ICON.takip}${TK.navTrack}</a></nav>
-  <button class="btn ghost logout" type="button" data-act="logout">${T.logout}</button></header>`;
+  <a class="me" href="#profil" aria-label="${TP.title}">${esc((S.profile.name || "?").charAt(0).toLocaleUpperCase("tr"))}</a></header>`;
 const tile = b => `<a class="tile" href="#kitap/${encodeURIComponent(b.id)}">${coverHTML(b)}<span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || T.unknownAuthor)}</span>${b.rating ? `<span class="stars">${'★'.repeat(b.rating)}</span>` : ''}</a>`;
 function viewShelf() {
   const needsVerify = S.user.providerData.some(p => p.providerId === 'password') && !S.user.emailVerified;
@@ -100,13 +101,13 @@ function render() {
   if (!S.user) v.innerHTML = viewLanding();
   else if (S.profile === undefined) v.innerHTML = '';
   else if (!S.profile) v.innerHTML = viewUsername();
-  else v.innerHTML = header() + ({ raf: viewShelf, ara: viewSearch, kitap: viewBook, oda: () => viewOda(S), takip: () => viewTakip(S), kulup: viewClubs, davet: viewInvite, k: () => viewClub(S.clubTab), kb: () => viewClubBook(S.bookId) }[S.view] || viewShelf)();
+  else v.innerHTML = header() + ({ raf: viewShelf, ara: viewSearch, kitap: viewBook, oda: () => viewOda(S), takip: () => viewTakip(S), profil: () => viewProfile(S), kulup: viewClubs, davet: viewInvite, k: () => viewClub(S.clubTab), kb: () => viewClubBook(S.bookId) }[S.view] || viewShelf)();
 }
 function route() {
   const [view, id] = location.hash.slice(1).split('/');
   if (view !== 'oda') setRoom(false);
   const [, , sub, bid] = location.hash.slice(1).split('/');
-  S.view = ['ara', 'kitap', 'oda', 'takip', 'kulup', 'davet', 'k'].includes(view) ? view : 'raf';
+  S.view = ['ara', 'kitap', 'oda', 'takip', 'kulup', 'davet', 'k', 'profil'].includes(view) ? view : 'raf';
   S.bookId = id ? decodeURIComponent(id) : null;
   if (view === 'k' && id) {
     if (S.user) openClub(decodeURIComponent(id));
@@ -137,6 +138,7 @@ document.addEventListener('click', e => {
   if (a === 'add') addToShelf(uid, S.results[Number(el.dataset.i)], 'istiyorum').then(() => toast(T.added)).catch(fail);
   if (a === 'status') updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okudum' ? { finishedAt: new Date().toISOString() } : {}) }).catch(fail);
   if (a === 'rate') updateShelf(uid, S.bookId, { rating: Number(el.dataset.v) }).catch(fail);
+  if (a === 'pedit') { S.editProfile = true; render(); }
   if (a === 'tstart') startTimer(S.shelf);
   if (a === 'treset') resetTimer();
   if (a === 'roomtoggle') setRoom(!document.body.classList.contains('in-room'));
@@ -151,7 +153,7 @@ document.addEventListener('click', e => {
   if (a === 'metric') { try { localStorage.setItem('kuytu-metric', el.dataset.v); } catch (err) {} render(); }
   if (a === 'logpg') $('#log-form [name="pages"]').value = el.dataset.v;
   if (a === 'logall') { S.logAll = true; render(); }
-  if (a === 'heatday') { const f = $('#log-form'); if (f) { f.elements.day.value = el.dataset.v; f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.elements.pages.focus({ preventScroll: true }); } }
+  if (a === 'heatday') { const f = $('#log-form'); if (f) { f.closest('details').open = true; f.elements.day.value = el.dataset.v; f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.elements.pages.focus({ preventScroll: true }); } }
   if (a === 'gsave') saveProfile(uid, { [S.metricNow === 'pages' ? 'goalPages' : 'goalMin']: Math.max(0, Number($('#goal').value) || 0) }).then(() => toast(TK.saved)).catch(fail);
   if (a === 'delsess') {
     if (S.armed !== el.dataset.id) { S.armed = el.dataset.id; render(); return; }
@@ -223,6 +225,7 @@ document.addEventListener('submit', async e => {
       toast(T.added);
     }
     if (S.user && await clubSubmit(id, f)) return;
+    if (id === 'profile-form') { await profileSubmit(S, f); toast(TK.saved); }
     if (id === 'log-form') {
       const min = Math.round(Number(f.min.value)) || 0, pages = Math.round(Number(f.pages.value)) || 0;
       if (!min && !pages) return toast(TK.needAmount);

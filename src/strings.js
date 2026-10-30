@@ -71,18 +71,24 @@ export const TK = {
   track: 'Takip', habit: 'Okuma <em>alışkanlığım</em>', pageTab: 'Sayfa', minTab: 'Dakika', reading: 'Şu an okuduğun',
   addPages: 'Kalan sayfayı görmek için kitabın sayfa sayısını gir.', openBook: 'Kitabı aç', finished: 'Kitabı bitirdin.', perDay: 'Son 7 günde günde ortalama', perDay2: 'sayfa okudun; bu hızla', perDay3: 'günde bitirirsin.', noPace: 'Sayfa ekledikçe bitiş tahminin burada görünecek.', leftPages: 'sayfa kaldı',
   logTitle: 'Okuduğunu ekle', logHint: 'Okuma köşesi dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', pagesRead: 'Sayfa', minutes: 'Süre (dk)', date: 'Tarih', time: 'Saat', pageWord: 'sayfa',
-  thisMonth: 'Bu ay', streak: 'Şu anki seri', best: 'En uzun seri', speed: 'Okuma hızın', last30: 'Son 30 gün', lastWeeks: 'Son 26 hafta', heatHint: 'Bir güne tıklayınca o gün için kayıt ekleyebilirsin.',
+  thisMonth: 'Bu ay', thisWeek: 'Bu hafta', details: 'Ayrıntılar', streak: 'Şu anki seri', best: 'En uzun seri', speed: 'Okuma hızın', last30: 'Son 30 gün', lastWeeks: 'Son 26 hafta', heatHint: 'Bir güne tıklayınca o gün için kayıt ekleyebilirsin.',
   weekGoal: 'Haftalık hedef', goal: 'Hedef', noGoal: 'Henüz hedef yok', dayParts: 'Günün saatleri', weekDays: 'Haftanın günleri', byBook: 'Kitaplara göre', noRecord: 'Henüz kayıt yok.', records: 'Kayıtlarım', manual: 'elle', sure: 'Silinsin mi?', del: 'Sil', showAll: 'Tümünü göster',
   needAmount: 'Sayfa ya da süre yaz.', tooBig: 'Sayfa ya da süre çok büyük görünüyor.', future: 'İleri tarihli kayıt eklenemez.', badDate: 'Tarihi kontrol et.', added: 'eklendi', saved: 'Kaydedildi', navClubs: 'Kulüpler', navRoom: 'Okuma köşesi', navTrack: 'Takip',
 };
 
 // Kulüpler
 export const TC = {
-  photos: 'Fotoğraflar', addPhoto: 'Fotoğraf ekle', noPhotos: 'Henüz fotoğraf yok.', photoFail: 'Fotoğraf yüklenemedi.', photoAdded: 'Fotoğraf eklendi', spoiler: 'Spoiler olabilir, göster', spoilerTag: 'Spoiler', hasSpoiler: 'Spoiler içeriyor', clubs: 'Kulüpler', myClubs: 'Kulüp<em>lerim</em>', owner: 'Kurucu', member: 'Üye', viewer: 'İzleyici', noClubs: 'Henüz bir kulübün yok. İlkini kur ya da davet bağlantısıyla katıl.',
+  photos: 'Fotoğraflar', addPhoto: 'Fotoğraf ekle', noPhotos: 'Henüz fotoğraf yok.', photoFail: 'Fotoğraf yüklenemedi.', photoAdded: 'Fotoğraf eklendi', spoiler: 'Spoiler olabilir, göster', spoilerTag: 'Spoiler', hasSpoiler: 'Spoiler içeriyor', days: 'gün kaldı', meetToday: 'Toplantı bugün', nextPicker: 'Sıradaki seçen', recent: 'Son yazılanlar', quotes: 'Alıntılar', rate: 'Puanın', avg: 'Kulüp puanı', statDone: 'bitirilen kitap', statPages: 'okunan sayfa', clubs: 'Kulüpler', myClubs: 'Kulüp<em>lerim</em>', owner: 'Kurucu', member: 'Üye', viewer: 'İzleyici', noClubs: 'Henüz bir kulübün yok. İlkini kur ya da davet bağlantısıyla katıl.',
   newClub: 'Yeni kulüp kur', clubName: 'Kulüp adı', create: 'Kur', loading: 'Yükleniyor...', badInvite: 'Bu davet geçersiz.', backClubs: 'Kulüplerime dön', invited: 'Kulübe davet edildin', goClub: 'Kulübe git', join: 'Kulübe katıl',
   tabNow: 'Bu ay', tabBooks: 'Kitaplar', tabSugg: 'Öneriler', tabMembers: 'Üyeler', noCurrent: 'Şu an okunan kitap yok. Kitaplar sekmesinden ekleyip durumunu "Okunuyor" yap.', nowReading: 'Şu an okunan', meeting: 'Toplantı', coming: 'Gelecekler', noMeeting: 'Toplantı tarihi henüz belli değil.', openBook: 'Kitabın sayfası',
   searchHint: 'Kitap adı, yazar ya da ISBN', search: 'Ara', searchFail: 'Arama şu an çalışmıyor.', add: 'Ekle', adopt: 'Kitaplığa al', noSugg: 'Henüz öneri yok.', addedOk: 'Eklendi',
   inviteTitle: 'Davet bağlantısı', inviteHint: 'Bu bağlantıya sahip herkes üye olarak katılabilir; yalnızca güvendiğin kişilerle paylaş.', copy: 'Kopyala', newLink: 'Yeni bağlantı üret', makeLink: 'Bağlantı oluştur', linkReady: 'Bağlantı hazır', copied: 'Kopyalandı',
   makeMember: 'Üye yap', makeViewer: 'İzleyici yap', kick: 'Çıkar', leave: 'Kulüpten ayrıl', noAccess: 'Bu kulübü göremiyorsun.', club: 'Kulüp',
   myProgress: 'İlerlemem (%)', date: 'Tarih', time: 'Saat', place: 'Yer', save: 'Kaydet', saved: 'Kaydedildi', yes: 'Geliyorum', no: 'Gelemiyorum', discussed: 'Konuşuldu', del: 'Sil', noNotes: 'Henüz bir şey yazılmadı.', write: 'Yaz', generic: 'Her kitaba uyan 8 soruyu ekle', genericBy: 'Genel soru',
+};
+
+// Profil
+export const TP = {
+  title: 'Profilim', about: 'Hakkımda', bio: 'Kendinden bahset', genres: 'Sevdiğin türler', favBook: 'En sevdiğin kitap', favAuthor: 'En sevdiğin yazar', quote: 'En sevdiğin alıntı', yearGoal: 'Bu yıl kaç kitap?', edit: 'Düzenle', save: 'Kaydet', logout: 'Çıkış yap',
+  yearDone: 'bu yıl bitirildi', badges: 'Rozetler', now: 'Şu an okuduğu', empty: 'Henüz bir şey yazmadın.',
 };

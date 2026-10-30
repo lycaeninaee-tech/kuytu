@@ -63,20 +63,40 @@ export function viewInvite() {
 }
 const tabs = active => `<nav class="ctabs">${[['ay', T.tabNow], ['kitaplar', T.tabBooks], ['oneriler', T.tabSugg], ['uyeler', T.tabMembers]].map(([k, l]) => `<a href="#k/${encodeURIComponent(C().id)}/${k}" class="${active === k ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
 const bookLink = b => `#k/${encodeURIComponent(C().id)}/b/${encodeURIComponent(b.id)}`;
+const avgRate = b => { const v = Object.values(b.ratings || {}); return v.length ? `<p class="muted small">${T.avg}: ${(v.reduce((a, x) => a + x, 0) / v.length).toFixed(1)}</p>` : ''; };
 const bookTile = b => `<a class="tile" href="${bookLink(b)}">${coverHTML(b)}<span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || '')}</span></a>`;
+// Sıra, üyelerin katılım sırasıyla döner: son kitabı ekleyenden sonraki üye seçer
+function nextPicker() {
+  const ms = C().members.slice().sort((a, b) => (a.joinedAt || '').localeCompare(b.joinedAt || ''));
+  if (!ms.length) return '';
+  const last = C().books.slice().sort((a, b) => (b.at || '').localeCompare(a.at || ''))[0];
+  const i = last ? ms.findIndex(m => m.uid === last.addedBy) : -1;
+  return ms[(i + 1) % ms.length].name;
+}
+const daysLeft = d => Math.round((new Date(d + 'T00:00:00') - new Date(new Date().setHours(0, 0, 0, 0))) / 86400000);
 function tabNow() {
   const b = C().books.find(x => x.status === 'okunuyor');
-  if (!b) return `<p class="empty-note">${T.noCurrent}</p>`;
+  if (!b) return `<p class="empty-note">${T.noCurrent}</p><p class="muted">${T.nextPicker}: <b>${esc(nextPicker())}</b></p>`;
+  openNotes(b.id);
+  const notes = C().notes.filter(n => !n.spoiler), quotes = notes.filter(n => n.kind === 'quote');
+  const left = b.meetingDate ? daysLeft(b.meetingDate) : null;
+  const extra = `<div class="statrow three">
+      ${left !== null && left >= 0 ? `<div><b>${left === 0 ? T.meetToday : left + ' ' + T.days}</b><span>${T.meeting}</span></div>` : ''}
+      <div><b>${esc(nextPicker())}</b><span>${T.nextPicker}</span></div>
+    </div>
+    ${quotes.length ? `<div class="quotes" aria-label="${T.quotes}"><div>${quotes.concat(quotes).map(n => `<span>“${esc(n.text)}”</span>`).join('')}</div></div>` : ''}
+    ${notes.length ? `<section class="surface"><h3>${T.recent}</h3><ul class="timeline">${notes.slice(-5).reverse().map(n => `<li><b>${esc(n.byName || '')}</b><p>${esc(n.text)}</p></li>`).join('')}</ul></section>` : ''}`;
   const yes = C().members.filter(m => (b.rsvp || {})[m.uid] === 'y');
   return `<section class="surface now">${coverHTML(b)}<div class="now-body"><p class="label">${esc(b.month || T.nowReading)}</p><h2>${esc(b.title)}</h2><p class="muted">${esc(b.author || '')}</p>
       <ul class="hbars">${C().members.map(m => { const p = (b.progress || {})[m.uid] || 0; return `<li><span>${esc(m.name)}</span><span class="bar"><i style="width:${p}%"></i></span><span class="v">%${p}</span></li>`; }).join('')}</ul>
       ${b.meetingDate ? `<p><b>${T.meeting}:</b> ${esc(dateTR(b.meetingDate))}${b.meetingTime ? ' · ' + esc(b.meetingTime) : ''}${b.meetingPlace ? ' · ' + esc(b.meetingPlace) : ''}</p><p class="muted small">${T.coming}: ${yes.map(m => esc(m.name)).join(', ') || '–'}</p>` : `<p class="muted">${T.noMeeting}</p>`}
-      <a class="btn" href="${bookLink(b)}">${T.openBook}</a></div></section>`;
+      <a class="btn" href="${bookLink(b)}">${T.openBook}</a></div></section>${extra}`;
 }
 const searchBox = to => (canWrite() ? `<form class="searchbar" id="cb-search" data-to="${to}"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="btn" type="submit">${T.search}</button></form>
   ${C().results === 'fail' ? `<p class="muted">${T.searchFail}</p>` : C().results ? `<ul class="results">${C().results.map((b, i) => `<li>${coverHTML(b)}<div><b>${esc(b.title)}</b><p class="muted small">${esc([b.author, b.year].filter(Boolean).join(' · '))}</p></div><button class="btn ghost" type="button" data-act="cadd" data-to="${to}" data-i="${i}">${T.add}</button></li>`).join('')}</ul>` : ''}` : '');
 function tabBooks() {
-  return `${searchBox('books')}${CLUB_STATUS.map(([k, l]) => { const list = C().books.filter(b => b.status === k); return list.length ? `<section class="row"><h3>${l} <span>${list.length}</span></h3><div class="grid">${list.map(bookTile).join('')}</div></section>` : ''; }).join('')}`;
+  const done = C().books.filter(b => b.status === 'tamamlandi');
+  return `<div class="statrow three"><div><b>${done.length}</b><span>${T.statDone}</span></div><div><b>${done.reduce((a, b) => a + (Number(b.pages) || 0), 0)}</b><span>${T.statPages}</span></div></div>${searchBox('books')}${CLUB_STATUS.map(([k, l]) => { const list = C().books.filter(b => b.status === k); return list.length ? `<section class="row"><h3>${l} <span>${list.length}</span></h3><div class="grid">${list.map(bookTile).join('')}</div></section>` : ''; }).join('')}`;
 }
 function tabSugg() {
   const rows = C().sugg.slice().sort((a, b) => Object.keys(b.votes || {}).length - Object.keys(a.votes || {}).length);
@@ -105,7 +125,8 @@ export function viewClubBook(bid) {
   const kind = S.noteKind === 'photo' && !photosOn ? 'own' : S.noteKind || 'own', list = c.notes.filter(n => n.kind === kind), w = canWrite();
   const qGeneric = kind === 'question' && w && !b.genericAdded;
   return `<a class="small" href="#k/${encodeURIComponent(c.id)}/kitaplar">← ${esc(c.doc.name)}</a>
-    <section class="book">${coverHTML(b)}<div class="book-body"><h2>${esc(b.title)}</h2><p class="muted">${esc(b.author || '')}</p>
+    <section class="book">${coverHTML(b)}<div class="book-body"><h2>${esc(b.title)}</h2><p class="muted">${esc([b.author, b.year, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p>
+      <div class="rate" role="group" aria-label="${T.rate}">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="${((b.ratings || {})[S.user.uid] || 0) >= n ? 'on' : ''}" data-act="crate" data-v="${n}" aria-label="${n}">★</button>`).join('')}</div>${avgRate(b)}
       ${w ? `<div class="seg wrap">${CLUB_STATUS.map(([k, l]) => `<button type="button" class="${b.status === k ? 'on' : ''}" data-act="cstatus" data-v="${k}">${l}</button>`).join('')}</div>
       <form id="cb-prog" class="pagebar"><label>${T.myProgress}<input name="p" type="number" min="0" max="100" value="${(b.progress || {})[S.user.uid] || 0}"></label><button class="btn ghost" type="submit">${T.save}</button></form>
       <form id="cb-meet" class="pagebar"><label>${T.date}<input name="d" type="date" value="${esc(b.meetingDate || '')}"></label><label>${T.time}<input name="t" type="time" value="${esc(b.meetingTime || '')}"></label><label>${T.place}<input name="pl" maxlength="80" value="${esc(b.meetingPlace || '')}"></label><button class="btn ghost" type="submit">${T.save}</button></form>
@@ -169,6 +190,7 @@ export function clubClick(a, el) {
   if (a === 'ckick') remove(`${base}/members/${el.dataset.id}`).catch(fail);
   if (a === 'cleave') leaveClub(u.uid, C().id).then(() => { location.hash = '#kulup'; }).catch(fail);
   if (a === 'cstatus') patch(`${base}/books/${bid}`, { status: el.dataset.v }).catch(fail);
+  if (a === 'crate') patch(`${base}/books/${bid}`, { ratings: { [u.uid]: Number(el.dataset.v) } }).catch(fail);
   if (a === 'crsvp') patch(`${base}/books/${bid}`, { rsvp: { [u.uid]: el.dataset.v } }).catch(fail);
   if (a === 'creveal') { S.reveal.add(el.dataset.id); render(); }
   if (a === 'ckind') { S.noteKind = el.dataset.v; render(); }
