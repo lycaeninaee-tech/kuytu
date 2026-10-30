@@ -6,6 +6,8 @@ import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
 import { viewOda, refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption } from './reading.js';
 import { viewTakip } from './takip.js';
+import { watchCol } from './clubs.js';
+import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit } from './clubview.js';
 
 
 const S = { user: null, profile: undefined, shelf: [], sessions: [], mode: 'login', view: 'raf', bookId: null, results: null, searching: false, armed: false };
@@ -22,7 +24,7 @@ const shelfBook = id => S.shelf.find(b => b.id === id);
 const hueOf = s => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 360;
 // Kuytu işareti: kemer içinde yıldız ve açık kitap
 const LOGO = '<svg class="logo" viewBox="0 0 60 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M6 68V30a24 24 0 0 1 48 0v38"/><path d="M30 14l2.4 7.6L40 24l-7.6 2.4L30 34l-2.4-7.6L20 24l7.6-2.4z" fill="currentColor" stroke="none"/><path d="M30 48c-5-4-12-5-18-3v17c6-2 13-1 18 3 5-4 12-5 18-3V45c-6-2-13-1-18 3zM30 48v17"/></svg>';
-const ICON = { raf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 5.5c2.5-1.2 6-1.2 9 1 3-2.2 6.5-2.2 9-1V19c-2.5-1.2-6-1.2-9 1-3-2.2-6.5-2.2-9-1zM12 6.5V20"/></svg>', oda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>', takip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>', ara: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>' };
+const ICON = { raf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 5.5c2.5-1.2 6-1.2 9 1 3-2.2 6.5-2.2 9-1V19c-2.5-1.2-6-1.2-9 1-3-2.2-6.5-2.2-9-1zM12 6.5V20"/></svg>', kulup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M16 5a3.5 3.5 0 0 1 0 6.5M18 14.5c1.9.8 3 2.7 3 5.5"/></svg>', oda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>', takip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>', ara: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>' };
 const coverHTML = b => (b.cover
   ? `<img class="cover" src="${esc(b.cover)}" alt="" loading="lazy">`
   : `<span class="cover ph" style="--h:${hueOf(b.title)}"><b>${esc(b.title)}</b></span>`);
@@ -48,7 +50,7 @@ function viewUsername() {
     <p class="muted small">${T.chooseHelp}</p><button class="btn" type="submit">${T.save}</button></form></section>`;
 }
 const header = () => `<header class="top"><a class="brand" href="#raf">${LOGO}KUYTU</a>
-  <nav class="nav"><a href="#raf" class="${S.view === 'raf' ? 'on' : ''}">${ICON.raf}${T.navShelf}</a><a href="#ara" class="${S.view === 'ara' ? 'on' : ''}">${ICON.ara}${T.navSearch}</a><a href="#oda" class="${S.view === 'oda' ? 'on' : ''}">${ICON.oda}${TK.navRoom}</a><a href="#takip" class="${S.view === 'takip' ? 'on' : ''}">${ICON.takip}${TK.navTrack}</a></nav>
+  <nav class="nav"><a href="#raf" class="${S.view === 'raf' ? 'on' : ''}">${ICON.raf}${T.navShelf}</a><a href="#ara" class="${S.view === 'ara' ? 'on' : ''}">${ICON.ara}${T.navSearch}</a><a href="#kulup" class="${['kulup', 'k', 'kb', 'davet'].includes(S.view) ? 'on' : ''}">${ICON.kulup}${TK.navClubs}</a><a href="#oda" class="${S.view === 'oda' ? 'on' : ''}">${ICON.oda}${TK.navRoom}</a><a href="#takip" class="${S.view === 'takip' ? 'on' : ''}">${ICON.takip}${TK.navTrack}</a></nav>
   <button class="btn ghost logout" type="button" data-act="logout">${T.logout}</button></header>`;
 const tile = b => `<a class="tile" href="#kitap/${encodeURIComponent(b.id)}">${coverHTML(b)}<span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || T.unknownAuthor)}</span>${b.rating ? `<span class="stars">${'★'.repeat(b.rating)}</span>` : ''}</a>`;
 function viewShelf() {
@@ -98,13 +100,20 @@ function render() {
   if (!S.user) v.innerHTML = viewLanding();
   else if (S.profile === undefined) v.innerHTML = '';
   else if (!S.profile) v.innerHTML = viewUsername();
-  else v.innerHTML = header() + ({ raf: viewShelf, ara: viewSearch, kitap: viewBook, oda: () => viewOda(S), takip: () => viewTakip(S) }[S.view] || viewShelf)();
+  else v.innerHTML = header() + ({ raf: viewShelf, ara: viewSearch, kitap: viewBook, oda: () => viewOda(S), takip: () => viewTakip(S), kulup: viewClubs, davet: viewInvite, k: () => viewClub(S.clubTab), kb: () => viewClubBook(S.bookId) }[S.view] || viewShelf)();
 }
 function route() {
   const [view, id] = location.hash.slice(1).split('/');
   if (view !== 'oda') setRoom(false);
-  S.view = ['ara', 'kitap', 'oda', 'takip'].includes(view) ? view : 'raf';
+  const [, , sub, bid] = location.hash.slice(1).split('/');
+  S.view = ['ara', 'kitap', 'oda', 'takip', 'kulup', 'davet', 'k'].includes(view) ? view : 'raf';
   S.bookId = id ? decodeURIComponent(id) : null;
+  if (view === 'k' && id) {
+    if (S.user) openClub(decodeURIComponent(id));
+    S.clubTab = ['ay', 'kitaplar', 'oneriler', 'uyeler'].includes(sub) ? sub : 'ay';
+    if (sub === 'b' && bid && S.club) { S.view = 'kb'; S.bookId = decodeURIComponent(bid); openNotes(S.bookId); }
+  } else if (S.club) closeClub();
+  if (view === 'davet' && id && S.user && S.profile) { loadInvite(decodeURIComponent(id)); return; }
   S.armed = false;
   render();
   scrollTo(0, 0);
@@ -115,6 +124,7 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el) return;
   const a = el.dataset.act, uid = S.user && S.user.uid;
+  if (S.user && clubClick(a, el)) return;
   if (a === 'mode') { S.mode = el.dataset.v; render(); }
   if (a === 'google') loginGoogle().catch(fail);
   if (a === 'logout') logout().catch(fail);
@@ -211,6 +221,7 @@ document.addEventListener('submit', async e => {
       location.hash = '#kitap/' + encodeURIComponent(book.id);
       toast(T.added);
     }
+    if (S.user && await clubSubmit(id, f)) return;
     if (id === 'log-form') {
       const min = Math.round(Number(f.min.value)) || 0, pages = Math.round(Number(f.pages.value)) || 0;
       if (!min && !pages) return toast(TK.needAmount);
@@ -236,6 +247,7 @@ document.addEventListener('submit', async e => {
   }
 });
 
+initClubs({ S, toast, fail, render: () => render(), coverHTML });
 route();
 if (configured) {
   let stops = [];
@@ -250,8 +262,9 @@ if (configured) {
     if (user) {
       // Okuma köşesinde sayfa yeniden çizilmez; müzik kesilmesin diye yalnızca zamanlayıcı yenilenir
       const redraw = () => { setCurrent(S); if (S.view === 'oda' && $('#timer-card')) refreshTimer(); else render(); };
+      stops.push(watchCol('users/' + user.uid + '/clubs', l => { S.myClubs = l; if (S.view === 'kulup' || S.view === 'davet') render(); }));
       stops.push(watchSessions(user.uid, list => { S.sessions = list; redraw(); }));
-      stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; if (first) render(); else redraw(); }));
+      stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; if (first) { route(); } else redraw(); }));
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;
         // Aramada yazılan metin kaybolmasın: arama sayfasında yalnızca sonuçlar yenilenir
