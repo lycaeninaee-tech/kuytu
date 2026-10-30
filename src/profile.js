@@ -33,7 +33,7 @@ export function viewProfile(S) {
     : `<section class="surface"><h3>${T.about}</h3>${favs.length ? `<div class="favs">${favs.map(([k, v]) => `<p>${k}: <b>${esc(v)}</b></p>`).join('')}</div>` : `<p class="muted">${T.empty}</p>`}<button class="btn ghost share" type="button" data-act="pedit">${T.edit}</button></section>`}
     <div class="statrow three"><div><b>${yearDone}${p.yearGoal ? ' / ' + p.yearGoal : ''}</b><span>${T.yearDone}</span></div>${reading.length ? `<div><b>${esc(reading[0].title)}</b><span>${T.now}</span></div>` : ''}</div>
     <section class="surface"><h3>${T.badges}</h3><div class="badges">${BADGES.map(([t, d, ok]) => `<div class="badge ${ok(data) ? 'won' : ''}"><b>${t}</b><span>${d}</span></div>`).join('')}</div></section>
-    <button class="btn ghost share" type="button" data-act="logout">${T.logout}</button>
+    <div class="ractions left"><a class="btn ghost" href="#raf">${T.myShelf}</a><a class="btn ghost" href="#kulup">${T.myClubs}</a><button class="btn ghost" type="button" data-act="logout">${T.logout}</button></div>
     </div>`;
 }
 export async function profileSubmit(S, f) {
