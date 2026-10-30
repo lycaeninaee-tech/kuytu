@@ -11,9 +11,11 @@ const CLUB_STATUS = [['okunuyor', 'Okunuyor'], ['sirada', 'Sırada'], ['tamamlan
 let S, toast, fail, render, coverHTML;
 export function initClubs(ctx) { ({ S, toast, fail, render, coverHTML } = ctx); }
 // Kişinin kitaplığında henüz olmayan kulüp kitapları; yalnızca kopyalanır, kulüp verisi değişmez
-const missing = () => (S.club ? S.club.books.filter(b => ['okunuyor', 'tamamlandi'].includes(b.status) && !S.shelf.some(x => x.id === b.id || x.title === b.title)) : []);
+// Aynı kitap farklı yazılmış olabilir (Narsis, Narziss); yazar ve başlığın başı tutuyorsa yeniden eklenmez
+const sameBook = (x, b) => x.id === b.id || x.title === b.title || (!!b.author && x.author === b.author && (x.title || '').slice(0, 3) === (b.title || '').slice(0, 3));
+const missing = () => (S.club ? S.club.books.filter(b => b.status !== 'birakildi' && !S.shelf.some(x => sameBook(x, b))) : []);
 export const clubMissing = () => missing().length;
-export const importClubBooks = () => Promise.all(missing().map(b => addToShelf(S.user.uid, { id: b.id, title: b.title, author: b.author || '', cover: b.cover && b.cover.length < 2000 ? b.cover : '', pages: b.pages || 0, year: b.year || '', publisher: b.publisher || '' }, b.status === 'okunuyor' ? 'okuyorum' : 'okudum')));
+export const importClubBooks = () => Promise.all(missing().map(b => addToShelf(S.user.uid, { id: b.id, title: b.title, author: b.author || '', cover: b.cover && b.cover.length < 2000 ? b.cover : '', pages: b.pages || 0, year: b.year || '', publisher: b.publisher || '' }, { okunuyor: 'okuyorum', tamamlandi: 'okudum' }[b.status] || 'istiyorum')));
 // Bugün ekranı için etkin kulübün özeti
 export function clubNow() {
   const c = S.club;
