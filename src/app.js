@@ -4,13 +4,13 @@ import { searchBooks } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
-import { viewOda, refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption } from './reading.js';
-import { viewTakip } from './takip.js';
+import { viewOda, refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish } from './reading.js';
+import { viewTakip, shareRecap } from './takip.js';
 import { watchCol } from './clubs.js';
 import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit } from './clubview.js';
 
 
-const S = { user: null, profile: undefined, shelf: [], sessions: [], mode: 'login', view: 'raf', bookId: null, results: null, searching: false, armed: false };
+const S = { user: null, profile: undefined, shelf: [], sessions: [], reveal: new Set(), mode: 'login', view: 'raf', bookId: null, results: null, searching: false, armed: false };
 
 function toast(msg) {
   const el = $('#toast');
@@ -142,6 +142,7 @@ document.addEventListener('click', e => {
   if (a === 'roomtoggle') setRoom(!document.body.classList.contains('in-room'));
   if (a === 'roomopt') setOption(el.dataset.kind, el.dataset.v);
   if (a === 'tstop') finishSession();
+  if (a === 'recapshare') shareRecap(S).catch(fail);
   if (a === 'msave') {
     let v = $('#music-url').value.trim();
     if (v && !/^https?:/.test(v)) v = 'https://' + v;
@@ -247,6 +248,7 @@ document.addEventListener('submit', async e => {
   }
 });
 
+setOnFinish(() => finishSession());
 initClubs({ S, toast, fail, render: () => render(), coverHTML });
 route();
 if (configured) {

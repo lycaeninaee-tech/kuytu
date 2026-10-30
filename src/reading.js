@@ -2,12 +2,14 @@
 import { $, esc, dayKey, sessDay } from './util.js';
 import { TK as T } from './strings.js';
 
-export const MODES = [['serbest', '∞', 'Serbest okuma', 0, 0], ['k15', '15', 'Kısa tur · 15 / 3', 15, 3], ['p25', '25', 'Pomodoro · 25 / 5', 25, 5], ['p50', '50', 'Derin odak · 50 / 10', 50, 10]];
-let timer = null, pref = 'p25', roomLight = 'alaca', sound = 'off', acx = null, src = null;
+export const MODES = [['serbest', '∞', 'Serbest okuma', 0, 0], ['k15', '15', 'Kısa tur · 15 / 3', 15, 3], ['p25', '25', 'Pomodoro · 25 / 5', 25, 5], ['p50', '50', 'Derin odak · 50 / 10', 50, 10], ['ozel', '+', 'Özel döngü', 0, 0], ['sayac', '↓', 'Geri sayım', 0, 0]];
+let timer = null, pref = 'p25', roomLight = 'alaca', sound = 'off', acx = null, src = null, onFinish = () => {}, custom = { f: 30, b: 5, c: 30 };
+export const setOnFinish = fn => { onFinish = fn; };
 try {
   timer = JSON.parse(localStorage.getItem('kuytu-timer') || 'null');
   pref = localStorage.getItem('kuytu-mode') || 'p25';
   roomLight = localStorage.getItem('kuytu-light') || 'alaca';
+  custom = { ...custom, ...JSON.parse(localStorage.getItem('kuytu-custom') || '{}') };
 } catch (e) {}
 const save = () => { try { if (timer) localStorage.setItem('kuytu-timer', JSON.stringify(timer)); else localStorage.removeItem('kuytu-timer'); } catch (e) {} };
 const mmss = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
@@ -26,10 +28,10 @@ function advance() {
   if (changed) save();
   return changed;
 }
-const focusSecs = () => (!timer ? 0 : !timer.focus ? elapsed() : timer.done + (timer.phase === 'focus' ? Math.floor((Date.now() - timer.phaseStart) / 1000) : 0));
-const pct = () => (!timer.focus ? (elapsed() % 3600) / 3600 : Math.min(1, (Date.now() - timer.phaseStart) / 1000 / (timer.phase === 'focus' ? timer.focus : timer.brk)));
-const label = () => (!timer.focus ? mmss(elapsed()) : mmss(Math.max(0, (timer.phase === 'focus' ? timer.focus : timer.brk) - Math.floor((Date.now() - timer.phaseStart) / 1000))));
-const sub = () => (!timer.focus ? T.free : (timer.phase === 'focus' ? T.focus : T.rest) + ' · ' + timer.cycles + ' ' + T.rounds);
+const focusSecs = () => (!timer ? 0 : timer.target ? Math.min(elapsed(), timer.target) : !timer.focus ? elapsed() : timer.done + (timer.phase === 'focus' ? Math.floor((Date.now() - timer.phaseStart) / 1000) : 0));
+const pct = () => (timer.target ? Math.min(1, elapsed() / timer.target) : !timer.focus ? (elapsed() % 3600) / 3600 : Math.min(1, (Date.now() - timer.phaseStart) / 1000 / (timer.phase === 'focus' ? timer.focus : timer.brk)));
+const label = () => (timer.target ? mmss(Math.max(0, timer.target - elapsed())) : !timer.focus ? mmss(elapsed()) : mmss(Math.max(0, (timer.phase === 'focus' ? timer.focus : timer.brk) - Math.floor((Date.now() - timer.phaseStart) / 1000))));
+const sub = () => (timer.target ? T.countdown + ' · ' + Math.round(timer.target / 60) + ' dk' : !timer.focus ? T.free : (timer.phase === 'focus' ? T.focus : T.rest) + ' · ' + timer.cycles + ' ' + T.rounds);
 function chime() {
   try {
     const ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -47,6 +49,7 @@ function chime() {
 }
 setInterval(() => {
   if (!timer) return;
+  if (timer.target && elapsed() >= timer.target) { chime(); onFinish(); return; }
   if (advance()) { chime(); refreshTimer(); return; }
   const el = $('#digits'); if (el) el.textContent = label();
   const line = $('#tline'); if (line) line.style.setProperty('--pct', pct().toFixed(4));
@@ -117,6 +120,8 @@ function timerBody() {
   return `<h2>${T.ask}</h2>
     <label>${T.book}<select id="timer-book">${opts}</select></label>
     <div class="modes" role="radiogroup" aria-label="${T.ask}">${modes}</div>
+    <div class="f-ozel"><label>${T.focusMin}<input id="t-focus" type="number" min="1" max="180" value="${custom.f}"></label><label>${T.breakMin}<input id="t-break" type="number" min="1" max="60" value="${custom.b}"></label></div>
+    <label class="f-sayac">${T.countMin}<input id="t-count" type="number" min="1" max="300" value="${custom.c}"></label>
     <button type="button" class="btn" data-act="tstart">${T.enter}</button>`;
 }
 export function refreshTimer() {
@@ -132,7 +137,12 @@ export function startTimer(shelf) {
   pref = m[0];
   try { localStorage.setItem('kuytu-mode', pref); } catch (e) {}
   const now = Date.now();
+  const num = (id, lo, hi, d) => Math.min(hi, Math.max(lo, Math.round(Number(($('#' + id) || {}).value)) || d));
+  custom = { f: num('t-focus', 1, 180, custom.f), b: num('t-break', 1, 60, custom.b), c: num('t-count', 1, 300, custom.c) };
+  try { localStorage.setItem('kuytu-custom', JSON.stringify(custom)); } catch (e) {}
   timer = { bookId, title: b.title, start: now, phase: 'focus', phaseStart: now, done: 0, cycles: 0, focus: m[3] * 60, brk: m[4] * 60 };
+  if (m[0] === 'ozel') { timer.focus = custom.f * 60; timer.brk = custom.b * 60; }
+  if (m[0] === 'sayac') timer.target = custom.c * 60;
   save();
   refreshTimer();
   setRoom(true);

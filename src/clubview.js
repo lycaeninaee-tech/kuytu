@@ -108,8 +108,8 @@ export function viewClubBook(bid) {
       ${b.meetingDate ? `<div class="seg"><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'y' ? 'on' : ''}" data-act="crsvp" data-v="y">${T.yes}</button><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'n' ? 'on' : ''}" data-act="crsvp" data-v="n">${T.no}</button></div>` : ''}` : ''}
     </div></section>
     <nav class="ctabs">${NOTE_KINDS.map(([k, l]) => `<button type="button" class="${kind === k ? 'on' : ''}" data-act="ckind" data-v="${k}">${l}</button>`).join('')}</nav>
-    <ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div><p>${esc(n.text)}</p><p class="muted small">${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
-    ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><button class="btn" type="submit">${T.add}</button></form>` : ''}
+    <ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div>${n.spoiler && n.by !== S.user.uid && !S.reveal.has(n.id) ? `<button class="linkbtn" type="button" data-act="creveal" data-id="${esc(n.id)}">${T.spoiler}</button>` : `<p>${esc(n.text)}</p>`}<p class="muted small">${n.spoiler ? `<span class="pill">${T.spoilerTag}</span> ` : ''}${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
+    ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}
     ${qGeneric ? `<button class="btn ghost" type="button" data-act="cgeneric">${T.generic}</button>` : ''}`;
 }
 
@@ -133,6 +133,7 @@ export function clubClick(a, el) {
   if (a === 'cleave') leaveClub(u.uid, C().id).then(() => { location.hash = '#kulup'; }).catch(fail);
   if (a === 'cstatus') patch(`${base}/books/${bid}`, { status: el.dataset.v }).catch(fail);
   if (a === 'crsvp') patch(`${base}/books/${bid}`, { rsvp: { [u.uid]: el.dataset.v } }).catch(fail);
+  if (a === 'creveal') { S.reveal.add(el.dataset.id); render(); }
   if (a === 'ckind') { S.noteKind = el.dataset.v; render(); }
   if (a === 'cdone') { const n = C().notes.find(x => x.id === el.dataset.id); patch(`${base}/books/${bid}/notes/${n.id}`, { done: !n.done }).catch(fail); }
   if (a === 'cdelnote') remove(`${base}/books/${bid}/notes/${el.dataset.id}`).catch(fail);
@@ -160,7 +161,7 @@ export async function clubSubmit(id, f, target) {
   if (id === 'cb-prog') { await patch(`${base}/books/${bid}`, { progress: { [u.uid]: Math.min(100, Math.max(0, Number(f.p.value) || 0)) } }); toast(T.saved); return true; }
   if (id === 'cb-meet') { await patch(`${base}/books/${bid}`, { meetingDate: f.d.value, meetingTime: f.t.value, meetingPlace: f.pl.value.trim() }); toast(T.saved); return true; }
   if (id === 'cb-note') {
-    await add(`${base}/books/${bid}/notes`, { kind: S.noteKind || 'own', text: f.text.value.trim(), by: u.uid, byName: S.profile.name, done: false, at: new Date().toISOString() });
+    await add(`${base}/books/${bid}/notes`, { kind: S.noteKind || 'own', text: f.text.value.trim(), spoiler: f.spoiler.checked, by: u.uid, byName: S.profile.name, done: false, at: new Date().toISOString() });
     f.text.value = '';
     return true;
   }

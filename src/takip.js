@@ -60,6 +60,39 @@ function logForm(state) {
     <label>${T.time}<input name="time" type="time" value="${time}"></label></div>
     <div class="log-foot"><div class="qmins">${[10, 20, 30, 50].map(p => `<button type="button" data-act="logpg" data-v="${p}">${p}</button>`).join('')}<span class="muted small">${T.pageWord}</span></div><button class="btn" type="submit">${T.save}</button></form>`;
 }
+// Aylık özeti 1080x1350 bir resme çizer; telefonda paylaşım menüsü, bilgisayarda indirme
+export async function shareRecap(state) {
+  const key = dayKey(new Date()).slice(0, 7), list = state.sessions.filter(s => sessDay(s).startsWith(key));
+  const pages = list.reduce((a, s) => a + (s.pages || 0), 0), secs = list.reduce((a, s) => a + (s.seconds || 0), 0), days = new Set(list.map(sessDay)).size;
+  const per = {};
+  list.forEach(s => { per[s.title || ''] = (per[s.title || ''] || 0) + (s.pages || s.seconds || 0); });
+  const top = Object.entries(per).filter(e => e[0]).sort((a, b) => b[1] - a[1])[0];
+  const c = document.createElement('canvas');
+  c.width = 1080; c.height = 1350;
+  const g = c.getContext('2d');
+  try { await document.fonts.load('500 150px "Playfair Display"'); await document.fonts.load('italic 500 44px "Playfair Display"'); await document.fonts.ready; } catch (e) {}
+  g.fillStyle = '#1f3d33'; g.fillRect(0, 0, 1080, 1350);
+  g.textAlign = 'center';
+  const line = (text, font, color, y) => { g.font = font; g.fillStyle = color; g.fillText(text, 540, y); };
+  line('KUYTU', '500 64px "Playfair Display", Georgia, serif', '#f5efe7', 190);
+  line(new Date().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }).toLocaleUpperCase('tr-TR'), '600 30px Inter, sans-serif', '#cfd6cb', 260);
+  line(pages ? String(pages) : String(Math.round(secs / 60)), '500 230px "Playfair Display", Georgia, serif', '#f5efe7', 610);
+  line(pages ? 'sayfa okudum' : 'dakika okudum', 'italic 500 56px "Playfair Display", Georgia, serif', '#d8c3a0', 700);
+  line(`${days} gün · ${Math.round(secs / 60)} dakika`, '500 38px Inter, sans-serif', '#f5efe7', 830);
+  if (top) line(top[0].slice(0, 42), 'italic 500 44px "Playfair Display", Georgia, serif', '#d8c3a0', 930);
+  line('Aynı sayfalarda farklı hayatlar.', 'italic 500 38px "Playfair Display", Georgia, serif', '#cfd6cb', 1220);
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  if (!blob) return;
+  const file = new File([blob], `kuytu-${key}.png`, { type: 'image/png' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = file.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
 export function viewTakip(state) {
   const mine = state.sessions, prof = state.profile || {};
   let saved = null;
@@ -106,6 +139,7 @@ export function viewTakip(state) {
       <div><b>${best} gün</b><span>${T.best}</span></div>
       <div><b>${speed ? speed + ' s/sa' : '–'}</b><span>${T.speed}</span></div>
     </div>
+    ${mList.length ? `<button class="btn ghost share" type="button" data-act="recapshare">${T.shareRecap}</button>` : ''}
     <section class="surface"><h3>${T.last30}</h3>${chart(byDay, pg)}</section>
     <section class="surface"><h3>${T.lastWeeks}</h3><div class="heat">${cells}</div><p class="muted small">${T.heatHint}</p></section>
     <div class="grid2">

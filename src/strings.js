@@ -62,7 +62,7 @@ export const T = {
 
 // Okuma köşesi ve Takip
 export const TK = {
-  free: 'Serbest okuma', focus: 'Odak', rest: 'Mola', rounds: 'tur bitti', today: 'Bugün', todayLow: 'bugün',
+  free: 'Serbest okuma', countdown: 'Geri sayım', focusMin: 'Odak (dk)', breakMin: 'Mola (dk)', countMin: 'Süre (dk)', shareRecap: 'Aylık özetimi paylaş', focus: 'Odak', rest: 'Mola', rounds: 'tur bitti', today: 'Bugün', todayLow: 'bugün',
   light: 'Işık', day: 'Gündüz', dusk: 'Alacakaranlık', night: 'Gece', sound: 'Ses', quiet: 'Sessiz', rain: 'Yağmur', fire: 'Şömine',
   shrink: 'Küçült', enter2: 'Odaya dön', finish: 'Bitir ve kaydet', reset: 'Sıfırla', ask: 'Bugün ne kadar <em>okuyoruz?</em>',
   needBook: 'Önce rafına bir kitap ekle.', findBook: 'Kitap ara', book: 'Kitap', enter: 'Odaya gir', music: 'Müzik', moveMusic: 'Müzik çaları taşı',
@@ -78,7 +78,7 @@ export const TK = {
 
 // Kulüpler
 export const TC = {
-  clubs: 'Kulüpler', myClubs: 'Kulüp<em>lerim</em>', owner: 'Kurucu', member: 'Üye', viewer: 'İzleyici', noClubs: 'Henüz bir kulübün yok. İlkini kur ya da davet bağlantısıyla katıl.',
+  spoiler: 'Spoiler olabilir, göster', spoilerTag: 'Spoiler', hasSpoiler: 'Spoiler içeriyor', clubs: 'Kulüpler', myClubs: 'Kulüp<em>lerim</em>', owner: 'Kurucu', member: 'Üye', viewer: 'İzleyici', noClubs: 'Henüz bir kulübün yok. İlkini kur ya da davet bağlantısıyla katıl.',
   newClub: 'Yeni kulüp kur', clubName: 'Kulüp adı', create: 'Kur', loading: 'Yükleniyor...', badInvite: 'Bu davet geçersiz.', backClubs: 'Kulüplerime dön', invited: 'Kulübe davet edildin', goClub: 'Kulübe git', join: 'Kulübe katıl',
   tabNow: 'Bu ay', tabBooks: 'Kitaplar', tabSugg: 'Öneriler', tabMembers: 'Üyeler', noCurrent: 'Şu an okunan kitap yok. Kitaplar sekmesinden ekleyip durumunu "Okunuyor" yap.', nowReading: 'Şu an okunan', meeting: 'Toplantı', coming: 'Gelecekler', noMeeting: 'Toplantı tarihi henüz belli değil.', openBook: 'Kitabın sayfası',
   searchHint: 'Kitap adı, yazar ya da ISBN', search: 'Ara', searchFail: 'Arama şu an çalışmıyor.', add: 'Ekle', adopt: 'Kitaplığa al', noSugg: 'Henüz öneri yok.', addedOk: 'Eklendi',
