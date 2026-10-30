@@ -10,3 +10,4 @@ Kitap Kulübü'nün herkese açık sürümü (çalışma adı Kuytu). Arayüz me
 - Modüller: `reading.js` (oda, zamanlayıcı, müzik), `takip.js`, `clubs.js` (veri), `clubview.js` (kulüp ekranları ve olayları), `sessions.js`, `books.js`, `shelf.js`, `util.js`.
 - Kulüp üyeliği `clubs/{id}/members/{uid}` (rol: kurucu, uye, izleyici); kişinin listesi `users/{uid}/clubs`. Davet `invites/{kod}`, yalnızca kodla okunur. Kurallar `firestore.rules` içinde; Firebase konsolunda da yayımlanmalı.
 - Henüz taşınmadı: fotoğraflar (Storage/Blaze ister), ses notları.
+- Fotoğraflar herkese açık bir özellik değil: yalnızca `photosEnabled: true` olan kulüpte sekme görünür ve yazma izni izinli e-postalarda (kullanıcının kararı: Kuytu herkese açık, foto yalnızca kendi kulüpleri için). Veriler `clubs/{c}/books/{b}/photos`, küçültülmüş JPEG data URL, Storage ve Blaze yok. İzinli e-posta listesi yalnızca konsoldaki kurallarda; repodaki `firestore.rules` yer tutucu içerir, olduğu gibi yayımlanmaz.

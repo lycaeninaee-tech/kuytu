@@ -264,3 +264,9 @@ select { width: 100%; min-width: 0; padding: 11px 14px; font: inherit; color: va
 .check-row { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 .check-row input { width: auto; }
 .share { justify-self: start; }
+
+.photo-add { justify-self: start; margin-bottom: 12px; cursor: pointer; }
+.album { columns: 3 200px; column-gap: 12px; }
+.album figure { break-inside: avoid; margin: 0 0 12px; padding: 8px; background: var(--surface); border-radius: 12px; }
+.album img { display: block; width: 100%; border-radius: 8px; }
+.album figcaption { padding-top: 6px; }

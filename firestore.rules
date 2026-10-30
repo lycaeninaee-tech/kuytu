@@ -2,6 +2,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    // Fotoğraflar yalnızca izinli hesaplara açık; gerçek liste gizlilik için yalnızca Firebase konsolundaki kurallarda durur
+    function photoUser() { return request.auth.token.email_verified == true && request.auth.token.email in ['izinli@ornek.com']; }
     function mem(c) { return /databases/$(database)/documents/clubs/$(c)/members/$(request.auth.uid); }
     function isMember(c) { return signedIn() && exists(mem(c)); }
     function canWrite(c) { return isMember(c) && get(mem(c)).data.role != 'izleyici'; }
@@ -45,6 +47,11 @@ service cloud.firestore {
         match /notes/{n} {
           allow read: if isMember(c);
           allow write: if canWrite(c);
+        }
+        match /photos/{p} {
+          allow read: if isMember(c);
+          allow create: if canWrite(c) && photoUser() && request.resource.data.data.size() < 1000000;
+          allow delete: if canWrite(c) && (resource.data.by == request.auth.uid || isOwner(c));
         }
       }
       match /suggestions/{s} {

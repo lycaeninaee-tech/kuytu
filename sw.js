@@ -1,5 +1,5 @@
 // Ağ öncelikli: istekler no-cache gider, böylece Pages'in 10 dakikalık önbelleği yeni sürümü geciktirmez; çevrimdışıyken kayıtlı kopya kullanılır
-const CACHE = 'kuytu-v5';
+const CACHE = 'kuytu-v6';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
