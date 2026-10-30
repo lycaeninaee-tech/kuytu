@@ -18,8 +18,8 @@ const dateTR = d => (d ? new Date(d + 'T00:00:00').toLocaleDateString('tr-TR', {
 // Başka üye bir şey ekleyince, yazılan form silinmesin diye yazma sırasında sayfa yenilenmez
 const soft = () => { const a = document.activeElement; if (a && a.matches('input,textarea,select') && $('#view').contains(a)) return; render(); };
 
-let stops = [], noteStop = null;
-export function closeClub() { stops.forEach(s => s()); stops = []; if (noteStop) { noteStop(); noteStop = null; } S.club = null; }
+let stops = [], noteStop = null, photoStop = null;
+export function closeClub() { stops.forEach(s => s()); stops = []; if (noteStop) { noteStop(); noteStop = null; } if (photoStop) { photoStop(); photoStop = null; } S.club = null; }
 export function openClub(id) {
   if (S.club && S.club.id === id) return;
   closeClub();
@@ -33,8 +33,11 @@ export function openClub(id) {
 export function openNotes(bid) {
   if (C().noteBook === bid) return;
   if (noteStop) noteStop();
+  if (photoStop) { photoStop(); photoStop = null; }
   C().noteBook = bid;
   C().notes = [];
+  C().photos = [];
+  photoStop = watchCol(`clubs/${C().id}/books/${bid}/photos`, l => { if (S.club) { S.club.photos = l.sort((a, b) => (b.at || '').localeCompare(a.at || '')); soft(); } }, () => {});
   noteStop = watchCol(`clubs/${C().id}/books/${bid}/notes`, l => { if (S.club) { S.club.notes = l.sort((a, b) => (a.at || '').localeCompare(b.at || '')); soft(); } }, () => {});
 }
 export async function loadInvite(code) {
@@ -98,7 +101,8 @@ export function viewClubBook(bid) {
   if (!c || c.doc === undefined) return `<p class="muted">${T.loading}</p>`;
   const b = c.books.find(x => x.id === bid);
   if (!c.doc || !b) return `<section class="surface"><h2>${T.noAccess}</h2><a href="#kulup">${T.backClubs}</a></section>`;
-  const kind = S.noteKind || 'own', list = c.notes.filter(n => n.kind === kind), w = canWrite();
+  const photosOn = !!c.doc.photosEnabled;
+  const kind = S.noteKind === 'photo' && !photosOn ? 'own' : S.noteKind || 'own', list = c.notes.filter(n => n.kind === kind), w = canWrite();
   const qGeneric = kind === 'question' && w && !b.genericAdded;
   return `<a class="small" href="#k/${encodeURIComponent(c.id)}/kitaplar">← ${esc(c.doc.name)}</a>
     <section class="book">${coverHTML(b)}<div class="book-body"><h2>${esc(b.title)}</h2><p class="muted">${esc(b.author || '')}</p>
@@ -107,12 +111,45 @@ export function viewClubBook(bid) {
       <form id="cb-meet" class="pagebar"><label>${T.date}<input name="d" type="date" value="${esc(b.meetingDate || '')}"></label><label>${T.time}<input name="t" type="time" value="${esc(b.meetingTime || '')}"></label><label>${T.place}<input name="pl" maxlength="80" value="${esc(b.meetingPlace || '')}"></label><button class="btn ghost" type="submit">${T.save}</button></form>
       ${b.meetingDate ? `<div class="seg"><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'y' ? 'on' : ''}" data-act="crsvp" data-v="y">${T.yes}</button><button type="button" class="${(b.rsvp || {})[S.user.uid] === 'n' ? 'on' : ''}" data-act="crsvp" data-v="n">${T.no}</button></div>` : ''}` : ''}
     </div></section>
-    <nav class="ctabs">${NOTE_KINDS.map(([k, l]) => `<button type="button" class="${kind === k ? 'on' : ''}" data-act="ckind" data-v="${k}">${l}</button>`).join('')}</nav>
-    <ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div>${n.spoiler && n.by !== S.user.uid && !S.reveal.has(n.id) ? `<button class="linkbtn" type="button" data-act="creveal" data-id="${esc(n.id)}">${T.spoiler}</button>` : `<p>${esc(n.text)}</p>`}<p class="muted small">${n.spoiler ? `<span class="pill">${T.spoilerTag}</span> ` : ''}${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
-    ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}
+    <nav class="ctabs">${NOTE_KINDS.concat(photosOn ? [['photo', T.photos]] : []).map(([k, l]) => `<button type="button" class="${kind === k ? 'on' : ''}" data-act="ckind" data-v="${k}">${l}</button>`).join('')}</nav>
+    ${kind === 'photo' ? photoTab(w) : `<ul class="notes">${list.map(n => `<li>${kind === 'question' && w ? `<button type="button" class="check ${n.done ? 'on' : ''}" data-act="cdone" data-id="${esc(n.id)}" aria-pressed="${!!n.done}" aria-label="${T.discussed}">✓</button>` : ''}<div>${n.spoiler && n.by !== S.user.uid && !S.reveal.has(n.id) ? `<button class="linkbtn" type="button" data-act="creveal" data-id="${esc(n.id)}">${T.spoiler}</button>` : `<p>${esc(n.text)}</p>`}<p class="muted small">${n.spoiler ? `<span class="pill">${T.spoilerTag}</span> ` : ''}${esc(n.byName || '')}${n.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelnote" data-id="${esc(n.id)}">${T.del}</button>` : ''}</p></div></li>`).join('') || `<li class="muted">${T.noNotes}</li>`}</ul>
+    ${w ? `<form class="surface" id="cb-note"><label>${T.write}<textarea name="text" rows="3" required maxlength="2000"></textarea></label><label class="check-row"><input type="checkbox" name="spoiler">${T.hasSpoiler}</label><button class="btn" type="submit">${T.add}</button></form>` : ''}`}
     ${qGeneric ? `<button class="btn ghost" type="button" data-act="cgeneric">${T.generic}</button>` : ''}`;
 }
 
+function photoTab(w) {
+  return `${w ? `<label class="btn ghost photo-add">${T.addPhoto}<input id="cb-photo" type="file" accept="image/*" hidden></label>` : ''}
+    <div class="album">${C().photos.map(p => `<figure><img src="${esc(p.data)}" alt="" loading="lazy"><figcaption class="muted small">${esc(p.byName || '')}${p.by === S.user.uid ? ` · <button class="linkbtn small" type="button" data-act="cdelphoto" data-id="${esc(p.id)}">${T.del}</button>` : ''}</figcaption></figure>`).join('') || `<p class="muted">${T.noPhotos}</p>`}</div>`;
+}
+// Fotoğraf küçültülüp veritabanına yazılır; Storage gerektirmez, ücretsiz kotada kalır
+function shrink(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onerror = rej;
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      let side = 1200, q = 0.8, data = '';
+      do {
+        const k = Math.min(1, side / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        data = c.toDataURL('image/jpeg', q);
+        side -= 200; q -= 0.1;
+      } while (data.length > 900000 && side >= 400);
+      res(data);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'cb-photo' || !e.target.files[0]) return;
+  try {
+    const data = await shrink(e.target.files[0]);
+    await add(`clubs/${C().id}/books/${S.bookId}/photos`, { by: S.user.uid, byName: S.profile.name, data, at: new Date().toISOString() });
+    toast(T.photoAdded);
+  } catch (err) { toast(T.photoFail); }
+});
 export function clubClick(a, el) {
   const u = S.user;
   if (a === 'cjoin') { const i = S.invite; joinClub(u, S.profile, i.code, i.data).then(() => { location.hash = '#k/' + i.data.clubId; }).catch(fail); return true; }
@@ -136,7 +173,7 @@ export function clubClick(a, el) {
   if (a === 'creveal') { S.reveal.add(el.dataset.id); render(); }
   if (a === 'ckind') { S.noteKind = el.dataset.v; render(); }
   if (a === 'cdone') { const n = C().notes.find(x => x.id === el.dataset.id); patch(`${base}/books/${bid}/notes/${n.id}`, { done: !n.done }).catch(fail); }
-  if (a === 'cdelnote') remove(`${base}/books/${bid}/notes/${el.dataset.id}`).catch(fail);
+  if (a === 'cdelphoto') remove(` remove(`${base}/books/${bid}/notes/${el.dataset.id}`).catch(fail);
   if (a === 'cgeneric') {
     const at = Date.now();
     Promise.all(GENERIC_Q.map((text, i) => add(`${base}/books/${bid}/notes`, { kind: 'question', text, by: u.uid, byName: T.genericBy, done: false, at: new Date(at + i).toISOString() }))).then(() => patch(`${base}/books/${bid}`, { genericAdded: true })).catch(fail);

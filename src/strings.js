@@ -78,7 +78,7 @@ export const TK = {
 
 // Kulüpler
 export const TC = {
-  spoiler: 'Spoiler olabilir, göster', spoilerTag: 'Spoiler', hasSpoiler: 'Spoiler içeriyor', clubs: 'Kulüpler', myClubs: 'Kulüp<em>lerim</em>', owner: 'Kurucu', member: 'Üye', viewer: 'İzleyici', noClubs: 'Henüz bir kulübün yok. İlkini kur ya da davet bağlantısıyla katıl.',
+  photos: 'Fotoğraflar', addPhoto: 'Fotoğraf ekle', noPhotos: 'Henüz fotoğraf yok.', photoFail: 'Fotoğraf yüklenemedi.', photoAdded: 'Fotoğraf eklendi', spoiler: 'Spoiler olabilir, göster', spoilerTag: 'Spoiler', hasSpoiler: 'Spoiler içeriyor', clubs: 'Kulüpler', myClubs: 'Kulüp<em>lerim</em>', owner: 'Kurucu', member: 'Üye', viewer: 'İzleyici', noClubs: 'Henüz bir kulübün yok. İlkini kur ya da davet bağlantısıyla katıl.',
   newClub: 'Yeni kulüp kur', clubName: 'Kulüp adı', create: 'Kur', loading: 'Yükleniyor...', badInvite: 'Bu davet geçersiz.', backClubs: 'Kulüplerime dön', invited: 'Kulübe davet edildin', goClub: 'Kulübe git', join: 'Kulübe katıl',
   tabNow: 'Bu ay', tabBooks: 'Kitaplar', tabSugg: 'Öneriler', tabMembers: 'Üyeler', noCurrent: 'Şu an okunan kitap yok. Kitaplar sekmesinden ekleyip durumunu "Okunuyor" yap.', nowReading: 'Şu an okunan', meeting: 'Toplantı', coming: 'Gelecekler', noMeeting: 'Toplantı tarihi henüz belli değil.', openBook: 'Kitabın sayfası',
   searchHint: 'Kitap adı, yazar ya da ISBN', search: 'Ara', searchFail: 'Arama şu an çalışmıyor.', add: 'Ekle', adopt: 'Kitaplığa al', noSugg: 'Henüz öneri yok.', addedOk: 'Eklendi',
