@@ -580,7 +580,7 @@ main { position: relative; max-width: 1180px; padding-top: max(16px, env(safe-ar
 
 /* Okuma */
 .okuma { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 32px; margin-bottom: 20px; }
-.ok-arch { display: grid; gap: 10px; text-align: center; justify-items: center; }
+.ok-arch { display: grid; gap: 10px; align-content: start; text-align: center; justify-items: center; }
 .ok-arch h1 { font-size: 34px; } .ok-arch .ring.r1 { height: 440px; }
 .ok-main .oda { grid-template-columns: minmax(0, 1fr); }
 .ok-rest { margin-bottom: 20px; }
