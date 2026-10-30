@@ -21,12 +21,14 @@ export async function signupEmail(name, email, pass) {
   await sendEmailVerification(user);
 }
 export const watchProfile = (uid, cb) => onSnapshot(doc(fs, 'users', uid), s => cb(s.exists() ? s.data() : null));
-// Kullanıcı adı ayrı bir belgede tutulur; işlem aynı adı iki kişinin almasını engeller
+// Kullanıcı adı ayrı bir belgede tutulur; işlem aynı adı iki kişinin almasını engeller.
+// Ad zaten kişinin kendisindeyse (işlem yeniden denendiyse ya da düğmeye iki kez basıldıysa) hata sayılmaz, var olan profil de ezilmez
 export function claimUsername(user, username) {
   return runTransaction(fs, async tx => {
-    const ref = doc(fs, 'usernames', username);
-    if ((await tx.get(ref)).exists()) throw new Error('taken');
-    tx.set(ref, { uid: user.uid });
-    tx.set(doc(fs, 'users', user.uid), { name: user.displayName || username, username, privacy: 'friends', createdAt: new Date().toISOString() });
+    const ref = doc(fs, 'usernames', username), me = doc(fs, 'users', user.uid);
+    const [name, profile] = [await tx.get(ref), await tx.get(me)];
+    if (name.exists() && name.data().uid !== user.uid) throw new Error('taken');
+    if (!name.exists()) tx.set(ref, { uid: user.uid });
+    if (!profile.exists()) tx.set(me, { name: user.displayName || username, username, privacy: 'friends', createdAt: new Date().toISOString() });
   });
 }

@@ -267,8 +267,10 @@ document.addEventListener('submit', async e => {
     if (id === 'name-form') {
       const username = cleanUsername(f.username.value);
       if (!USERNAME_RE.test(username)) return toast(T.badUsername);
+      if (S.claiming) return;
+      S.claiming = true;
       S.onb = 1;
-      await claimUsername(S.user, username).catch(err => { S.onb = 0; throw err; });
+      await claimUsername(S.user, username).catch(err => { S.onb = 0; throw err; }).finally(() => { S.claiming = false; });
     }
     if (id === 'search-form') await runSearch(f.q.value.trim());
     if (id === 'onb-invite') { S.onb = 0; location.hash = '#davet/' + encodeURIComponent(f.code.value.trim().split('/').pop()); }
