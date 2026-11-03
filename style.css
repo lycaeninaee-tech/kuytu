@@ -722,4 +722,5 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--f
   .ok-arch h1 { align-self: end; font-size: 30px; }
   .ok-arch p { align-self: start; }
   .lib-arch { min-height: min(640px, calc(100dvh - 150px)); }
-}
+}.search-empty .deco { margin: 0; align-self: center; }
+.four-arch .cover { width: auto; max-width: 100%; height: auto; max-height: 76%; }
