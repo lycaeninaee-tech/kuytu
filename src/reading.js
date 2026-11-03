@@ -189,6 +189,13 @@ export function viewOda(state) {
   </div>`;
 }
 export const setCurrent = state => { current = state; };
+// Yeni düzende zamanlayıcı sol tarafta, müzik sağ sayfada durur
+export function viewTimer(state) { current = state; return `<section class="surface" id="timer-card">${timerBody()}</section>`; }
+export function viewMusic(state) {
+  const music = (state.profile || {}).music || '', embed = musicEmbed(music);
+  return `<section class="surface" id="music-card">${embed ? `<button type="button" class="mdrag" id="music-drag" aria-label="${T.moveMusic}">⠿ ${T.music}</button>` : ''}<h3>${T.music}</h3>${embed || `<p class="muted small">${T.musicHint}</p>`}
+    <label>${T.link}<input id="music-url" value="${esc(music)}" placeholder="open.spotify.com/... ya da youtube.com/..."></label><button type="button" class="pl" data-act="msave">${T.save}</button></section>`;
+}
 
 // Odada müzik sürüklenerek taşınır; yeri bu tarayıcıda hatırlanır
 function moveMusic(x, y, keep) {

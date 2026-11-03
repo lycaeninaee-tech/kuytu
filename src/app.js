@@ -1,8 +1,8 @@
 import { T, TK, TP, TN } from './strings.js';
 import { viewProfile, profileSubmit } from './profile.js';
-import { viewToday, viewOkuma } from './home.js';
+import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
 import { viewLibrary, cardHTML, playPanel, scanBarcode } from './library.js';
-import { coverHTML, MOON, star, CAT } from './parts.js';
+import { coverHTML, flat, ebru, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
 import { searchBooks } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
@@ -12,7 +12,7 @@ import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, s
 import { shareRecap } from './takip.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
-import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks } from './clubview.js';
+import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook } from './clubview.js';
 
 
 const S = { user: null, profile: undefined, shelf: [], sessions: [], quotes: [], reveal: new Set(), mode: 'login', view: 'bugun', bookId: null, results: null, searching: false, armed: false, moods: new Set() };
@@ -26,26 +26,24 @@ function toast(msg) {
 }
 const fail = err => toast(T.authErrors[err.code] || T.error);
 const shelfBook = id => S.shelf.find(b => b.id === id);
-// Kuytu işareti: kemer içinde yıldız ve açık kitap
-const LOGO = '<svg class="logo" viewBox="0 0 60 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M6 68V30a24 24 0 0 1 48 0v38"/><path d="M30 14l2.4 7.6L40 24l-7.6 2.4L30 34l-2.4-7.6L20 24l7.6-2.4z" fill="currentColor" stroke="none"/><path d="M30 48c-5-4-12-5-18-3v17c6-2 13-1 18 3 5-4 12-5 18-3V45c-6-2-13-1-18 3zM30 48v17"/></svg>';
-const ICON = { ay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>', kalp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10A4.5 4.5 0 0 1 12 7.5 4.5 4.5 0 0 1 19.500 10c0 5.400-7.500 10-7.500 10z"/></svg>', raf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 5.5c2.5-1.2 6-1.2 9 1 3-2.2 6.5-2.2 9-1V19c-2.5-1.2-6-1.2-9 1-3-2.2-6.5-2.2-9-1zM12 6.5V20"/></svg>', kulup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M16 5a3.5 3.5 0 0 1 0 6.5M18 14.5c1.9.8 3 2.7 3 5.5"/></svg>', oda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>', takip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>', ara: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>' };
-
 function viewLanding() {
   const signup = S.mode === 'signup';
-  return `<section class="landing">
-    <div class="landing-hero">${MOON}${star('16%', '18%', 18)}${star('78%', '30%', 13, 1.3)}<span class="deco cream hero-cat">${CAT}</span><div class="brandmark">${LOGO}<b>KUYTU</b><span>${T.brandSub}</span></div><p class="slogan">${T.tagline}</p><p class="sub">${T.sub}</p></div>
-    <div class="landing-form">${configured ? `<form class="panel" id="auth-form">
-      <div class="seg" role="group"><button type="button" class="${signup ? '' : 'on'}" data-act="mode" data-v="login">${T.login}</button><button type="button" class="${signup ? 'on' : ''}" data-act="mode" data-v="signup">${T.signup}</button></div>
-      ${signup ? `<label>${T.name}<input name="name" required autocomplete="name"></label>` : ''}
-      <label>${T.email}<input name="email" type="email" required autocomplete="email"></label>
-      <label>${T.password}<input name="pass" type="password" required minlength="6" autocomplete="${signup ? 'new-password' : 'current-password'}"></label>
-      <button class="btn" type="submit">${signup ? T.signup : T.login}</button>
-      <button class="btn ghost" type="button" data-act="google">${T.google}</button>
-      ${signup ? '' : `<button class="linkbtn small" type="button" data-act="reset">${T.forgot}</button>`}
-    </form>` : `<p class="notice">${T.setup}</p>`}</div>
-  </section>`;
-}
-function viewUsername() {
+  return `<div class="shell landing2" style="--book:#2c5a47"><aside class="lp">${ebru('l')}
+      <span class="cap">${TN.firstPage}</span><div class="lp-center"><h1 class="kt light xl">Kuytu</h1><span class="rule-s"></span><p class="pq light">${T.tagline.replace(' farklı', '<br>farklı')}</p></div><span class="cap">${TN.lpFoot}</span></aside>
+    <section class="pp"><div class="pp-in narrow">
+      <p class="cap">İÇİNDEKİLER</p>
+      <div class="toc"><div><span>${TN.tocI}</span><span class="dots"></span><span class="r">I</span></div><div><span>${TN.tocII}</span><span class="dots"></span><span class="r">II</span></div><div><span>${TN.tocIII}</span><span class="dots"></span><span class="r">III</span></div></div>
+      ${configured ? `<form class="panel auth" id="auth-form">
+        <div class="chips-row"><button type="button" class="pl sm ${signup ? '' : 'ink'}" data-act="mode" data-v="login">${T.login}</button><button type="button" class="pl sm ${signup ? 'ink' : ''}" data-act="mode" data-v="signup">${T.signup}</button></div>
+        ${signup ? `<label>${T.name}<input name="name" required autocomplete="name"></label>` : ''}
+        <label>${T.email}<input name="email" type="email" required autocomplete="email"></label>
+        <label>${T.password}<input name="pass" type="password" required minlength="6" autocomplete="${signup ? 'new-password' : 'current-password'}"></label>
+        <button class="pl ink" type="submit">${signup ? T.signup : T.login}</button>
+        <button class="pl" type="button" data-act="google">${T.google}</button>
+        ${signup ? '' : `<button class="linkbtn small" type="button" data-act="reset">${T.forgot}</button>`}
+      </form>` : `<p class="notice">${T.setup}</p>`}
+    </div></section></div>`;
+}function viewUsername() {
   return `<section class="landing solo"><h2>${T.chooseTitle}</h2>
     <form class="panel" id="name-form"><label>${T.username}<input name="username" required autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="ornek_okur"></label>
     <p class="muted small">${T.chooseHelp}</p><button class="btn" type="submit">${T.save}</button></form></section>`;
@@ -57,15 +55,12 @@ const activeClub = () => {
   try { saved = localStorage.getItem('kuytu-club'); } catch (e) {}
   return (list.find(c => c.id === saved) || list.find(c => c.name === 'Kitap Kulübü') || list[0] || {}).id || '';
 };
-// Yüzen menü: dört yer ve profil. Kulübün kendi sayfaları kulübün içindeki alt menüde durur
-const header = () => {
+// Menü kitap sayfasının üstünde durur; telefonda ekranın altına iner
+const nav = () => {
   const a = activeClub(), club = ['k', 'kb', 'kulup', 'davet'].includes(S.view);
-  const link = (href, on, icon, text) => `<a href="${href}" class="${on ? 'on' : ''}">${icon}<span>${text}</span></a>`;
-  return `<header class="dock"><a class="brand" href="#bugun">${LOGO}<span>Kuytu</span></a>
-  <nav class="dk">${link('#bugun', S.view === 'bugun', ICON.ay, TN.today)}${link('#raf', S.view === 'raf', ICON.raf, TN.lib)}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, ICON.kulup, TN.club)}${link('#okuma', S.view === 'okuma', ICON.oda, TN.read)}${link('#profil', S.view === 'profil', ICON.kalp, TN.profile)}</nav>
-  <a class="dock-search" href="#ara" aria-label="${T.navSearch}">${ICON.ara}<span>${T.navSearch}</span></a></header>`;
-};
-const clubTabs = () => {
+  const link = (href, on, text, ic) => `<a href="${href}" class="${on ? 'on' : ''}"><i class="ni ni-${ic}" aria-hidden="true"></i><span>${text}</span></a>`;
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf', TN.lib, 'k')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}${link('#okuma', S.view === 'okuma', TN.read, 'o')}${link('#profil', S.view === 'profil', TN.profile, 'p')}<a class="ara ${S.view === 'ara' ? 'on' : ''}" href="#ara">${T.navSearch}</a></nav>`;
+};const clubTabs = () => {
   if (!S.club) return '';
   const k = '#k/' + encodeURIComponent(S.club.id), on = t => (S.view === 'k' && S.clubTab === t) || (t === 'kitaplar' && S.view === 'kb');
   const link = (t, text) => `<a href="${k}/${t}" class="${on(t) ? 'on' : ''}">${text}</a>`;
@@ -73,15 +68,15 @@ const clubTabs = () => {
 };
 function resultsHTML() {
   if (S.searching) return `<p class="muted">${T.searching}</p>`;
-  if (S.results === null) return S.onb ? '' : `<div class="search-empty"><span class="deco">${CAT}</span><p class="lbl">${TN.searchEmpty}</p></div>`;
+  if (S.results === null) return S.onb ? '' : `<p class="lbl search-empty">${TN.searchEmpty}</p>`;
   if (S.results === 'fail') return `<p class="muted">${T.searchFail}</p>`;
   if (!S.results.length) return `<p class="muted">${T.noResults}</p>`;
   return `<ul class="results">${S.results.map((b, i) => `<li>${coverHTML(b)}<div><b>${esc(b.title)}</b><p class="muted small">${esc([b.author, b.year, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p></div>
     ${shelfBook(b.id) ? `<span class="muted small">${T.inShelf}</span>` : `<button class="btn ghost" type="button" data-act="add" data-i="${i}">${T.add}</button>`}</li>`).join('')}</ul>`;
 }
 function viewSearch() {
-  return `<div class="search-page"><h1 class="huge">${T.searchTitle}</h1><p class="lbl">${TN.searchSub}</p>
-    <form class="searchbar" id="search-form"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="btn" type="submit">${T.search}</button><button class="btn ghost" type="button" data-act="scan">${TN.scan}</button></form>
+  return `<div class="search-page">
+    <form class="searchbar" id="search-form"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="pl ink" type="submit">${T.search}</button></form>
     <div id="results">${resultsHTML()}</div>
     <details class="manual"><summary>${T.manual}</summary>
       <form class="panel" id="manual-form"><label>${T.bookTitle}<input name="title" required maxlength="200"></label><label>${T.author}<input name="author" maxlength="200"></label><label>${T.pages}<input name="pages" type="number" min="1" max="20000"></label><button class="btn" type="submit">${T.add}</button></form>
@@ -101,31 +96,57 @@ function viewOnb() {
 }
 function updateCard() {
   const c = $('#card'), b = S.user && S.view === 'raf' && S.bookId ? shelfBook(S.bookId) : null;
-  if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; return; }
+  if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; S.editing = false; return; }
   const a = document.activeElement, first = S.cardOpen !== b.id;
   if (!first && a && c.contains(a) && a.matches('input')) return;
   c.innerHTML = cardHTML(S, b, first);
+  c.style.setProperty('--book', colorOf(b));
+  if (first) learnColor(b, hex => c.style.setProperty('--book', hex));
   c.hidden = false;
   S.cardOpen = b.id;
   const f = S.from || { x: 0, y: 200 };
   c.style.setProperty('--fx', f.x + 'px');
   c.style.setProperty('--fy', f.y + 'px');
 }
+// Her sayfa iki parça: solda kitabın renginde ebrulu iç kapak, sağda kitap sayfası. Kurdele yalnızca sayfaya girerken iner
+const defaultLeft = () => { const b = readingBook(S); return `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a></div><div class="lp-mid">${b ? flat(b, 220, 'big') : ''}</div>`; };
+function shell(o) {
+  const fresh = S.fresh;
+  S.fresh = false;
+  const book = o.book || readingBook(S);
+  const html = `<div class="shell" style="--book:${colorOf(book)}"><aside class="lp">${ebru('e')}${o.left || defaultLeft()}</aside>
+    <section class="pp">${o.ribbon ? `<div class="rbn${fresh ? ' drop' : ''}">${esc(o.ribbon)}</div>` : ''}${nav()}${S.view === 'k' || S.view === 'kb' ? clubTabs() : ''}<div class="pp-in">${o.right}</div>${o.folio ? `<div class="folio">— ${o.folio} —</div>` : ''}</section></div>`;
+  if (book) setTimeout(() => learnColor(book, hex => { const s = $('.shell'); if (s) s.style.setProperty('--book', hex); }));
+  return html;
+}
 function render() {
   const v = $('#view');
   if (!S.user) v.innerHTML = viewLanding();
   else if (S.profile === undefined) v.innerHTML = '';
-  else if (!S.profile) v.innerHTML = viewUsername();
-  else if (S.onb && S.view !== 'davet') v.innerHTML = viewOnb();
+  else if (!S.profile) v.innerHTML = `<div class="solo-page">${viewUsername()}</div>`;
+  else if (S.onb && S.view !== 'davet') v.innerHTML = `<div class="solo-page">${viewOnb()}</div>`;
   else {
-    const enter = S.enter, inClub = S.view === 'k' || S.view === 'kb';
+    const enter = S.enter;
     S.enter = false;
-    v.innerHTML = header() + (inClub ? clubTabs() : '') + ({ bugun: () => viewToday(S, clubNow()), raf: () => viewLibrary(S, enter, clubMissing()), ara: viewSearch, okuma: () => viewOkuma(S), profil: () => viewProfile(S), kulup: viewClubs, davet: viewInvite, k: () => viewClub(S.clubTab), kb: () => viewClubBook(S.bookId) }[S.view])();
+    const club = S.view === 'k' || S.view === 'kb';
+    const views = {
+      bugun: () => viewToday(S, clubNow()),
+      raf: () => viewLibrary(S, enter, clubMissing()),
+      ara: () => ({ left: searchLeft(S), right: viewSearch(), ribbon: 'ARA' }),
+      okuma: () => viewOkuma(S),
+      profil: () => viewProfile(S),
+      kulup: () => ({ right: viewClubs() }),
+      davet: () => ({ right: viewInvite() }),
+      k: () => ({ right: viewClub(S.clubTab) }),
+      kb: () => ({ right: viewClubBook(S.bookId) }),
+    };
+    const o = views[S.view]();
+    if (club) Object.assign(o, { left: clubLeft(), book: clubShownBook(), ribbon: S.view === 'kb' && S.chapter ? TN.chapter.toLocaleUpperCase('tr') + ' ' + S.chapter : TN.club.toLocaleUpperCase('tr'), folio: 3 });
+    v.innerHTML = shell(o);
   }
   updateCard();
   enhance(v);
-}
-function route() {
+}function route() {
   const [raw, id, sub, bid] = location.hash.slice(1).split('/');
   // Eski bağlantılar yeni yerlerine gider
   const view = { oda: 'okuma', takip: 'okuma', kitap: 'raf' }[raw] || raw;
@@ -133,6 +154,9 @@ function route() {
   S.view = ['raf', 'ara', 'okuma', 'kulup', 'davet', 'k', 'profil'].includes(view) ? view : 'bugun';
   S.bookId = id ? decodeURIComponent(id) : null;
   S.quick = false;
+  S.fresh = true;
+  S.menuFor = null;
+  if (S.keepChapter) S.keepChapter = false; else S.chapter = 0;
   if (view === 'k' && id) {
     if (S.user) { openClub(decodeURIComponent(id)); try { localStorage.setItem('kuytu-club', decodeURIComponent(id)); } catch (e) {} }
     S.clubTab = ['ay', 'kitaplar', 'oneriler', 'uyeler'].includes(sub) ? sub : 'ay';
@@ -149,7 +173,10 @@ function route() {
 window.addEventListener('hashchange', route);
 // Tarayıcı uygulama kurmayı önerince saklanır; Profil'deki düğme bunu kullanır
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; if (S.view === 'profil') render(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.cardOpen) location.hash = '#raf'; });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (S.menuFor) { S.menuFor = null; S.armed = false; render(); } else if (S.cardOpen) location.hash = '#raf';
+});
 async function runSearch(q) {
   const show = () => { const el = $('#results'); if (el) el.innerHTML = resultsHTML(); };
   S.searching = true;
@@ -162,6 +189,7 @@ async function runSearch(q) {
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
+  if (S.menuFor && (!el || !['bmenu', 'bdel', 'bedit', 'openbook'].includes(el.dataset.act))) { S.menuFor = null; S.armed = false; render(); }
   if (!el) return;
   const a = el.dataset.act, uid = S.user && S.user.uid;
   if (S.user && clubClick(a, el)) return;
@@ -183,7 +211,16 @@ document.addEventListener('click', e => {
     location.hash = '#kitap/' + encodeURIComponent(el.dataset.id);
   }
   if (a === 'bookclose') location.hash = '#raf';
-  if (a === 'libtab') { S.libTab = el.dataset.v; render(); playPanel(); }
+  if (a === 'bmenu') { S.menuFor = S.menuFor === el.dataset.id ? null : el.dataset.id; S.armed = false; render(); }
+  if (a === 'bedit') { S.editing = true; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
+  if (a === 'bnoedit') { S.editing = false; render(); }
+  if (a === 'bdel') {
+    if (S.armed !== el.dataset.id) { S.armed = el.dataset.id; render(); return; }
+    S.armed = false; S.menuFor = null;
+    removeShelf(uid, el.dataset.id).then(() => toast(TN.deleted)).catch(fail);
+  }
+  if (a === 'rowscroll') { const tr = el.closest('.srow').querySelector('.sr-track'); tr.scrollBy({ left: Number(el.dataset.v) * tr.clientWidth * 0.8, behavior: 'smooth' }); }
+  if (a === 'libtab') { S.libTab = el.dataset.v; S.rafSec = 'hepsi'; render(); playPanel(); }
   if (a === 'rafsec') { S.rafSec = el.dataset.v; render(); playPanel(); }
   if (a === 'fav') { const b = shelfBook(S.bookId); updateShelf(uid, b.id, { fav: !b.fav }).catch(fail); }
   if (a === 'wish') { const b = shelfBook(S.bookId); updateShelf(uid, b.id, { wish: !b.wish }).catch(fail); }
@@ -277,6 +314,14 @@ document.addEventListener('submit', async e => {
     }
     if (id === 'search-form') await runSearch(f.q.value.trim());
     if (id === 'onb-invite') { S.onb = 0; location.hash = '#davet/' + encodeURIComponent(f.code.value.trim().split('/').pop()); }
+    if (id === 'edit-form') {
+      const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim() };
+      if (cover || !(b.cover || '').startsWith('data:')) data.cover = cover;
+      await updateShelf(S.user.uid, S.bookId, data);
+      S.editing = false;
+      render();
+      toast(TK.saved);
+    }
     if (id === 'lend-form') await updateShelf(S.user.uid, S.bookId, { lentTo: f.who.value.trim(), lentAt: new Date().toISOString() });
     if (id === 'quote-form') { await add(`users/${S.user.uid}/quotes`, { text: f.text.value.trim(), book: f.book.value, at: new Date().toISOString() }); f.text.value = ''; }
     if (id === 'quick-form') {
@@ -284,6 +329,9 @@ document.addEventListener('submit', async e => {
       await updateShelf(S.user.uid, b.id, { page });
       if (diff > 0) await addSession(S.user.uid, { bookId: b.id, title: b.title, seconds: 0, pages: diff, at: new Date().toISOString(), manual: true });
       S.quick = false;
+  S.fresh = true;
+  S.menuFor = null;
+  if (S.keepChapter) S.keepChapter = false; else S.chapter = 0;
       render();
       toast(TK.saved);
     }
