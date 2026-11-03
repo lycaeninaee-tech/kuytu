@@ -1,69 +1,93 @@
-// Kitaplığım: evdeki kitaplık. Kemerin içinde raflar, kitap sırtları ve öne gelen kitap kartı
+// Kitaplığım: evdeki kitaplık. Kapaklar önden durur; her kapakta kart, düzenle, ödünç ve sil menüsü
 import { esc } from './util.js';
 import { TN as N, T } from './strings.js';
 import { STATUS } from './shelf.js';
-import { book3d, arch, MOON, star, CAT, PLANT, hueOf } from './parts.js';
+import { flat, emLast, ebru } from './parts.js';
 
-const SPINE = [['#f2b84b', '#1b1b1b'], ['#e0cdaa', '#2f2e2e'], ['#8f4a32', '#f5efe7'], ['#f5efe7', '#2f2e2e'], ['#6b7d63', '#f5efe7'], ['#a8865a', '#1b1b1b'], ['#d9c7b0', '#2f2e2e']];
 const homeBooks = S => S.shelf.filter(b => !b.wish && !b.lentTo);
-const sections = {
-  okudum: l => l.filter(b => b.status === 'okudum'),
-  sirada: l => l.filter(b => b.status !== 'okudum'),
-  kalp: l => l.filter(b => b.fav),
-};
-const spine = b => {
-  const h = hueOf(b.title), [bg, fg] = SPINE[h % SPINE.length];
-  const w = Math.max(26, Math.min(44, 24 + Math.round((b.pages || 240) / 30)));
-  return `<button type="button" class="s sp" data-act="openbook" data-id="${esc(b.id)}" style="--sw:${w}px;--sh:${118 + h % 28}px;background-color:${bg};color:${fg}">${esc(b.title)}</button>`;
-};
-export function panel(list) {
-  const per = innerWidth < 560 ? 7 : innerWidth < 900 ? 12 : 18;
-  const rows = [];
-  for (let i = 0; i < list.length; i += per) rows.push(list.slice(i, i + per));
-  while (rows.length < 3) rows.push([]);
-  return rows.map((r, i) => `<div class="raf">${r.map(spine).join('')}${i === rows.length - 1 ? `<span class="deco">${PLANT}</span>` : i === 0 ? `<span class="deco cream">${CAT}</span>` : ''}</div>`).join('');
-}
-// Seçim yapılmadıysa kitaplık ilk dolu rafla açılır
-const secNow = S => S.rafSec || ['okudum', 'sirada', 'kalp'].find(k => sections[k](homeBooks(S)).length) || 'okudum';
+const statusOf = k => (STATUS.find(s => s[0] === k) || ['', ''])[1];
+const daysSince = iso => Math.max(0, Math.floor((Date.now() - new Date(iso)) / 86400000));
+const brand = extra => `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a>${extra ? `<span class="cap">${extra}</span>` : ''}</div>`;
 const listNow = S => {
   if (S.libTab === 'odunc') return S.shelf.filter(b => b.lentTo);
   if (S.libTab === 'istek') return S.shelf.filter(b => b.wish);
-  return sections[secNow(S)](homeBooks(S));
+  return homeBooks(S);
 };
-// Raf değişince raflar derinden öne gelir; yalnızca seçimde oynar, her yenilemede değil
-export const playPanel = () => { const p = document.getElementById('raf-panel'); if (p) p.classList.add('go'); };
+const item = (S, b) => `<div class="bk">
+  <div class="bk-cv"><button type="button" class="bk-open" data-act="openbook" data-id="${esc(b.id)}" aria-label="${esc(b.title)}">${flat(b, 112)}</button>
+    ${b.lentTo ? `<span class="bk-tag">${esc(b.lentTo.toLocaleUpperCase('tr'))}'DA</span>` : ''}${b.fav ? '<span class="bk-fav" aria-label="Kalbimde">♥</span>' : ''}
+    <button type="button" class="bk-dots" data-act="bmenu" data-id="${esc(b.id)}" aria-label="${N.edit}, ${N.del2}">⋯</button>
+    ${S.menuFor === b.id ? `<div class="bmenu" role="menu"><button type="button" data-act="openbook" data-id="${esc(b.id)}">${N.openCard}</button><button type="button" data-act="bedit" data-id="${esc(b.id)}">✎ ${N.edit}</button><button type="button" data-act="openbook" data-id="${esc(b.id)}">${N.lend}</button><button type="button" class="del" data-act="bdel" data-id="${esc(b.id)}">${S.armed === b.id ? N.sure : N.del2}</button></div>` : ''}
+  </div>
+  <button type="button" class="bk-t" data-act="openbook" data-id="${esc(b.id)}">${esc(b.title)}</button><span class="bk-s">${esc(b.lentTo ? b.lentTo + "'da" : statusOf(b.status))}</span>
+</div>`;
 export function viewLibrary(S, enter, clubMissing = 0) {
-  const tab = S.libTab || 'evde', sec = secNow(S), home = homeBooks(S), lent = S.shelf.filter(b => b.lentTo), now = listNow(S);
-  const tabs = [['evde', N.tabHome], ['odunc', N.tabLent], ['istek', N.tabWish]].map(([k, l]) => `<button type="button" class="${tab === k ? 'on' : ''}" data-act="libtab" data-v="${k}">${l}</button>`).join('');
-  const secs = [['okudum', N.secRead], ['sirada', N.secNext], ['kalp', N.secHeart]].map(([k, l]) => `<button type="button" class="tab ${sec === k ? 'on' : ''}" data-act="rafsec" data-v="${k}">${l}<span>${sections[k](home).length}</span></button>`).join('');
-  const side = tab === 'evde' ? `<div class="tabs">${secs}</div><p class="lbl">${N.enterHint}</p>`
-    : tab === 'odunc' ? (lent.length ? `<ul class="lendlist">${lent.map(b => `<li><button type="button" data-act="openbook" data-id="${esc(b.id)}"><b>${esc(b.title)}</b><span>${esc(b.lentTo)}</span></button></li>`).join('')}</ul>` : `<p class="muted">${N.noLent}</p>`)
-    : `<p class="muted">${N.wishHint}</p>`;
-  return `<div class="lib">
-    <div class="lib-side"><h1>${N.lib}</h1><div class="seg" role="group">${tabs}</div>${side}
-      ${clubMissing ? `<button type="button" class="btn ghost" data-act="importclub">${N.importClub} (${clubMissing})</button>` : ''}
-      <div class="lib-btn"><button type="button" class="btn" data-act="scan">${N.scan}</button><a class="btn ghost" href="#ara">${T.navSearch}</a></div></div>
-    ${arch(`<div class="glow"></div><div class="lamba"><svg viewBox="0 0 80 172" aria-hidden="true"><path d="M40 0V112" stroke="#a8865a" stroke-width="2"/><path fill="#a8865a" d="M14 150C16 124 28 112 40 112S64 124 66 150Z"/><ellipse cx="40" cy="151" rx="26" ry="5" fill="#f2b84b"/></svg></div>
-      <div class="cam">${S.shelf.length} ${N.bookWord} · ${lent.length} ${N.lentWord}</div>${MOON}${star('24%', '16%', 16)}${star('66%', '12%', 12, 1.3)}
-      <span class="mote" style="left:18%"></span><span class="mote" style="left:38%;animation-delay:2s"></span><span class="mote" style="left:56%;animation-delay:4s"></span><span class="mote" style="left:78%;animation-delay:6s"></span>
-      <div class="pn" id="raf-panel">${panel(now)}</div>
-      ${S.shelf.length ? '' : `<a class="arch-empty" href="#ara">${N.emptyShelf}</a>`}`, `lib-arch${enter ? ' enter' : ''}`)}
-  </div>`;
+  const tab = S.libTab || 'evde', home = homeBooks(S), lent = S.shelf.filter(b => b.lentTo), wish = S.shelf.filter(b => b.wish), list = listNow(S);
+  const year = String(new Date().getFullYear()), added = S.shelf.filter(b => (b.addedAt || '').startsWith(year)).sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''));
+  const authors = {};
+  S.shelf.forEach(b => { if (b.author) authors[b.author] = (authors[b.author] || 0) + 1; });
+  const topAuthor = Object.entries(authors).sort((a, b) => b[1] - a[1])[0];
+  const ix = [['evde', N.tabHome, home.length], ['odunc', N.tabLent, lent.length], ['istek', N.tabWish, wish.length]].map(([k, l, n]) => `<button type="button" class="${tab === k ? 'on' : ''}" data-act="libtab" data-v="${k}"><span>${l}</span><span class="cap">${n}</span></button>`).join('');
+  const left = `${brand()}<h1 class="kt light lp-title">Kitap<i>lığım</i></h1><p class="lbl">${home.length} ${N.evdeN}, ${lent.length} ${N.lentN}</p>
+    <div class="ix">${ix}</div>
+    ${clubMissing ? `<button type="button" class="pl" data-act="importclub">${N.importClub} (${clubMissing})</button>` : ''}
+    <div class="lp-foot col"><button type="button" class="pl on" data-act="scan">${N.scan}</button><a class="pl" href="#ara">${N.addManual}</a></div>`;
+  // Raflar örnek uygulamadaki gibi: her bölüm bir sıra, kapakların önünden renkli cam raf geçer
+  const ROWS = tab === 'evde'
+    ? [['okuyorum', N.nowReading, home.filter(b => b.status === 'okuyorum'), 'var(--book)'], ['sirada', N.secNext, home.filter(b => b.status === 'istiyorum' || b.status === 'biraktim'), '#e9a64a'], ['okudum', N.secRead, home.filter(b => b.status === 'okudum'), '#4f8fd6'], ['kalp', N.secHeart, home.filter(b => b.fav), '#d9655b']]
+    : [[tab, tab === 'odunc' ? N.tabLent : N.tabWish, list, tab === 'odunc' ? '#d9655b' : '#e9a64a']];
+  const sec = S.rafSec || 'hepsi', shown = ROWS.filter(r => r[2].length && (tab !== 'evde' || sec === 'hepsi' || r[0] === sec));
+  const chips = tab === 'evde' ? `<div class="chips-row">${[['hepsi', N.all], ['okuyorum', N.nowReading], ['sirada', N.secNext], ['okudum', N.secRead], ['kalp', N.secHeart]].map(([k, l]) => `<button type="button" class="pl sm ${sec === k ? 'ink' : ''}" data-act="rafsec" data-v="${k}">${l}</button>`).join('')}</div>` : '';
+  const row = ([k, title, books, tint]) => `<section class="srow" style="--tint:${tint}"><div class="sr-head"><h3>${title}</h3><span class="cap">${books.length} ${N.booksN}</span><button type="button" class="arw" data-act="rowscroll" data-v="-1" aria-label="Geri">‹</button><button type="button" class="arw" data-act="rowscroll" data-v="1" aria-label="İleri">›</button></div>
+    <div class="sr-track">${books.map(b => item(S, b)).join('')}${k === 'sirada' || tab !== 'evde' ? `<a class="bk bk-add" href="#ara"><span>${N.placeBook}</span></a>` : ''}</div><div class="acryl"><i></i><i></i></div></section>`;
+  const right = `${chips}
+    <div class="shelves${enter ? ' enter' : ''}" id="raf-panel">${shown.map(row).join('') || `<a class="bk bk-add solo" href="#ara"><span>${N.placeBook}</span></a>`}</div>
+    <div class="strip">
+      <div><p class="cap red">${N.lentRemind}</p>${lent.length ? lent.slice(0, 2).map(b => `<p class="sf">${esc(b.title)}, ${esc(b.lentTo)}'da ${b.lentAt ? daysSince(b.lentAt) + ' ' + N.daysAgo : ''}</p>`).join('') : `<p class="sf muted">${N.noLent}</p>`}</div>
+      <div><p class="cap">${N.yearIn}</p><p class="sf">${added.length} ${N.bookWord}${added[0] ? ' · ' + N.last + ': ' + esc(added[0].title) : ''}</p></div>
+      <div><p class="cap">${N.mostAuthor}</p><p class="sf">${topAuthor ? esc(topAuthor[0]) + ' · ' + topAuthor[1] + ' ' + N.bookWord : '–'}</p></div>
+    </div>`;
+  return { left, right, ribbon: `${S.shelf.length} ${N.bookWord.toLocaleUpperCase('tr')}`, folio: 2 };
 }
+export const playPanel = () => { const p = document.getElementById('raf-panel'); if (p) { p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); } };
+
+// Kitap kartı: sol tarafta kapak kitabın renginde, sağda künye, hikâye ve düzenleme
 export function cardHTML(S, b, first) {
-  const st = STATUS.map(([k, label]) => `<button type="button" class="${b.status === k ? 'on' : ''}" data-act="status" data-v="${k}">${label}</button>`).join('');
+  const fmt = iso => (iso ? new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+  const firstSession = S.sessions.filter(s => s.bookId === b.id).map(s => s.at).sort()[0];
+  const story = [[N.shelfIn, b.addedAt], [N.started, firstSession], [N.finished, b.status === 'okudum' && b.finishedAt], [b.lentTo ? b.lentTo + "'a " + N.gave : '', b.lentAt]].filter(e => e[0] && e[1]);
+  const quotesN = S.quotes.filter(q => q.book === b.title).length;
+  const st = STATUS.map(([k, label]) => `<button type="button" class="pl sm ${b.status === k ? 'ink' : ''}" data-act="status" data-v="${k}">${label}</button>`).join('');
   const stars = [1, 2, 3, 4, 5].map(n => `<button type="button" class="${(b.rating || 0) >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n}">★</button>`).join('');
-  return `<div class="card-scrim" data-act="bookclose"></div><div class="card-in ${first ? 'first' : ''}" role="dialog" aria-label="${esc(b.title)}">
-    <div class="card-book">${book3d(b, 250)}</div>
-    <div class="fis"><p class="lbl">${N.card}</p><h2>${esc(b.title)}</h2><p class="muted">${esc([b.author || T.unknownAuthor, b.year].filter(Boolean).join(' · '))}</p>
-      <div class="seg wrap" role="group">${st}</div>
+  const editForm = `<form id="edit-form" class="editf">
+      <label>${T.bookTitle}<input name="title" required maxlength="200" value="${esc(b.title)}"></label>
+      <label>${T.author}<input name="author" maxlength="200" value="${esc(b.author || '')}"></label>
+      <label>${T.pages}<input name="pages" type="number" min="0" max="20000" value="${b.pages || ''}"></label>
+      <label>${N.source}<input name="source" maxlength="120" value="${esc(b.source || '')}"></label>
+      <label class="wide">${N.coverUrl}<input name="cover" maxlength="2000" value="${esc(b.cover && !b.cover.startsWith('data:') ? b.cover : '')}" placeholder="https://..."></label>
+      <div class="acts wide"><button class="pl on" type="submit">${T.save}</button><button class="pl" type="button" data-act="bnoedit">${N.cancel}</button></div></form>`;
+  return `<div class="card-scrim" data-act="bookclose"></div>
+  <div class="cardk ${first ? 'first' : ''}" role="dialog" aria-label="${esc(b.title)}">
+    <div class="cardk-l">${ebru('c')}<div class="cardk-cv">${flat(b, 240, 'big')}</div></div>
+    <div class="cardk-r">
+      <div class="cardk-head"><span class="cap">${N.card.toLocaleUpperCase('tr')}</span><button type="button" class="pl sm" data-act="bedit" data-id="${esc(b.id)}">✎ ${N.edit}</button><button type="button" class="pl sm red" data-act="remove">${S.armed ? N.sure : N.del2}</button><button type="button" class="x" data-act="bookclose" aria-label="${N.close}">×</button></div>
+      <h2 class="kt sm">${emLast(b.title)}</h2>
+      <p class="lbl">${esc([b.author || T.unknownAuthor, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p>
+      ${S.editing ? editForm : `
+      <div class="chips-row">${st}</div>
       <div class="rate" role="group" aria-label="${T.rating}">${stars}</div>
-      <form id="page-form" class="pagebar"><label>${T.currentPage}<input name="page" type="number" min="0" max="20000" value="${b.page || ''}"></label><label>${T.pages}<input name="pages" type="number" min="1" max="20000" value="${b.pages || ''}"></label><button class="btn ghost" type="submit">${T.save}</button></form>
-      <div class="actions"><button type="button" class="btn ghost" data-act="fav" aria-pressed="${!!b.fav}">${b.fav ? N.unheart : N.heart}</button><button type="button" class="btn ghost" data-act="wish" aria-pressed="${!!b.wish}">${b.wish ? N.gotIt : N.toWish}</button></div>
-      ${b.lentTo ? `<p class="lent">${esc(b.lentTo)} ${N.has}${b.lentAt ? ' · ' + esc(new Date(b.lentAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })) : ''}</p><button type="button" class="btn" data-act="lendback">${N.back}</button>`
-    : `<form id="lend-form" class="pagebar"><label>${N.lendTo}<input name="who" maxlength="60" required></label><button class="btn" type="submit">${N.lend}</button></form>`}
-      <div class="card-foot"><a class="linkbtn" href="#okuma">${N.startRead}</a><button class="linkbtn small" type="button" data-act="remove">${S.armed ? T.removeSure : T.remove}</button><button class="linkbtn" type="button" data-act="bookclose">${N.close}</button></div>
-    </div></div>`;
+      <form id="page-form" class="pagebar"><label>${T.currentPage}<input name="page" type="number" min="0" max="20000" value="${b.page || ''}"></label><label>${T.pages}<input name="pages" type="number" min="1" max="20000" value="${b.pages || ''}"></label><button class="pl" type="submit">${T.save}</button></form>
+      <div class="kunye">
+        <div><p class="cap">${N.who}</p><p class="sf">${b.lentTo ? esc(b.lentTo) + (b.lentAt ? ', ' + fmt(b.lentAt) : '') : N.mine}</p></div>
+        <div><p class="cap">${N.inClub}</p><p class="sf">${b.status === 'okudum' && S.club && S.club.books.some(x => x.title === b.title) ? N.readTogether : '–'}</p></div>
+        <div><p class="cap">${N.from}</p><p class="sf">${b.source ? esc(b.source) : `<span class="muted">–</span>`}</p></div>
+        <div><p class="cap">${N.quoteN}</p><p class="sf">${quotesN}</p></div>
+      </div>
+      ${story.length ? `<div class="story"><p class="cap">${N.story}</p><ol>${story.map(([k, d]) => `<li><b>${esc(k)}</b><span>${fmt(d)}</span></li>`).join('')}</ol></div>` : ''}
+      ${b.lentTo ? `<div class="acts"><button type="button" class="pl on" data-act="lendback">${N.back}</button></div>` : `<form id="lend-form" class="pagebar"><label>${N.lendTo}<input name="who" maxlength="60" required></label><button class="pl" type="submit">${N.lend}</button></form>`}
+      <div class="acts"><button type="button" class="pl ${b.fav ? 'ink' : ''}" data-act="fav">♥ ${b.fav ? N.unheart : N.heart}</button><button type="button" class="pl" data-act="wish">${b.wish ? N.gotIt : N.toWish}</button><a class="pl" href="#okuma">${N.startRead}</a></div>`}
+    </div>
+  </div>`;
 }
 // Barkod okuyucu telefon kamerasını kullanır; desteklemeyen tarayıcıda ISBN elle aranır
 export async function scanBarcode() {
@@ -71,7 +95,7 @@ export async function scanBarcode() {
   const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
   const box = document.createElement('div');
   box.className = 'scanner';
-  box.innerHTML = `<video playsinline muted></video><p>${N.scanHint}</p><button type="button" class="btn light">${N.close}</button>`;
+  box.innerHTML = `<video playsinline muted></video><p>${N.scanHint}</p><button type="button" class="pl">${N.close}</button>`;
   document.body.appendChild(box);
   const video = box.querySelector('video');
   video.srcObject = stream;
