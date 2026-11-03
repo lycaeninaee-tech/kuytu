@@ -1007,3 +1007,13 @@ input, textarea, select { background: #fffaf1; border: 1px solid var(--line2); b
 body.in-room .lp { position: static; overflow: visible; }
 body.in-room .lp > .ebru { display: none; }
 .kt em { font-style: italic; font-weight: 300; color: var(--book); }
+/* İnce ayar: ebru ve cam raf daha hafif, sayfa içeriği taşmasın, arama geniş */
+.lp > .ebru { opacity: .32; }
+.cardk-l .ebru { opacity: .36; }
+.pp-in { grid-template-columns: minmax(0, 1fr); }
+.pp-in > *, .shelves, .srow { min-width: 0; }
+.acryl { background: linear-gradient(180deg, color-mix(in srgb, var(--tint) 46%, rgba(255, 255, 255, .35)), color-mix(in srgb, var(--tint) 38%, transparent)); }
+.search-page { max-width: none; margin: 0; }
+.search-page .searchbar { max-width: 760px; display: flex; gap: 12px; align-items: flex-end; }
+.search-page .searchbar input { flex: 1; }
+@media (max-width: 860px) { .chips-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-right: 46px; } .chips-row::-webkit-scrollbar { display: none; } .chips-row .pl { flex: none; } }
