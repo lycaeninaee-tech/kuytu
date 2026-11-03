@@ -644,27 +644,83 @@ main { position: relative; max-width: 1180px; padding-top: max(16px, env(safe-ar
 .stage-cover .cover { transform: none; box-shadow: inset 6px 0 10px rgba(0, 0, 0, 0.2); }
 .searchbar { flex-wrap: wrap; }
 .subtabs { background: transparent; }
-/* Bölüm odaları: her bölüm bir kemerli kapı, kedi kişinin sıradaki kapısında bekler */
-.doors { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 24px 16px; }
-.door { display: grid; gap: 6px; align-content: start; justify-items: center; text-align: center; min-width: 0; }
-.door-frame { width: 100%; max-width: 150px; height: 190px; }
-.door .ring { padding: 7px 7px 0; }
-.door .r4 { align-items: center; padding: 0 8px 8px; }
-.door.open .r4 { background: radial-gradient(circle at 50% 88%, #f2b84b, #a8703a 46%, var(--deep) 92%); }
-.door .moon { top: 26px; width: 26px; margin-left: -13px; opacity: 0.8; }
-.door-n { position: absolute; left: 0; right: 0; top: 46%; font: 500 34px var(--font-display); color: #e0cdaa; }
-.door.open .door-n { color: var(--deep); }
-.door .cat { position: relative; width: 50px; color: #e0cdaa; } .door .cat .eye { stroke: #2f2e2e; }
-.door.open .cat { color: #2f2e2e; } .door.open .cat .eye { stroke: #f5efe7; }
-.door-t { font: 500 16px var(--font-display); color: var(--forest); overflow-wrap: anywhere; }
-.door .btn { padding: 8px 14px; font-size: 13px; }
-.door .linkbtn { justify-self: center; }
-.book-grid .add-book > summary { padding: 9px 18px; }
-.room-empty, .room-head { position: relative; overflow: hidden; display: grid; gap: 6px; padding: 76px 22px 26px; text-align: center; color: var(--cream); background: linear-gradient(160deg, var(--deep), var(--forest)); border-radius: 30px; }
-.room-empty h3, .room-head h2 { color: var(--cream); font-size: clamp(26px, 5vw, 36px); overflow-wrap: anywhere; }
-.room-empty p { max-width: 30em; margin-inline: auto; color: #d9dfd6; }
-.room-head em { color: #e0cdaa; }
-.room-who { min-height: 1.4em; font-size: 13px; color: #d9dfd6; }
-.room-head .cat { position: absolute; right: 16px; bottom: 0; width: 64px; color: #e0cdaa; } .room-head .cat .eye { stroke: #2f2e2e; }
-@media (max-width: 480px) { .room-head { padding-bottom: 54px; } }
 @media (prefers-reduced-motion: reduce) { .amb i, .mq, .ring, .glow, .lamba, .mote, .tw, .tail, .b3, .pn.go, .card-in .card-book, .card-in .fis, .kart::after, .stamp.big { animation: none; } .mote { display: none; } }
+/* Tasarım 2: tek dil, telefon ve uygulama uyumu */
+/* Eski büyük harfli etiketler yeni italik dile geçer */
+.label, .eyebrow, .eyebrow-dark { font: italic 500 16px var(--font-display); letter-spacing: 0; text-transform: none; color: #5a6b53; }
+.eyebrow { color: #e0cdaa; }
+h2 em, .pagehead h1 em, .huge em { font-style: italic; color: var(--ink-red); }
+.surface h3, .sec-title { font-size: clamp(22px, 2.6vw, 28px); }
+.surface { padding: clamp(18px, 3vw, 26px); }
+.pagehead { margin-bottom: 22px; }
+.pagehead h1, .pagehead h2 { font-size: clamp(38px, 6vw, 64px); }
+input, textarea, select { background: rgba(255, 255, 255, 0.8); border-color: rgba(31, 61, 51, 0.16); border-radius: 14px; transition: border-color 0.2s, box-shadow 0.2s; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--forest); box-shadow: 0 0 0 4px rgba(31, 61, 51, 0.1); }
+.add-book > summary.btn, .logbox > summary.btn { padding: 11px 22px; color: var(--cream); }
+/* Sayılar cam karolarda, büyük ve okunaklı */
+.statrow div, .numbers > div { padding: 16px 18px; background: rgba(255, 255, 255, 0.52); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.75); border-left: 1px solid rgba(255, 255, 255, 0.75); border-radius: 20px; box-shadow: 0 10px 26px rgba(31, 61, 51, 0.08); }
+.statrow b, .numbers b { font-size: clamp(26px, 3.4vw, 36px); }
+.statrow.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.insight { font-size: clamp(22px, 2.6vw, 30px); }
+.c30 rect { fill: var(--forest); } .c30 rect:last-child { fill: var(--ink-red); }
+.heat .l4 { background: var(--ink-red); }
+/* Okuma süresi seçimi: telefonda yana kayan kartlar */
+.mode { background: rgba(255, 255, 255, 0.7); border-color: rgba(31, 61, 51, 0.12); border-radius: 18px; transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1), border-color 0.2s, background 0.2s; }
+.mode:hover { transform: translateY(-2px); }
+.mode:has(input:checked) { color: var(--cream); background: var(--forest); border-color: var(--forest); }
+.mode:has(input:checked) b, .mode:has(input:checked) span { color: var(--cream); }
+/* Arama */
+.search-page { display: grid; gap: 14px; max-width: 760px; margin: 0 auto; }
+.search-page .searchbar { max-width: none; padding: 8px; background: rgba(255, 255, 255, 0.55); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.75); border-radius: 999px; box-shadow: 0 14px 34px rgba(31, 61, 51, 0.12); }
+.search-page .searchbar input { flex: 1 1 200px; border: 0; background: transparent; box-shadow: none; }
+.search-empty { display: grid; justify-items: center; gap: 10px; padding: 40px 0; text-align: center; }
+.search-empty .cat { width: 110px; }
+.results li { background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.75); border-radius: 20px; }
+/* Profil */
+.four-arch { height: clamp(150px, 30vw, 250px); }
+.four-add { padding-bottom: 0; align-self: center; font: 300 42px var(--font-display); color: rgba(224, 205, 170, 0.6); }
+.four-arch:has(.four-add) { align-items: center; background: linear-gradient(180deg, rgba(20, 38, 31, 0.25), rgba(31, 61, 51, 0.35)); border: 1.5px dashed rgba(31, 61, 51, 0.35); box-shadow: none; }
+/* Kulüp */
+.subnav { position: sticky; top: 74px; z-index: 20; width: max-content; max-width: 100%; margin: -8px auto 20px; padding: 5px; background: rgba(255, 255, 255, 0.5); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 999px; }
+.subnav a.on { color: var(--cream); background: var(--forest); box-shadow: none; }
+.memberlist li, .notes li { background: rgba(255, 255, 255, 0.5); }
+.notes li { border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 18px; }
+.memberlist li { padding: 12px 16px; margin-bottom: 8px; border: 0; border-radius: 16px; }
+/* Uygulama olarak açılınca üst boşluk çentiğe göre */
+@media (display-mode: standalone) { main { padding-top: max(20px, env(safe-area-inset-top, 0px)); } }
+
+/* Telefon */
+@media (max-width: 760px) {
+  main { padding-left: 16px; padding-right: 16px; }
+  .huge { font-size: clamp(42px, 13vw, 60px); }
+  .subnav { top: max(10px, env(safe-area-inset-top, 0px)); margin-top: 0; }
+  .modes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -4px; padding: 4px; }
+  .modes::-webkit-scrollbar { display: none; }
+  .mode { flex: 0 0 112px; scroll-snap-align: start; }
+  .statrow.three { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .statrow div { padding: 12px; }
+  .statrow b { font-size: 20px; }
+  .statrow span { font-size: 11.5px; }
+  .numbers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .bento { gap: 12px; }
+  .stage { padding: 22px; gap: 18px; }
+  .stage-cover { justify-self: center; padding: 50px 18px 20px; }
+  .display { font-size: clamp(38px, 11vw, 56px); }
+  .search-page .searchbar { border-radius: 26px; }
+  .search-page .searchbar .btn { flex: 1; }
+}
+@media (max-width: 860px) {
+  /* Okuma: kemer küçülür ve başlığın yanına geçer, ekranı kaplamaz */
+  .ok-arch { grid-template-columns: 116px minmax(0, 1fr); align-items: center; justify-items: start; text-align: left; column-gap: 18px; row-gap: 4px; }
+  .ok-arch .ring.r1 { grid-row: span 2; width: 116px; height: 170px; padding: 8px 8px 0; }
+  .ok-arch .ring { padding: 6px 6px 0; }
+  .ok-arch .r4 { padding: 0 6px 8px; }
+  .ok-arch .b3 { --w: 54px !important; --d: 12px; }
+  .ok-arch .arch-book { padding-top: 26px; }
+  .ok-arch .moon { width: 20px; margin-left: -10px; top: 12px; }
+  .ok-arch .tw, .ok-arch .glow { display: none; }
+  .ok-arch h1 { align-self: end; font-size: 30px; }
+  .ok-arch p { align-self: start; }
+  .lib-arch { min-height: min(640px, calc(100dvh - 150px)); }
+}.search-empty .deco { margin: 0; align-self: center; }
+.four-arch .cover { width: auto; max-width: 100%; height: auto; max-height: 76%; }
