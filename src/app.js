@@ -173,7 +173,10 @@ function render() {
 window.addEventListener('hashchange', route);
 // Tarayıcı uygulama kurmayı önerince saklanır; Profil'deki düğme bunu kullanır
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; if (S.view === 'profil') render(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.cardOpen) location.hash = '#raf'; });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (S.menuFor) { S.menuFor = null; S.armed = false; render(); } else if (S.cardOpen) location.hash = '#raf';
+});
 async function runSearch(q) {
   const show = () => { const el = $('#results'); if (el) el.innerHTML = resultsHTML(); };
   S.searching = true;
