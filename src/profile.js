@@ -14,6 +14,14 @@ const BADGES = [
   ['Bin sayfa', '1000 sayfa oku', d => d.pages >= 1000],
   ['Eleştirmen', '10 kitaba puan ver', d => d.rated >= 10],
 ];
+// Uygulama olarak kurma: Android ve bilgisayarda tarayıcının kendi penceresi, iPhone'da Safari'nin Ana Ekrana Ekle adımı
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+function installBox(S) {
+  if (standalone()) return `<p class="small muted">${N.installed}</p>`;
+  if (S.installEvt) return `<button class="btn" type="button" data-act="install">${N.install}</button>`;
+  return isIos() ? `<p class="glass small">${N.installIos}</p>` : '';
+}
 export function viewProfile(S) {
   const p = S.profile, editing = S.editProfile, year = String(new Date().getFullYear());
   const done = S.shelf.filter(b => b.status === 'okudum'), yearBooks = done.filter(b => (b.finishedAt || '').startsWith(year));
@@ -36,9 +44,10 @@ export function viewProfile(S) {
         <label>${T.yearGoal}<input name="yearGoal" type="number" min="0" max="500" value="${p.yearGoal || ''}"></label>
         ${field('quote', T.quote, p.quote, true)}</div><button class="btn" type="submit">${T.save}</button></form>`
     : `<div class="actions"><button class="btn ghost" type="button" data-act="pedit">${T.edit}</button><button class="btn ghost" type="button" data-act="logout">${T.logout}</button></div>`}
+      ${installBox(S)}
     </div>
     <div class="prof-main">
-      <section><p class="lbl">${N.four}</p><div class="four">${[0, 1, 2, 3].map(i => `<a class="four-arch" href="${four[i] ? '#kitap/' + encodeURIComponent(four[i].id) : '#raf'}">${four[i] ? coverHTML(four[i]) : `<span class="four-add">${N.addHeart}</span>`}</a>`).join('')}</div></section>
+      <section><p class="lbl">${N.four}</p><div class="four">${[0, 1, 2, 3].map(i => `<a class="four-arch" href="${four[i] ? '#kitap/' + encodeURIComponent(four[i].id) : '#raf'}" aria-label="${four[i] ? esc(four[i].title) : N.addHeart}">${four[i] ? coverHTML(four[i]) : '<span class="four-add">+</span>'}</a>`).join('')}</div>${four.length < 4 ? `<p class="small muted">${N.heartHint}</p>` : ''}</section>
       <div class="prof-low">
         <section><p class="lbl">${N.stamps}</p><div class="stamps">${BADGES.map(([t, d, ok], i) => `<span class="stamp ${ok(data) ? 'won' : ''}" style="--r:${(i * 37) % 17 - 8}deg" title="${esc(d)}">${esc(t)}</span>`).join('')}</div><p class="small muted">${N.stampHint}</p></section>
         <section class="glass"><p class="lbl">${year} ${N.summary}</p>

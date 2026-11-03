@@ -73,19 +73,19 @@ const clubTabs = () => {
 };
 function resultsHTML() {
   if (S.searching) return `<p class="muted">${T.searching}</p>`;
-  if (S.results === null) return '';
+  if (S.results === null) return S.onb ? '' : `<div class="search-empty"><span class="deco">${CAT}</span><p class="lbl">${TN.searchEmpty}</p></div>`;
   if (S.results === 'fail') return `<p class="muted">${T.searchFail}</p>`;
   if (!S.results.length) return `<p class="muted">${T.noResults}</p>`;
   return `<ul class="results">${S.results.map((b, i) => `<li>${coverHTML(b)}<div><b>${esc(b.title)}</b><p class="muted small">${esc([b.author, b.year, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p></div>
     ${shelfBook(b.id) ? `<span class="muted small">${T.inShelf}</span>` : `<button class="btn ghost" type="button" data-act="add" data-i="${i}">${T.add}</button>`}</li>`).join('')}</ul>`;
 }
 function viewSearch() {
-  return `<h2>${T.searchTitle}</h2>
+  return `<div class="search-page"><h1 class="huge">${T.searchTitle}</h1><p class="lbl">${TN.searchSub}</p>
     <form class="searchbar" id="search-form"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="btn" type="submit">${T.search}</button><button class="btn ghost" type="button" data-act="scan">${TN.scan}</button></form>
     <div id="results">${resultsHTML()}</div>
     <details class="manual"><summary>${T.manual}</summary>
       <form class="panel" id="manual-form"><label>${T.bookTitle}<input name="title" required maxlength="200"></label><label>${T.author}<input name="author" maxlength="200"></label><label>${T.pages}<input name="pages" type="number" min="1" max="20000"></label><button class="btn" type="submit">${T.add}</button></form>
-    </details>`;
+    </details></div>`;
 }
 // Yeni üye karşılaması: kullanıcı adından hemen sonra, üç kısa adım
 function viewOnb() {
@@ -147,6 +147,8 @@ function route() {
   pageChange(() => { render(); scrollTo(0, 0); });
 }
 window.addEventListener('hashchange', route);
+// Tarayıcı uygulama kurmayı önerince saklanır; Profil'deki düğme bunu kullanır
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; if (S.view === 'profil') render(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.cardOpen) location.hash = '#raf'; });
 async function runSearch(q) {
   const show = () => { const el = $('#results'); if (el) el.innerHTML = resultsHTML(); };
@@ -187,6 +189,7 @@ document.addEventListener('click', e => {
   if (a === 'wish') { const b = shelfBook(S.bookId); updateShelf(uid, b.id, { wish: !b.wish }).catch(fail); }
   if (a === 'lendback') updateShelf(uid, S.bookId, { lentTo: '', lentAt: '' }).catch(fail);
   if (a === 'scan') scanBarcode().then(code => { if (code === null) toast(TN.scanNo); else if (code) runSearch(code); }).catch(fail);
+  if (a === 'install' && S.installEvt) S.installEvt.prompt().finally(() => { S.installEvt = null; render(); });
   if (a === 'importclub') importClubBooks().then(() => toast(TN.imported)).catch(fail);
   if (a === 'quick') { S.quick = !S.quick; render(); }
   if (a === 'qdel') remove(`users/${uid}/quotes/${el.dataset.id}`).catch(fail);

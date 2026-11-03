@@ -84,7 +84,6 @@ export const TC = {
   searchHint: 'Kitap adı, yazar ya da ISBN', search: 'Ara', searchFail: 'Arama şu an çalışmıyor.', add: 'Ekle', adopt: 'Kitaplığa al', noSugg: 'Henüz öneri yok.', addedOk: 'Eklendi',
   inviteTitle: 'Davet bağlantısı', inviteHint: 'Bu bağlantıya sahip herkes üye olarak katılabilir; yalnızca güvendiğin kişilerle paylaş.', copy: 'Kopyala', newLink: 'Yeni bağlantı üret', makeLink: 'Bağlantı oluştur', linkReady: 'Bağlantı hazır', copied: 'Kopyalandı',
   makeMember: 'Üye yap', makeViewer: 'İzleyici yap', kick: 'Çıkar', leave: 'Kulüpten ayrıl', noAccess: 'Bu kulübü göremiyorsun.', club: 'Kulüp',
-  noRooms: 'Kapılar henüz yapılmadı', roomsHint: 'Her bölümün bir odası var. Bölümü bitirince kapısı açılır, kimse sana sonrasını söyleyemez.', addRooms: 'Oda ekle', roomCount: 'Kaç oda?', roomName: 'Oda adı (tek oda eklerken)', msgWord: 'mesaj', roomQuiet: 'Henüz sessiz', enterRoom: 'İçeri gir', finishedRoom: 'Bitirdim, kapıyı aç', allRooms: 'Tüm odalar', roomWord: 'oda', notFinished: 'Bu bölümü henüz bitirmedim', chapter: 'Bölüm',
   myProgress: 'İlerlemem (%)', date: 'Tarih', time: 'Saat', place: 'Yer', save: 'Kaydet', saved: 'Kaydedildi', yes: 'Geliyorum', no: 'Gelemiyorum', discussed: 'Konuşuldu', del: 'Sil', noNotes: 'Henüz bir şey yazılmadı.', write: 'Yaz', generic: 'Her kitaba uyan 8 soruyu ekle', genericBy: 'Genel soru',
 };
 
@@ -98,6 +97,8 @@ export const TN = {
   tabHome: 'Evde', tabLent: 'Ödünç', tabWish: 'İstek', secRead: 'Okuduklarım', secNext: 'Sıradakiler', secHeart: 'Kalbimdekiler', enterHint: 'Birine dokun, kemerden içeri gir',
   noLent: 'Şu an ödünç verdiğin kitap yok.', wishHint: 'Alınacak kitapların burada bekler.', scan: 'Barkod tara', bookWord: 'kitap', lentWord: 'ödünçte', emptyShelf: 'Rafın boş. İlk kitabını koy',
   scanNo: 'Bu tarayıcı barkod okumuyor. ISBN numarasını aramaya yazabilirsin.', scanHint: 'Barkodu kameraya göster',
+  searchSub: 'Kitap adı, yazar ya da ISBN yaz; arkası bir kitap varsa barkodunu okut.', searchEmpty: 'Aklındaki kitabı yaz, rafına koyalım.',
+  install: 'Uygulamayı yükle', installIos: 'Uygulama olarak kullanmak için Safari\'de Paylaş düğmesine, ardından "Ana Ekrana Ekle"ye dokun.', installed: 'Kuytu uygulama olarak açık.', heartHint: 'Kitap kartında "Kalbime al" dediğin ilk dört kitap burada durur.',
   importClub: 'Kulüp kitaplarını ekle', imported: 'Kitaplığına eklendi', card: 'Kitap kartı', heart: 'Kalbime al', unheart: 'Kalbimden çıkar', toWish: 'İstek listesine al', gotIt: 'Artık bende', has: 'kişisinde', back: 'Geri geldi', lendTo: 'Kime verdin?', lend: 'Ödünç verdim', startRead: 'Okumaya başla', close: 'Rafa geri koy',
   enterTitle: 'Kuytuna gir', enterSub: 'Telefonu bırak, sesini seç, oku. Bitince kaç sayfa okuduğunu yazarsın.', quotes: 'Altını çizdiklerim', noQuotes: 'Henüz alıntı yok.', addQuote: 'Bir cümle yakala', del: 'Sil',
   readerCard: 'Kuytu okuyucu kartı', style: 'Okur tarzım', four: 'Beni anlatan dört kitap', addHeart: 'Kitap kartından kalbine al', stamps: 'Damgalarım', stampHint: 'Soluk olanlar henüz kazanılmadı.', summary: 'özetim', doneBooks: 'Biten kitap', pagesRead: 'Okunan sayfa', longest: 'En uzun kitap', bestLoved: 'En sevdiğim', share: 'Bu ayki özetimi paylaş',
