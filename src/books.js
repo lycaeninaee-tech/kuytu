@@ -29,13 +29,17 @@ export async function searchBooks(q) {
   if (!list.length && words.length > 1) list = await openLibrary(words.slice().sort((a, b) => b.length - a.length)[0]);
   return list.filter(b => b.title);
 }
-// Kapağı ya da sayfa sayısı eksik kitap için ad ve yazarla arar; adı en çok tutan, kapaklı ve sayfalı sonucu seçer, yalnızca eksik alanları döndürür
-export async function fillInfo(b) {
+// Aynı kitabın baskıları: adın en az yarısı tutmalı, yazar biliniyorsa soyadı da
+export async function editions(b) {
   const norm = s => (s || '').toLocaleLowerCase('tr');
-  const words = norm(b.title).split(/\s+/).filter(w => w.length > 2);
+  const words = norm(b.title).split(/\s+/).filter(w => w.length > 2), surname = norm(b.author).split(/\s+/).pop();
   const list = await searchBooks([b.title, b.author].filter(Boolean).join(' '));
-  const score = r => words.filter(w => norm(r.title).includes(w)).length * 3 + (r.cover ? 2 : 0) + (r.pages ? 1 : 0) + (b.author && norm(r.author).includes(norm(b.author).split(' ').pop()) ? 2 : 0);
-  const best = list.filter(r => words.some(w => norm(r.title).includes(w))).sort((x, y) => score(y) - score(x))[0];
+  const hits = r => words.filter(w => norm(r.title).includes(w)).length;
+  return list.filter(r => hits(r) >= Math.ceil(words.length / 2) && (!surname || norm(r.author).includes(surname)));
+}
+// Kapağı ya da sayfa sayısı eksik kitap için en uygun baskıyı seçer, yalnızca eksik alanları döndürür
+export async function fillInfo(b) {
+  const best = (await editions(b)).sort((x, y) => (y.cover ? 2 : 0) + (y.pages ? 1 : 0) - (x.cover ? 2 : 0) - (x.pages ? 1 : 0))[0];
   if (!best) return {};
   const out = {};
   for (const k of ['cover', 'pages', 'year', 'publisher']) if (!b[k] && best[k]) out[k] = best[k];

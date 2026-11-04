@@ -4,7 +4,7 @@ import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
 import { viewLibrary, cardHTML, playPanel, scanBarcode } from './library.js';
 import { coverHTML, flat, ebru, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
-import { searchBooks, fillInfo } from './books.js';
+import { searchBooks, fillInfo, editions } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
@@ -96,7 +96,7 @@ function viewOnb() {
 }
 function updateCard() {
   const c = $('#card'), b = S.user && S.view === 'raf' && S.bookId ? shelfBook(S.bookId) : null;
-  if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; S.editing = false; return; }
+  if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; S.editing = false; S.covers = null; return; }
   const a = document.activeElement, first = S.cardOpen !== b.id;
   if (!first && a && c.contains(a) && a.matches('input')) return;
   c.innerHTML = cardHTML(S, b, first);
@@ -212,8 +212,15 @@ document.addEventListener('click', e => {
   }
   if (a === 'bookclose') location.hash = '#raf';
   if (a === 'bmenu') { S.menuFor = S.menuFor === el.dataset.id ? null : el.dataset.id; S.armed = false; render(); }
-  if (a === 'bedit') { S.editing = true; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
-  if (a === 'bnoedit') { S.editing = false; render(); }
+  if (a === 'bedit') { S.editing = true; S.covers = null; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
+  if (a === 'bnoedit') { S.editing = false; S.covers = null; render(); }
+  // Otomatik gelen kapak yanlışsa aynı kitabın başka baskılarının kapaklarından biri seçilir
+  if (a === 'findcovers') {
+    const b = shelfBook(S.bookId);
+    S.covers = 'loading'; render();
+    editions(b).then(l => { S.covers = [...new Set(l.map(r => r.cover).filter(Boolean))].slice(0, 12); }).catch(() => { S.covers = []; }).then(() => render());
+  }
+  if (a === 'pickcover') { const f = $('#edit-form'); if (f) f.cover.value = el.dataset.u; document.querySelectorAll('.covs button').forEach(x => x.classList.toggle('on', x === el)); }
   if (a === 'bdel') {
     if (S.armed !== el.dataset.id) { S.armed = el.dataset.id; render(); return; }
     S.armed = false; S.menuFor = null;
@@ -318,7 +325,7 @@ document.addEventListener('submit', async e => {
       const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim() };
       if (cover || !(b.cover || '').startsWith('data:')) data.cover = cover;
       await updateShelf(S.user.uid, S.bookId, data);
-      S.editing = false;
+      S.editing = false; S.covers = null;
       render();
       toast(TK.saved);
     }
