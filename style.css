@@ -1162,3 +1162,25 @@ body:not(.in-room) .lp .rtop, body:not(.in-room) .lp .rauthor { color: rgba(251,
 #finish-form { flex-wrap: wrap; }
 #finish-form label { flex: 1 1 260px; min-width: 0; }
 #finish-form input { width: 100%; box-sizing: border-box; }
+/* Koyu görünüm: kitap sayfası (sağ taraf), kitap kartı ve kapanışlar koyulaşır; kitabın renginden gelen sol taraf olduğu gibi kalır */
+:root[data-dark] { color-scheme: dark; --paper: #1b1916; --ink2: #ece4d6; --mute2: #b3a996; --soft: #8c8373; --line2: #38332c; --sand: #25221e; }
+:root[data-dark] body { background: var(--paper); color: var(--ink2); }
+:root[data-dark] .lp { --paper: #fbf6ec; --ink2: #1b1b1b; --mute2: #5d5a52; --soft: #8a8273; --line2: #d8cfbf; --sand: #f1ebe0; }
+:root[data-dark] .pp, :root[data-dark] #card { --ink: #ece4d6; --muted: #b3a996; --line: #38332c; --surface: #23201c; --cream: #1b1916; --forest: #c3d4c8; --forest-soft: #26302b; }
+:root[data-dark] .pp { background-color: var(--paper); background-image: linear-gradient(90deg, rgba(0, 0, 0, .5), rgba(0, 0, 0, .2) 14px, transparent 50px); }
+:root[data-dark] .pp::before { background: linear-gradient(135deg, var(--paper) 0 50%, #3a342c 50%); }
+:root[data-dark] :is(.pp, #card) :is(input, textarea, select) { background: #25221e; color: var(--ink2); border-color: #3d382f; }
+:root[data-dark] :is(.pp, #card) .pl { color: var(--ink2); border-color: #5a5246; }
+:root[data-dark] :is(.pp, #card) :is(.pl.on, .pl.ink) { background: var(--ink2); color: var(--paper); border-color: var(--ink2); }
+:root[data-dark] :is(.pp, #card) :is(.linkbtn, .ys .lbl a, .kt i, .wk-q) { color: color-mix(in srgb, var(--book) 40%, #fff); }
+:root[data-dark] .spines span { background: #2e2a25; }
+:root[data-dark] .spines .on { background: var(--book); }
+:root[data-dark] .pedge { background: repeating-linear-gradient(90deg, #3b362e 0 2px, #2b2721 2px 3px); }
+:root[data-dark] :is(.pnav, .subtabs) { background: var(--paper); }
+:root[data-dark] .pp :is(.glass, .surface, .box, .results li, .memberlist li, .notes li, .statrow div, .numbers > div, .seg, .dock), :root[data-dark] .search-page .searchbar, :root[data-dark] .subnav { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .08); box-shadow: none; }
+:root[data-dark] .subnav a.on { background: rgba(255, 255, 255, .12); }
+:root[data-dark] .pp :is(.notice) { background: #2b2620; }
+:root[data-dark] .pp .polaroid { background: #2a2622; }
+:root[data-dark] .pp .mode { background: #23201c; }
+:root[data-dark] :is(.bmenu) { background: #23201c; }
+:root[data-dark] .bk-dots { background: rgba(35, 32, 28, .92); color: var(--ink2); }
