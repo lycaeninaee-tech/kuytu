@@ -2,7 +2,7 @@
 import { esc } from './util.js';
 import { TN as N, T } from './strings.js';
 import { STATUS } from './shelf.js';
-import { flat, emLast, ebru } from './parts.js';
+import { flat, emLast, backdrop } from './parts.js';
 
 const homeBooks = S => S.shelf.filter(b => !b.wish && !b.lentTo);
 const statusOf = k => (STATUS.find(s => s[0] === k) || ['', ''])[1];
@@ -71,7 +71,7 @@ export function cardHTML(S, b, first) {
       <div class="acts wide"><button class="pl on" type="submit">${T.save}</button><button class="pl" type="button" data-act="bnoedit">${N.cancel}</button></div></form>`;
   return `<div class="card-scrim" data-act="bookclose"></div>
   <div class="cardk ${first ? 'first' : ''}" role="dialog" aria-label="${esc(b.title)}">
-    <div class="cardk-l">${ebru('c')}<div class="cardk-cv">${flat(b, 240, 'big')}</div></div>
+    <div class="cardk-l">${backdrop(b)}<div class="cardk-cv">${flat(b, 240, 'big')}</div></div>
     <div class="cardk-r">
       <div class="cardk-head"><span class="cap">${N.card.toLocaleUpperCase('tr')}</span><button type="button" class="pl sm" data-act="bedit" data-id="${esc(b.id)}">✎ ${N.edit}</button><button type="button" class="pl sm red" data-act="remove">${S.armed ? N.sure : N.del2}</button><button type="button" class="x" data-act="bookclose" aria-label="${N.close}">×</button></div>
       <h2 class="kt sm">${emLast(b.title)}</h2>
