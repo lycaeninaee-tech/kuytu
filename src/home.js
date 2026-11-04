@@ -99,7 +99,7 @@ function quotes(S, cur) {
   const list = S.quotes || [];
   return `<section class="surface"><h3>${N.quotes}</h3>
     ${list.slice(0, 6).map(q => `<figure class="quote"><blockquote>“${esc(q.text)}”</blockquote><figcaption>${esc(q.book || '')} · <button type="button" class="linkbtn small" data-act="qdel" data-id="${esc(q.id)}">${N.del}</button></figcaption></figure>`).join('') || `<p class="muted small">${N.noQuotes}</p>`}
-    <form id="quote-form" class="panel"><label>${N.addQuote}<textarea name="text" rows="2" required maxlength="1000"></textarea></label><input type="hidden" name="book" value="${esc(cur ? cur.title : '')}"><button class="pl" type="submit">${T.save}</button></form></section>`;
+    <form id="quote-form" class="panel"><label>${N.addQuote}<textarea name="text" rows="2" required maxlength="1000"></textarea></label><input type="hidden" name="book" value="${esc(cur ? cur.title : '')}"><input type="hidden" name="bookId" value="${esc(cur ? cur.id : '')}"><button class="pl" type="submit">${T.save}</button></form></section>`;
 }
 export function viewOkuma(S) {
   const cur = readingBook(S) || S.shelf.find(b => b.status === 'istiyorum');
