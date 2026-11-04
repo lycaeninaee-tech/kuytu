@@ -18,6 +18,18 @@ import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewI
 
 const S = { user: null, profile: undefined, shelf: [], sessions: [], quotes: [], reveal: new Set(), mode: 'login', view: 'bugun', bookId: null, results: null, searching: false, armed: false, moods: new Set() };
 
+// Görünüm tercihi yalnızca bu cihazda tutulur; "cihaza göre" seçiliyken telefonun gece ayarını izler
+const themeOf = () => { try { return localStorage.getItem('kuytu-tema') || 'sistem'; } catch (e) { return 'sistem'; } };
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  const t = themeOf(), dark = t === 'koyu' || (t === 'sistem' && darkMQ.matches);
+  document.documentElement.toggleAttribute('data-dark', dark);
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = dark ? '#1b1916' : '#fbf6ec';
+}
+darkMQ.addEventListener('change', applyTheme);
+applyTheme();
+
 function toast(msg) {
   const el = $('#toast');
   el.textContent = msg;
@@ -221,6 +233,7 @@ document.addEventListener('click', e => {
   if (a === 'mndel') remove(`users/${uid}/${el.dataset.coll === 'quotes' ? 'quotes' : 'notes'}/${el.dataset.id}`).catch(fail);
   if (a === 'export') exportData(uid).then(() => toast(TN.exported)).catch(fail);
   if (a === 'delask') { S.delAsk = !S.delAsk; render(); }
+  if (a === 'theme') { try { localStorage.setItem('kuytu-tema', el.dataset.v); } catch (err) {} applyTheme(); render(); }
   if (a === 'rate') updateShelf(uid, S.bookId, { rating: Number(el.dataset.v) }).catch(fail);
   if (a === 'openbook') {
     const r = el.getBoundingClientRect();

@@ -28,7 +28,10 @@ function account(S) {
   const del = S.delAsk ? (freshLogin(S.user)
     ? `<form id="del-form" class="delbox"><p><b>${N.delTitle}</b></p><p class="lbl small">${N.delWhat}</p><label>${N.delType}<input name="u" autocomplete="off" autocapitalize="none" spellcheck="false" required></label><button class="pl red" type="submit">${S.deleting ? N.delBusy : N.delGo}</button><button class="linkbtn small" type="button" data-act="delask">${N.cancel}</button></form>`
     : `<div class="delbox"><p><b>${N.delTitle}</b></p><p class="lbl small">${N.delFresh}</p><button class="pl" type="button" data-act="logout">${T.logout}</button><button class="linkbtn small" type="button" data-act="delask">${N.cancel}</button></div>`) : '';
+  let theme = 'sistem';
+  try { theme = localStorage.getItem('kuytu-tema') || 'sistem'; } catch (e) {}
   return `<div class="acct"><p class="cap">${N.account}</p>
+    <div class="acct-row" role="group" aria-label="${N.look}"><span class="lbl small">${N.look}</span>${[['acik', N.lookLight], ['koyu', N.lookDark], ['sistem', N.lookAuto]].map(([k, l]) => `<button type="button" class="pl sm ${theme === k ? 'ink' : ''}" data-act="theme" data-v="${k}" aria-pressed="${theme === k}">${l}</button>`).join('')}</div>
     <div class="acct-row"><button class="pl" type="button" data-act="export">${N.export}</button><a class="pl" href="#gizlilik">${N.privacy}</a></div>
     <form id="ics-form" class="pagebar"><label>${N.remindAt}<input name="t" type="time" value="21:30" required></label><button class="pl" type="submit">${N.remind}</button></form>
     <p class="lbl small">${N.remindHint}</p>
