@@ -38,7 +38,8 @@ service cloud.firestore {
       match /members/{m} {
         allow read: if isMember(c);
         allow create: if signedIn() && m == request.auth.uid && ((request.resource.data.role == 'kurucu' && getAfter(/databases/$(database)/documents/clubs/$(c)).data.ownerId == request.auth.uid) || (request.resource.data.role == 'uye' && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.clubId == c));
-        allow update: if isOwner(c);
+        // Kurucu rolleri değiştirir; her üye yalnızca kendi kartını (tek cümle, dört kitap, okunan kitap) günceller
+        allow update: if isOwner(c) || (signedIn() && m == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['card']));
         allow delete: if signedIn() && (m == request.auth.uid || isOwner(c));
       }
       match /books/{b} {

@@ -26,6 +26,32 @@ export function clubNow() {
   return { id: c.id, name: c.doc.name, book: b, next: nextPicker().name, note, rs: b ? readers().map(r => ({ name: r.name, pct: pctOf(b, r) })) : [] };
 }
 
+// Kulüp arkadaşlarının göreceği kart: tek cümle, dört kitap ve şu an okunan kitap. Sayfa, dakika, seri ve hedef hiç girmez.
+// Her kulübün üyelik kaydına yazılır; raf yüklenmeden ve değişmediyse yazılmaz
+const slim = b => b && { title: b.title || '', author: b.author || '', cover: b.cover && !b.cover.startsWith('data:') && b.cover.length < 600 ? b.cover : '' };
+let cardTimer = null;
+export function shareCard() {
+  clearTimeout(cardTimer);
+  cardTimer = setTimeout(() => {
+    if (!S.user || !S.profile || !S.myClubs || !S.shelfReady) return;
+    const card = { bio: S.profile.bio || '', four: S.shelf.filter(b => b.fav).slice(0, 4).map(slim), reading: slim(S.shelf.find(b => b.status === 'okuyorum')) || null };
+    const key = JSON.stringify(card);
+    S.myClubs.forEach(c => {
+      const k = 'kuytu-kart-' + c.id;
+      let last = '';
+      try { last = localStorage.getItem(k) || ''; } catch (e) {}
+      if (last !== key) patch(`clubs/${c.id}/members/${S.user.uid}`, { card }).then(() => { try { localStorage.setItem(k, key); } catch (e) {} }).catch(() => {});
+    });
+  }, 1500);
+}
+const memberCard = m => {
+  const c = m.card;
+  if (!c) return `<div class="mcard"><p class="lbl small">${N.noCard}</p></div>`;
+  return `<div class="mcard">${c.bio ? `<p class="pq">${esc(c.bio)}</p>` : ''}
+    ${c.reading ? `<div class="mc-now">${flat(c.reading, 56)}<p><span class="cap">${N.nowReads}</span><b>${esc(c.reading.title)}</b><span>${esc(c.reading.author || '')}</span></p></div>` : ''}
+    ${c.four && c.four.length ? `<p class="cap">${N.fourOf}</p><div class="mc-four">${c.four.map(b => flat(b, 64)).join('')}</div>` : ''}</div>`;
+};
+
 const C = () => S.club;
 const me = () => (C().members || []).find(m => m.uid === S.user.uid);
 const canWrite = () => !!me() && me().role !== 'izleyici';
@@ -190,8 +216,10 @@ function tabMembers() {
   const link = C().doc.inviteCode ? `${location.origin}${location.pathname}#davet/${C().doc.inviteCode}` : '';
   return `<div class="pagehead"><div><p class="label">${esc(C().doc.name)}</p><h1>${T.tabMembers}</h1></div></div>
     ${isOwner() ? `<section class="surface"><h3>${T.inviteTitle}</h3><p class="muted small">${T.inviteHint}</p>${link ? `<input id="inv-link" readonly value="${esc(link)}" aria-label="${T.inviteTitle}"><div class="ractions left"><button class="btn" type="button" data-act="ccopy">${T.copy}</button><button class="btn ghost" type="button" data-act="cinvite">${T.newLink}</button></div>` : `<button class="btn" type="button" data-act="cinvite">${T.makeLink}</button>`}</section>` : ''}
-    <ul class="memberlist">${C().members.map(m => `<li><b>${esc(m.name)}</b><span class="muted">@${esc(m.username)}</span><span class="pill">${esc({ kurucu: T.owner, uye: T.member, izleyici: T.viewer }[m.role] || '')}</span>
-      ${isOwner() && m.role !== 'kurucu' ? `<button class="linkbtn small" type="button" data-act="crole" data-id="${esc(m.uid)}" data-v="${m.role === 'izleyici' ? 'uye' : 'izleyici'}">${m.role === 'izleyici' ? T.makeMember : T.makeViewer}</button><button class="linkbtn small" type="button" data-act="ckick" data-id="${esc(m.uid)}">${T.kick}</button>` : ''}</li>`).join('')}</ul>
+    <ul class="memberlist">${C().members.map(m => `<li><button type="button" class="mname" data-act="cmcard" data-id="${esc(m.uid)}" aria-expanded="${S.cardFor === m.uid}"><b>${esc(m.name)}</b></button><span class="muted">@${esc(m.username)}</span><span class="pill">${esc({ kurucu: T.owner, uye: T.member, izleyici: T.viewer }[m.role] || '')}</span>
+      ${isOwner() && m.role !== 'kurucu' ? `<button class="linkbtn small" type="button" data-act="crole" data-id="${esc(m.uid)}" data-v="${m.role === 'izleyici' ? 'uye' : 'izleyici'}">${m.role === 'izleyici' ? T.makeMember : T.makeViewer}</button><button class="linkbtn small" type="button" data-act="ckick" data-id="${esc(m.uid)}">${T.kick}</button>` : ''}
+      ${S.cardFor === m.uid ? memberCard(m) : ''}</li>`).join('')}</ul>
+    <p class="lbl small">${N.cardHint}</p>
     ${!isOwner() ? `<button class="linkbtn small" type="button" data-act="cleave">${T.leave}</button>` : ''}`;
 }
 export function viewClub(tab) {
@@ -302,6 +330,7 @@ export function clubClick(a, el) {
   if (a === 'crate') patch(`${base}/books/${bid}`, { ratings: { [u.uid]: Number(el.dataset.v) } }).catch(fail);
   if (a === 'crsvp') patch(`${base}/books/${el.dataset.id || bid}`, { rsvp: { [u.uid]: el.dataset.v } }).catch(fail);
   if (a === 'creveal') { S.reveal.add(el.dataset.id); render(); }
+  if (a === 'cmcard') { S.cardFor = S.cardFor === el.dataset.id ? null : el.dataset.id; render(); }
   if (a === 'ckind') { S.noteKind = el.dataset.v; if (el.tagName !== 'A') render(); }
   if (a === 'cchap') { S.chapter = Number(el.dataset.v) || 0; S.noteKind = 'own'; S.keepChapter = true; if (el.tagName !== 'A') render(); }
   if (a === 'cdone') { const n = C().notes.find(x => x.id === el.dataset.id); patch(`${base}/books/${bid}/notes/${n.id}`, { done: !n.done }).catch(fail); }
