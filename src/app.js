@@ -4,7 +4,7 @@ import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
 import { viewLibrary, cardHTML, playPanel, scanBarcode } from './library.js';
 import { coverHTML, flat, ebru, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
-import { searchBooks } from './books.js';
+import { searchBooks, fillInfo, editions } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
@@ -59,7 +59,7 @@ const activeClub = () => {
 const nav = () => {
   const a = activeClub(), club = ['k', 'kb', 'kulup', 'davet'].includes(S.view);
   const link = (href, on, text, ic) => `<a href="${href}" class="${on ? 'on' : ''}"><i class="ni ni-${ic}" aria-hidden="true"></i><span>${text}</span></a>`;
-  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf', TN.lib, 'k')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}${link('#okuma', S.view === 'okuma', TN.read, 'o')}${link('#profil', S.view === 'profil', TN.profile, 'p')}<a class="ara ${S.view === 'ara' ? 'on' : ''}" href="#ara">${T.navSearch}</a></nav>`;
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf', TN.lib, 'k')}${link('#okuma', S.view === 'okuma', TN.read, 'o')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}${link('#profil', S.view === 'profil', TN.profile, 'p')}<a class="ara ${S.view === 'ara' ? 'on' : ''}" href="#ara">${T.navSearch}</a></nav>`;
 };const clubTabs = () => {
   if (!S.club) return '';
   const k = '#k/' + encodeURIComponent(S.club.id), on = t => (S.view === 'k' && S.clubTab === t) || (t === 'kitaplar' && S.view === 'kb');
@@ -96,7 +96,7 @@ function viewOnb() {
 }
 function updateCard() {
   const c = $('#card'), b = S.user && S.view === 'raf' && S.bookId ? shelfBook(S.bookId) : null;
-  if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; S.editing = false; return; }
+  if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; S.editing = false; S.covers = null; return; }
   const a = document.activeElement, first = S.cardOpen !== b.id;
   if (!first && a && c.contains(a) && a.matches('input')) return;
   c.innerHTML = cardHTML(S, b, first);
@@ -212,8 +212,15 @@ document.addEventListener('click', e => {
   }
   if (a === 'bookclose') location.hash = '#raf';
   if (a === 'bmenu') { S.menuFor = S.menuFor === el.dataset.id ? null : el.dataset.id; S.armed = false; render(); }
-  if (a === 'bedit') { S.editing = true; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
-  if (a === 'bnoedit') { S.editing = false; render(); }
+  if (a === 'bedit') { S.editing = true; S.covers = null; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
+  if (a === 'bnoedit') { S.editing = false; S.covers = null; render(); }
+  // Otomatik gelen kapak yanlışsa aynı kitabın başka baskılarının kapaklarından biri seçilir
+  if (a === 'findcovers') {
+    const b = shelfBook(S.bookId);
+    S.covers = 'loading'; render();
+    editions(b).then(l => { S.covers = [...new Set(l.map(r => r.cover).filter(Boolean))].slice(0, 12); }).catch(() => { S.covers = []; }).then(() => render());
+  }
+  if (a === 'pickcover') { const f = $('#edit-form'); if (f) f.cover.value = el.dataset.u; document.querySelectorAll('.covs button').forEach(x => x.classList.toggle('on', x === el)); }
   if (a === 'bdel') {
     if (S.armed !== el.dataset.id) { S.armed = el.dataset.id; render(); return; }
     S.armed = false; S.menuFor = null;
@@ -318,7 +325,7 @@ document.addEventListener('submit', async e => {
       const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim() };
       if (cover || !(b.cover || '').startsWith('data:')) data.cover = cover;
       await updateShelf(S.user.uid, S.bookId, data);
-      S.editing = false;
+      S.editing = false; S.covers = null;
       render();
       toast(TK.saved);
     }
@@ -369,6 +376,20 @@ document.addEventListener('submit', async e => {
 });
 
 setOnFinish(() => finishSession());
+// Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu)
+const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu')) || []; } catch (e) { return []; } })());
+let filling = false;
+async function fillMissing(uid, list) {
+  if (filling) return;
+  filling = true;
+  for (const b of list.filter(x => (!x.cover || !x.pages) && x.title && !tried.has(x.id)).slice(0, 8)) {
+    tried.add(b.id);
+    try { localStorage.setItem('kuytu-doldu', JSON.stringify([...tried])); } catch (e) {}
+    try { const data = await fillInfo(b); if (Object.keys(data).length) await updateShelf(uid, b.id, data); } catch (e) {}
+  }
+  filling = false;
+}
+
 initClubs({ S, toast, fail, render: () => render(), coverHTML });
 route();
 if (configured) {
@@ -390,6 +411,7 @@ if (configured) {
       stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; if (first) { route(); } else redraw(); }));
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;
+        fillMissing(user.uid, list);
         // Aramada yazılan metin kaybolmasın: arama sayfasında yalnızca sonuçlar yenilenir
         if ((S.view === 'ara' || S.onb) && $('#results')) $('#results').innerHTML = resultsHTML();
         else redraw();

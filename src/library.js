@@ -64,6 +64,9 @@ export function cardHTML(S, b, first) {
       <label>${T.author}<input name="author" maxlength="200" value="${esc(b.author || '')}"></label>
       <label>${T.pages}<input name="pages" type="number" min="0" max="20000" value="${b.pages || ''}"></label>
       <label>${N.source}<input name="source" maxlength="120" value="${esc(b.source || '')}"></label>
+      <div class="wide covpick"><p class="cap">${N.otherCover}</p>${S.covers === 'loading' ? `<p class="lbl small">${T.searching}</p>` : Array.isArray(S.covers)
+        ? (S.covers.length ? `<div class="covs">${S.covers.map(u => `<button type="button" data-act="pickcover" data-u="${esc(u)}" class="${u === b.cover ? 'on' : ''}"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join('')}</div>` : `<p class="lbl small">${N.noCovers}</p>`)
+        : `<button type="button" class="pl sm" data-act="findcovers">${N.findCovers}</button>`}</div>
       <label class="wide">${N.coverUrl}<input name="cover" maxlength="2000" value="${esc(b.cover && !b.cover.startsWith('data:') ? b.cover : '')}" placeholder="https://..."></label>
       <div class="acts wide"><button class="pl on" type="submit">${T.save}</button><button class="pl" type="button" data-act="bnoedit">${N.cancel}</button></div></form>`;
   return `<div class="card-scrim" data-act="bookclose"></div>

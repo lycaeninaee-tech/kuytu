@@ -8,10 +8,19 @@ export const coverHTML = b => (b.cover
 // Son kelime italik ve kitabın renginde
 export const emLast = s => { const w = esc(s || '').split(' '); return w.length > 1 ? w.slice(0, -1).join(' ') + ' <i>' + w[w.length - 1] + '</i>' : w[0]; };
 
-// Kitabın rengi: kapaktan okunabiliyorsa ondan, okunamıyorsa adından seçilen koyu bir tondan gelir
-const PAL = ['#2c5a47', '#4f5fb5', '#b8432d', '#2f6f76', '#7d5226', '#62457f', '#a5561b', '#2a5573'];
+// Kitabın rengi: kapaktan okunabiliyorsa ondan, okunamıyorsa adından seçilen koyu bir tondan gelir.
+// Her renk aynı doygunluk ve koyuluk bandına çekilir; böylece hangi kitap gelirse gelsin krem sayfa ve kırmızı kurdeleyle uyumlu kalır
+const PAL = ['#2f5446', '#3d4f72', '#7a3b30', '#2f5e62', '#6b4a2e', '#55436b', '#7a5530', '#34506a'];
+const tame = hex => {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), hi = Math.max(r, g, b), lo = Math.min(r, g, b), d = hi - lo;
+  let h = 0;
+  if (d) h = hi === r ? ((g - b) / d) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + 360) % 360;
+  const l = (hi + lo) / 2, s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+  return `hsl(${Math.round(h)} ${Math.round(Math.min(s, .42) * 100)}% ${Math.round(Math.min(Math.max(l, .24), .32) * 100)}%)`;
+};
 let cache = {};
-try { cache = JSON.parse(localStorage.getItem('kuytu-renk') || '{}'); } catch (e) {}
+try { cache = JSON.parse(localStorage.getItem('kuytu-renk2') || '{}'); } catch (e) {}
 export const colorOf = b => (b && (cache[b.id] || PAL[hueOf(b.title || '') % PAL.length])) || PAL[0];
 export function learnColor(b, apply) {
   if (!b || !b.cover || b.id in cache) return;
@@ -31,11 +40,9 @@ export function learnColor(b, apply) {
         r += d[i]; gr += d[i + 1]; bl += d[i + 2]; n++;
       }
       if (n < 12) { cache[b.id] = ''; return; }
-      // Krem yazı okunsun diye renk koyulaştırılır
-      const rgb = [r / n, gr / n, bl / n], light = (Math.max(...rgb) + Math.min(...rgb)) / 510, k = light > 0.36 ? 0.36 / light : 1;
-      const hex = '#' + rgb.map(v => Math.round(v * k).toString(16).padStart(2, '0')).join('');
+      const hex = tame('#' + [r / n, gr / n, bl / n].map(v => Math.round(v).toString(16).padStart(2, '0')).join(''));
       cache[b.id] = hex;
-      try { localStorage.setItem('kuytu-renk', JSON.stringify(cache)); } catch (e) {}
+      try { localStorage.setItem('kuytu-renk2', JSON.stringify(cache)); } catch (e) {}
       apply(hex);
     } catch (e) { cache[b.id] = ''; }
   };
@@ -48,8 +55,8 @@ export const flat = (b, w, cls = '') => `<span class="fcw ${cls}" style="--fw:${
   : `<b>${esc(b.title)}</b><small>${esc((b.author || '').toLocaleUpperCase('tr'))}</small>`}</span><i class="pgs"></i><i class="bm"></i></span>`;
 export const book3d = (b, w) => flat(b, w, 'big');
 
-// Ebru: eski kitapların iç kapak kâğıdı. Kitabın rengiyle çizilir, çok yavaş akar
-export const ebru = p => `<svg class="ebru" viewBox="0 0 400 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><pattern id="${p}s" width="84" height="900" patternUnits="userSpaceOnUse"><rect width="84" height="900" style="fill:var(--book)"/><rect width="20" height="900" style="fill:#efe4cc"/><rect x="30" width="7" height="900" style="fill:#c8462f"/><rect x="48" width="24" height="900" style="fill:rgba(0,0,0,.28)"/></pattern><filter id="${p}m" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.007 0.004" numOctaves="2" seed="7" result="t"><animate attributeName="baseFrequency" dur="40s" values="0.007 0.004;0.009 0.005;0.007 0.004" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" in2="t" scale="170" xChannelSelector="R" yChannelSelector="G"/></filter></defs><rect x="-100" y="-100" width="600" height="1100" fill="url(#${p}s)" filter="url(#${p}m)" transform="rotate(14 200 450)"/></svg>`;
+// Ebru: eski kitapların iç kapak kâğıdı. Yalnızca kitabın renginin bir ton açığı ve koyusuyla, seyrek ve hareketsiz çizilir; göz yormaz
+export const ebru = p => `<svg class="ebru" viewBox="0 0 400 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><pattern id="${p}s" width="190" height="900" patternUnits="userSpaceOnUse"><rect width="190" height="900" fill="rgba(255,255,255,0)"/><rect width="46" height="900" fill="rgba(255,255,255,.07)"/><rect x="104" width="54" height="900" fill="rgba(0,0,0,.12)"/></pattern><filter id="${p}m" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.004 0.0025" numOctaves="2" seed="7" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="110" xChannelSelector="R" yChannelSelector="G"/></filter></defs><rect x="-100" y="-100" width="600" height="1100" fill="url(#${p}s)" filter="url(#${p}m)" transform="rotate(10 200 450)"/></svg>`;
 
 // Okuma odasında kullanılan küçük süsler
 export const MOON = '<svg class="moon" viewBox="0 0 32 32" aria-hidden="true"><path fill="#e1b56c" d="M20 3A13 13 0 1 0 29 22A10.5 10.5 0 0 1 20 3Z"/></svg>';

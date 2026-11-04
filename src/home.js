@@ -15,36 +15,49 @@ const spines = S => {
 };
 export const readingBook = S => S.shelf.find(b => b.status === 'okuyorum');
 
+// Bugün kişinin kendi okumasıdır: kitabı, haftası, yıl hedefi. Kulüp en altta tek satırlık bir köşe
 export function viewToday(S, club) {
   const name = esc((S.profile.name || '').split(' ')[0]);
   const needsVerify = S.user.providerData.some(p => p.providerId === 'password') && !S.user.emailVerified;
-  const mine = readingBook(S), cb = club && club.book, b = mine || cb;
+  const reading = S.shelf.filter(x => x.status === 'okuyorum'), mine = reading[0], others = reading.slice(1, 4);
   const [now] = streaks(new Set(S.sessions.map(sessDay).filter(Boolean)));
-  const clubLink = club ? `#k/${encodeURIComponent(club.id)}/ay` : '#kulup';
   const pct = mine && mine.pages ? Math.min(100, Math.round((mine.page || 0) / mine.pages * 100)) : null;
-  const waiting = S.shelf.filter(x => x.status === 'istiyorum' && !x.lentTo && x !== mine).slice(0, 4);
+  const left = mine && mine.pages ? Math.max(0, mine.pages - (mine.page || 0)) : 0;
+  const waiting = S.shelf.filter(x => x.status === 'istiyorum' && !x.lentTo).slice(0, 4);
   const quote = S.quotes.length ? S.quotes[new Date().getDate() % S.quotes.length] : null;
-  const clubText = club && cb ? `${cb.meetingDate ? `${N.meetOn}: ${esc(new Date(cb.meetingDate + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }))}.` : N.meetNone} ${club.rs.map(r => `${esc(r.name)} %${r.pct}`).join(', ')}.${club.next ? ' ' + esc(N.nextPick.replace('{n}', club.next)) : ''}` : N.noClub;
-  const left = `${brand(b ? N.colorOf : '')}
-    <div class="lp-mid">${b ? `<a href="${mine ? '#kitap/' + encodeURIComponent(mine.id) : clubLink}" aria-label="${esc(b.title)}">${flat(b, 250, 'big')}</a>` : `<a class="fc-empty" href="#ara">${N.findFirst}</a>`}</div>
-    <div class="lp-foot"><span>${N.colorHint}</span>${mine && mine.pages ? `<span>${mine.page || 0} / ${mine.pages}</span>` : ''}</div>`;
+  // Haftanın sayfası ve dakikası, yılın bitirilen kitapları
+  const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
+  const wk = S.sessions.filter(s => new Date(s.at) >= mon);
+  const wPages = wk.reduce((n, s) => n + (Number(s.pages) || 0), 0), wMin = Math.round(wk.reduce((n, s) => n + (Number(s.seconds) || 0), 0) / 60);
+  const year = String(new Date().getFullYear()), done = S.shelf.filter(x => x.status === 'okudum' && String(x.finishedAt || '').startsWith(year)).length;
+  const goal = Number(S.profile.yearGoal) || 0, gp = goal ? Math.min(100, Math.round(done / goal * 100)) : 0;
+  const cb = club && club.book;
+  const lp = `${brand(mine ? N.colorOf : '')}
+    <div class="lp-mid">${mine ? `<a href="#kitap/${encodeURIComponent(mine.id)}" aria-label="${esc(mine.title)}">${flat(mine, 250, 'big')}</a>` : `<a class="fc-empty" href="#ara">${N.findFirst}</a>`}</div>
+    <div class="lp-foot"><span>${mine ? esc(mine.author || '') : ''}</span>${mine && mine.pages ? `<span>${mine.page || 0} / ${mine.pages}</span>` : ''}</div>`;
   const right = `${needsVerify ? `<p class="notice">${T.verify} <button class="linkbtn" type="button" data-act="resend">${T.resend}</button></p>` : ''}
-    <p class="lbl">${greet()} ${name}. ${b ? (mine ? N.leftOff2 : N.clubReads2) : ''}</p>
-    ${b ? `<h1 class="kt">${emLast(b.title)}</h1>
-      <div class="acts">${mine ? `<a class="pl on" href="#okuma">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button>` : `<a class="pl on" href="${clubLink}">${N.toClub}</a>`}</div>
-      ${S.quick && mine ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}
-      ${pct !== null ? `<div class="prog"><span style="width:${pct}%"></span></div>` : ''}`
+    <p class="lbl">${greet()} ${name}. ${mine ? N.leftOff2 : ''}</p>
+    ${mine ? `<h1 class="kt">${emLast(mine.title)}</h1>
+      ${pct !== null ? `<div class="prog big"><span style="width:${pct}%"></span></div><p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}</p>` : ''}
+      <div class="acts"><a class="pl on" href="#okuma">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
+      ${S.quick ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}`
     : `<h1 class="kt">${N.emptyHero}</h1><div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a></div>`}
-    <div class="two rule">
-      <a class="blk" href="${clubLink}"><p class="cap">${club ? esc(club.name).toLocaleUpperCase('tr') : N.clubMonth}</p><p class="dropp"><span class="drop">${esc(clubText.charAt(0))}</span>${clubText.slice(1)}</p></a>
-      <div class="blk"><p class="cap">${N.week} · ${now} ${N.dayStreak.toLocaleUpperCase('tr')}</p>${spines(S)}<p class="lbl small">${N.spineNote}</p></div>
+    <div class="stats rule">
+      <div><b>${wPages}</b><span>${N.wPages}</span></div>
+      <div><b>${wMin}</b><span>${N.wMin}</span></div>
+      <div><b>${now}</b><span>${N.dayStreak}</span></div>
+      <a href="#profil"><b>${done}${goal ? `<small>/${goal}</small>` : ''}</b><span>${N.yearBooks.replace('{y}', year)}</span>${goal ? `<i class="gbar"><i style="width:${gp}%"></i></i>` : ''}</a>
     </div>
-    ${club && club.note ? `<aside class="marg"><p>“${esc(club.note.text)}”</p><span class="cap">${esc(club.note.byName || '')}${club.note.chapter ? ' · ' + N.chapter.toLocaleUpperCase('tr') + ' ' + club.note.chapter : ''}</span></aside>` : ''}
+    <div class="blk"><p class="cap">${N.week}</p>${spines(S)}</div>
+    ${others.length ? `<div class="blk"><p class="cap">${N.alsoReading}</p><div class="mini">${others.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div></div>` : ''}
     <div class="two bottom">
-      <div class="blk"><p class="cap">${N.waiting}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('') || `<a class="lbl" href="#raf">${N.placeBook}</a>`}</div></div>
-      ${quote ? `<div class="blk"><p class="cap">❦ ${N.todayLine}</p><p class="pq">“${esc(quote.text)}”</p><p class="cap">${esc((quote.book || '').toLocaleUpperCase('tr'))}</p></div>` : ''}
-    </div>`;
-  return { left, right, book: b, ribbon: mine ? `S. ${mine.page || 0}` : '', folio: 1 };
+      <div class="blk"><p class="cap">${N.waiting}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('') || `<a class="lbl" href="#ara">${N.placeBook}</a>`}</div></div>
+      ${quote ? `<div class="blk"><p class="cap">${N.todayLine}</p><p class="pq">“${esc(quote.text)}”</p><p class="cap">${esc((quote.book || '').toLocaleUpperCase('tr'))}</p></div>` : ''}
+    </div>
+    <a class="clubline" href="${club ? `#k/${encodeURIComponent(club.id)}/ay` : '#kulup'}">${club && cb
+      ? `<span class="cap">${esc(club.name).toLocaleUpperCase('tr')}</span><span>${esc(cb.title)}${cb.meetingDate ? ' · ' + N.meetOn + ' ' + esc(new Date(cb.meetingDate + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })) : ''}</span>`
+      : `<span class="cap">${N.clubsCap}</span><span>${N.clubsInvite}</span>`}<span aria-hidden="true">→</span></a>`;
+  return { left: lp, right, book: mine, ribbon: mine ? `S. ${mine.page || 0}` : '', folio: 1 };
 }
 
 function quotes(S, cur) {
