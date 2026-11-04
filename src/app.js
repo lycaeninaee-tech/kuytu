@@ -12,7 +12,7 @@ import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, s
 import { shareRecap } from './takip.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
-import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook } from './clubview.js';
+import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook, shareCard } from './clubview.js';
 
 
 const S = { user: null, profile: undefined, shelf: [], sessions: [], quotes: [], reveal: new Set(), mode: 'login', view: 'bugun', bookId: null, results: null, searching: false, armed: false, moods: new Set() };
@@ -419,17 +419,20 @@ if (configured) {
     S.user = user;
     S.profile = undefined;
     S.shelf = [];
+    S.shelfReady = false;
     S.sessions = [];
     render();
     if (user) {
       // Okuma köşesinde sayfa yeniden çizilmez; müzik kesilmesin diye yalnızca zamanlayıcı yenilenir
       const redraw = () => { setCurrent(S); if (S.view === 'okuma' && $('#timer-card') && timerOn()) refreshTimer(); else render(); };
       stops.push(watchCol(`users/${user.uid}/quotes`, l => { S.quotes = l.sort((a, b) => (b.at || '').localeCompare(a.at || '')); redraw(); }, () => {}));
-      stops.push(watchCol('users/' + user.uid + '/clubs', l => { const first = !S.myClubs; S.myClubs = l; if (first) route(); else if (S.view === 'kulup' || S.view === 'davet') render(); }));
+      stops.push(watchCol('users/' + user.uid + '/clubs', l => { const first = !S.myClubs; S.myClubs = l; shareCard(); if (first) route(); else if (S.view === 'kulup' || S.view === 'davet') render(); }));
       stops.push(watchSessions(user.uid, list => { S.sessions = list; redraw(); }));
-      stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; if (first) { route(); } else redraw(); }));
+      stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; shareCard(); if (first) { route(); } else redraw(); }));
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;
+        S.shelfReady = true;
+        shareCard();
         fillMissing(user.uid, list);
         // Aramada yazılan metin kaybolmasın: arama sayfasında yalnızca sonuçlar yenilenir
         if ((S.view === 'ara' || S.onb) && $('#results')) $('#results').innerHTML = resultsHTML();
