@@ -1,7 +1,8 @@
 import { T, TK, TP, TN } from './strings.js';
 import { viewProfile, profileSubmit } from './profile.js';
 import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
-import { viewLibrary, cardHTML, playPanel, scanBarcode } from './library.js';
+import { viewLibrary, cardHTML, finishHTML, playPanel, scanBarcode } from './library.js';
+import { exportData, reminderICS, importGoodreads, freshLogin, deleteAccount, privacyHTML } from './account.js';
 import { coverHTML, flat, backdrop, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
 import { searchBooks, fillInfo, coverChoices } from './books.js';
@@ -42,6 +43,7 @@ function viewLanding() {
         <button class="pl" type="button" data-act="google">${T.google}</button>
         ${signup ? '' : `<button class="linkbtn small" type="button" data-act="reset">${T.forgot}</button>`}
       </form>` : `<p class="notice">${T.setup}</p>`}
+      <a class="linkbtn small" href="#gizlilik">${TN.privacy}</a>
     </div></section></div>`;
 }function viewUsername() {
   return `<section class="landing solo"><h2>${T.chooseTitle}</h2>
@@ -98,7 +100,7 @@ function updateCard() {
   const c = $('#card'), b = S.user && S.view === 'raf' && S.bookId ? shelfBook(S.bookId) : null;
   if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; S.editing = false; S.covers = null; return; }
   const a = document.activeElement, first = S.cardOpen !== b.id;
-  if (!first && a && c.contains(a) && a.matches('input')) return;
+  if (!first && a && c.contains(a) && a.matches('input,textarea')) return;
   c.innerHTML = cardHTML(S, b, first);
   c.style.setProperty('--book', colorOf(b));
   if (first) learnColor(b, hex => c.style.setProperty('--book', hex));
@@ -120,8 +122,11 @@ function shell(o) {
   return html;
 }
 function render() {
-  const v = $('#view');
-  if (!S.user) v.innerHTML = viewLanding();
+  const v = $('#view'), focus = document.activeElement;
+  // Bitirme anında cümle yazılırken arka plandaki kayıtlar sayfayı yeniden çizmez
+  if (focus && focus.closest && focus.closest('.finish') && focus.matches('input')) return;
+  if (S.view === 'gizlilik' && !S.user) v.innerHTML = `<div class="solo-page">${privacyHTML()}<a class="pl" href="#">${TN.close}</a></div>`;
+  else if (!S.user) v.innerHTML = viewLanding();
   else if (S.profile === undefined) v.innerHTML = '';
   else if (!S.profile) v.innerHTML = `<div class="solo-page">${viewUsername()}</div>`;
   else if (S.onb && S.view !== 'davet') v.innerHTML = `<div class="solo-page">${viewOnb()}</div>`;
@@ -135,6 +140,7 @@ function render() {
       ara: () => ({ left: searchLeft(S), right: viewSearch(), ribbon: 'ARA' }),
       okuma: () => viewOkuma(S),
       profil: () => viewProfile(S),
+      gizlilik: () => ({ right: privacyHTML(), ribbon: TN.privacy.toLocaleUpperCase('tr') }),
       kulup: () => ({ right: viewClubs() }),
       davet: () => ({ right: viewInvite() }),
       k: () => ({ right: viewClub(S.clubTab) }),
@@ -143,6 +149,8 @@ function render() {
     const o = views[S.view]();
     if (club) Object.assign(o, { left: clubLeft(), book: clubShownBook(), ribbon: S.view === 'kb' && S.chapter ? TN.chapter.toLocaleUpperCase('tr') + ' ' + S.chapter : TN.club.toLocaleUpperCase('tr'), folio: 3 });
     v.innerHTML = shell(o);
+    const fb = S.finish && shelfBook(S.finish);
+    if (fb) v.insertAdjacentHTML('beforeend', finishHTML(S, fb));
   }
   updateCard();
   enhance(v);
@@ -151,7 +159,7 @@ function render() {
   // Eski bağlantılar yeni yerlerine gider
   const view = { oda: 'okuma', takip: 'okuma', kitap: 'raf' }[raw] || raw;
   if (view !== 'okuma') setRoom(false);
-  S.view = ['raf', 'ara', 'okuma', 'kulup', 'davet', 'k', 'profil'].includes(view) ? view : 'bugun';
+  S.view = ['raf', 'ara', 'okuma', 'kulup', 'davet', 'k', 'profil', 'gizlilik'].includes(view) ? view : 'bugun';
   S.bookId = id ? decodeURIComponent(id) : null;
   S.quick = false;
   S.fresh = true;
@@ -203,7 +211,16 @@ document.addEventListener('click', e => {
     resetPassword(email).then(() => toast(T.resetSent)).catch(fail);
   }
   if (a === 'add') addToShelf(uid, S.results[Number(el.dataset.i)], 'istiyorum').then(() => toast(T.added)).catch(fail);
-  if (a === 'status') updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okudum' ? { finishedAt: new Date().toISOString() } : {}), ...(el.dataset.v === 'okuyorum' && !(shelfBook(S.bookId) || {}).startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
+  if (a === 'status') {
+    if (el.dataset.v === 'okudum' && (shelfBook(S.bookId) || {}).status !== 'okudum') finishBook(shelfBook(S.bookId));
+    else updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okuyorum' && !(shelfBook(S.bookId) || {}).startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
+  }
+  if (a === 'frate') updateShelf(uid, S.finish, { rating: Number(el.dataset.v) }).catch(fail);
+  if (a === 'fclose') { S.finish = null; render(); }
+  if (a === 'fnext') { S.finish = null; updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).then(() => { location.hash = '#bugun'; }).catch(fail); }
+  if (a === 'mndel') remove(`users/${uid}/${el.dataset.coll === 'quotes' ? 'quotes' : 'notes'}/${el.dataset.id}`).catch(fail);
+  if (a === 'export') exportData(uid).then(() => toast(TN.exported)).catch(fail);
+  if (a === 'delask') { S.delAsk = !S.delAsk; render(); }
   if (a === 'rate') updateShelf(uid, S.bookId, { rating: Number(el.dataset.v) }).catch(fail);
   if (a === 'openbook') {
     const r = el.getBoundingClientRect();
@@ -273,10 +290,20 @@ document.addEventListener('click', e => {
     removeShelf(uid, S.bookId).then(() => { location.hash = '#raf'; }).catch(fail);
   }
 });
+// Son sayfaya gelince kitap biter: rafta "okudum" olur ve bitirme anı açılır
+function finishBook(b) {
+  if (!b) return;
+  S.finish = b.id;
+  updateShelf(S.user.uid, b.id, { status: 'okudum', finishedAt: new Date().toISOString(), ...(b.pages ? { page: b.pages } : {}) }).catch(fail);
+  render();
+}
+const reachedEnd = (b, page) => b && b.pages && page >= b.pages && b.status !== 'okudum';
 // Sayfa eklenince raftaki kaldığın sayfa da ileri gider
 const bumpPage = (bookId, pages) => {
   const b = shelfBook(bookId);
-  if (b && pages) updateShelf(S.user.uid, bookId, { page: (b.page || 0) + pages }).catch(fail);
+  if (!b || !pages) return;
+  if (reachedEnd(b, (b.page || 0) + pages)) finishBook(b);
+  else updateShelf(S.user.uid, bookId, { page: (b.page || 0) + pages }).catch(fail);
 };
 function finishSession() {
   const r = stopTimer();
@@ -333,10 +360,30 @@ document.addEventListener('submit', async e => {
       toast(TK.saved);
     }
     if (id === 'lend-form') await updateShelf(S.user.uid, S.bookId, { lentTo: f.who.value.trim(), lentAt: new Date().toISOString() });
-    if (id === 'quote-form') { await add(`users/${S.user.uid}/quotes`, { text: f.text.value.trim(), book: f.book.value, at: new Date().toISOString() }); f.text.value = ''; }
+    if (id === 'quote-form') { await add(`users/${S.user.uid}/quotes`, { text: f.text.value.trim(), book: f.book.value, ...(f.bookId && f.bookId.value ? { bookId: f.bookId.value } : {}), at: new Date().toISOString() }); f.text.value = ''; }
+    if (id === 'mnote-form') {
+      const b = shelfBook(S.bookId), text = f.text.value.trim(), page = Math.max(0, Math.round(Number(f.page.value)) || 0), at = new Date().toISOString();
+      if (!b || !text) return;
+      if (f.quote.checked) await add(`users/${S.user.uid}/quotes`, { text, book: b.title, bookId: b.id, ...(page ? { page } : {}), at });
+      else await add(`users/${S.user.uid}/notes`, { bookId: b.id, text, ...(page ? { page } : {}), at });
+      f.text.value = '';
+      f.text.blur();
+      toast(TN.noteSaved);
+    }
+    if (id === 'finish-form') { await updateShelf(S.user.uid, S.finish, { thought: f.thought.value.trim() }); f.thought.blur(); toast(TK.saved); }
+    if (id === 'ics-form') reminderICS(f.t.value);
+    if (id === 'del-form') {
+      if (f.u.value.trim().toLocaleLowerCase('tr') !== (S.profile.username || '').toLocaleLowerCase('tr')) return toast(TN.delWrong);
+      if (!freshLogin(S.user)) { render(); return; }
+      S.deleting = true; render();
+      await deleteAccount(S.user, S.profile).finally(() => { S.deleting = false; });
+      S.delAsk = false;
+      toast(TN.delDone);
+    }
     if (id === 'quick-form') {
       const b = S.shelf.find(x => x.status === 'okuyorum'), page = Math.max(0, Number(f.page.value) || 0), diff = page - (b.page || 0);
-      await updateShelf(S.user.uid, b.id, { page });
+      if (reachedEnd(b, page)) finishBook(b);
+      else await updateShelf(S.user.uid, b.id, { page });
       if (diff > 0) await addSession(S.user.uid, { bookId: b.id, title: b.title, seconds: 0, pages: diff, at: new Date().toISOString(), manual: true });
       S.quick = false;
   S.fresh = true;
@@ -370,8 +417,10 @@ document.addEventListener('submit', async e => {
       toast((pages ? pages + ' sayfa' : min + ' dk') + ' ' + TK.added);
     }
     if (id === 'page-form') {
-      await updateShelf(S.user.uid, S.bookId, { page: Number(f.page.value) || 0, pages: Number(f.pages.value) || 0 });
-      toast(T.sent);
+      const page = Number(f.page.value) || 0, pages = Number(f.pages.value) || 0, b = shelfBook(S.bookId);
+      await updateShelf(S.user.uid, S.bookId, { page, pages });
+      if (reachedEnd({ ...b, pages }, page)) finishBook({ ...b, pages });
+      else toast(T.sent);
     }
   } catch (err) {
     if (err.message === 'taken') toast(T.taken);
@@ -395,6 +444,15 @@ async function fillMissing(uid, list) {
 }
 
 // Kaynaklarda kapağı olmayan kitap için elindeki kitabın fotoğrafı: 900 piksel boya küçültülür, raf belgesine yazılır
+// Goodreads dosyası seçilince kitaplar sırayla rafa girer; sol taraftaki düğme sayıyı gösterir
+document.addEventListener('change', e => {
+  if (e.target.id !== 'gr-file' || !e.target.files[0] || S.grBusy) return;
+  S.grBusy = 1; render();
+  importGoodreads(S.user.uid, e.target.files[0], S.shelf, n => { S.grBusy = Math.max(1, n); })
+    .then(n => toast(TN.grDone.replace('{n}', n)))
+    .catch(err => (err.message === 'csv' ? toast(TN.grBad) : fail(err)))
+    .finally(() => { S.grBusy = 0; render(); });
+});
 document.addEventListener('change', e => {
   if (e.target.id !== 'cover-photo' || !e.target.files[0]) return;
   const img = new Image();
@@ -421,11 +479,15 @@ if (configured) {
     S.shelf = [];
     S.shelfReady = false;
     S.sessions = [];
+    S.notes = [];
+    S.finish = null;
+    S.delAsk = false;
     render();
     if (user) {
       // Okuma köşesinde sayfa yeniden çizilmez; müzik kesilmesin diye yalnızca zamanlayıcı yenilenir
       const redraw = () => { setCurrent(S); if (S.view === 'okuma' && $('#timer-card') && timerOn()) refreshTimer(); else render(); };
       stops.push(watchCol(`users/${user.uid}/quotes`, l => { S.quotes = l.sort((a, b) => (b.at || '').localeCompare(a.at || '')); redraw(); }, () => {}));
+      stops.push(watchCol(`users/${user.uid}/notes`, l => { S.notes = l; redraw(); }, () => {}));
       stops.push(watchCol('users/' + user.uid + '/clubs', l => { const first = !S.myClubs; S.myClubs = l; shareCard(); if (first) route(); else if (S.view === 'kulup' || S.view === 'davet') render(); }));
       stops.push(watchSessions(user.uid, list => { S.sessions = list; redraw(); }));
       stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; shareCard(); if (first) { route(); } else redraw(); }));

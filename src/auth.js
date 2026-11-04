@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, updateProfile, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, updateProfile, onAuthStateChanged, signOut, deleteUser } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { FIREBASE } from './config.js';
 
@@ -11,6 +11,7 @@ export const fs = app ? getFirestore(app) : null;
 export const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 export const onUser = cb => onAuthStateChanged(auth, cb);
 export const logout = () => signOut(auth);
+export const deleteMe = () => deleteUser(auth.currentUser);
 export const loginGoogle = () => signInWithPopup(auth, new GoogleAuthProvider());
 export const loginEmail = (email, pass) => signInWithEmailAndPassword(auth, email, pass);
 export const resetPassword = email => sendPasswordResetEmail(auth, email);

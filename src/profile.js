@@ -4,6 +4,7 @@ import { TP as T, TN as N } from './strings.js';
 import { saveProfile } from './sessions.js';
 import { streaks } from './takip.js';
 import { flat } from './parts.js';
+import { freshLogin } from './account.js';
 
 const BADGES = [
   ['İlk adım', 'İlk okuma kaydın', d => d.sessions >= 1],
@@ -21,6 +22,17 @@ function installBox(S) {
   if (standalone()) return `<p class="lbl small">${N.installed}</p>`;
   if (S.installEvt) return `<button class="pl on" type="button" data-act="install">${N.install}</button>`;
   return isIos() ? `<p class="lbl small">${N.installIos}</p>` : '';
+}
+// Hesabın ve verin: indir, takvime hatırlatıcı ekle, gizlilik, hesabı sil. Silme iki adımlı ve kullanıcı adıyla onaylanır
+function account(S) {
+  const del = S.delAsk ? (freshLogin(S.user)
+    ? `<form id="del-form" class="delbox"><p><b>${N.delTitle}</b></p><p class="lbl small">${N.delWhat}</p><label>${N.delType}<input name="u" autocomplete="off" autocapitalize="none" spellcheck="false" required></label><button class="pl red" type="submit">${S.deleting ? N.delBusy : N.delGo}</button><button class="linkbtn small" type="button" data-act="delask">${N.cancel}</button></form>`
+    : `<div class="delbox"><p><b>${N.delTitle}</b></p><p class="lbl small">${N.delFresh}</p><button class="pl" type="button" data-act="logout">${T.logout}</button><button class="linkbtn small" type="button" data-act="delask">${N.cancel}</button></div>`) : '';
+  return `<div class="acct"><p class="cap">${N.account}</p>
+    <div class="acct-row"><button class="pl" type="button" data-act="export">${N.export}</button><a class="pl" href="#gizlilik">${N.privacy}</a></div>
+    <form id="ics-form" class="pagebar"><label>${N.remindAt}<input name="t" type="time" value="21:30" required></label><button class="pl" type="submit">${N.remind}</button></form>
+    <p class="lbl small">${N.remindHint}</p>
+    ${S.delAsk ? del : `<button class="linkbtn small danger" type="button" data-act="delask">${N.delAcc}</button>`}</div>`;
 }
 export function viewProfile(S) {
   const p = S.profile, editing = S.editProfile, year = String(new Date().getFullYear());
@@ -48,7 +60,8 @@ export function viewProfile(S) {
         ${longest ? `<div><span>${N.longest}</span><span class="dots"></span><span class="r">${esc(longest.title)}</span></div>` : ''}
         ${top && top.rating ? `<div><span>${N.bestLoved}</span><span class="dots"></span><span class="r">${esc(top.title)}</span></div>` : ''}
       </div><button class="pl ink" type="button" data-act="recapshare">${N.share}</button></div>
-    </div>`;
+    </div>
+    ${account(S)}`;
   return { left, right, book: colorBook, ribbon: 'EX LIBRIS', folio: 5 };
 }
 export async function profileSubmit(S, f) {
