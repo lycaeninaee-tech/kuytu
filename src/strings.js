@@ -91,8 +91,9 @@ export const TC = {
 export const TN = {
   today: 'Bugün', lib: 'Kitaplığım', club: 'Kulüpler', read: 'Okuma', profile: 'Profilim',
   pagesLeft: 'bitmesine {n} sayfa', wPages: 'bu hafta sayfa', wMin: 'bu hafta dakika', yearBooks: '{y} içinde biten', alsoReading: 'BUNLARI DA OKUYORSUN',
-  trail: 'YIL YOLU', trailLeft: 'hedefe {n} kitap', trailDone: 'hedefe vardın', trailNoGoal: 'Profilim’den yıl hedefi koyabilirsin', bookNo: '{n}. kitap',
-  tasks: 'HAFTANIN GÖREVLERİ', t3days: 'Bu hafta 3 gün oku', t100: 'Haftada 100 sayfa', t20: 'Bir oturumda 20 dakika', tQuote: 'Bir alıntı kaydet', seal: 'Bu haftanın mührü senin',
+  finishBy: 'bu tempoyla {d} civarı biter',
+  weekLine: '{d} gün · {p} sayfa · {m} dakika', wGoal: 'Hedefin haftada {n} gün', wGoalLeft: '{n} gün kaldı', wGoalDone: 'bu hafta tamam', wGoalSet: 'Haftada kaç gün okumak istersin?', change: 'değiştir', streakOn: '{n} gündür ara vermeden okuyorsun', keepLine: 'Bu hafta aklında kalan bir cümle oldu mu? Okuma’da sakla →',
+  yearShelf: '{y} RAFIN', yrLeft: 'Yılın bitmesine {w} hafta var; bu tempoyla {p} kitap daha.', yrWeeks: 'Yılın bitmesine {w} hafta var.', yrReach: 'Yılın bitmesine {w} hafta var; bu tempoyla hedefe yetişirsin.', yrDone: 'Hedefine vardın: {n} kitap.', yrNoGoal: 'Bu yıl bitirdiğin her kitap burada durur.', yrEmpty: 'Bu yıl bitirdiğin ilk kitap buraya gelecek.', goalEdit: 'Hedefi değiştir', goalSet: 'Yıl hedefi koy', goalAsk: 'Bu yıl kaç kitap?', onlyYou: 'YALNIZCA SEN GÖRÜRSÜN', bioHint: 'Kendini bir cümleyle anlat',
   otherCover: 'KAPAK YANLIŞ MI?', findCovers: 'Başka kapak seç', noCovers: 'Bu kitabın kapağı kitap kaynaklarında yok. Elindeki kitabın fotoğrafını çekebilirsin.', shootCover: 'Kapağın fotoğrafını çek', coverSaved: 'Kapak kaydedildi', clubsCap: 'KULÜPLER', clubsInvite: 'İstersen bir kulübe katıl ya da kendi kulübünü kur',
   morning: 'Günaydın', noon: 'Merhaba', evening: 'İyi akşamlar', night: 'İyi geceler', leftOff: 'kaldığın yer', clubReads: 'kulübün okuyor',
   enter: 'Kuytuya gir', addPage: 'Sayfa ekle', whichPage: 'Kaçıncı sayfadasın?', toClub: 'Kulübe git', emptyHero: 'İlk kitabın seni bekliyor', findFirst: 'Kitap ara',
