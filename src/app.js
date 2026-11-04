@@ -4,7 +4,7 @@ import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
 import { viewLibrary, cardHTML, playPanel, scanBarcode } from './library.js';
 import { coverHTML, flat, ebru, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
-import { searchBooks } from './books.js';
+import { searchBooks, fillInfo } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
@@ -59,7 +59,7 @@ const activeClub = () => {
 const nav = () => {
   const a = activeClub(), club = ['k', 'kb', 'kulup', 'davet'].includes(S.view);
   const link = (href, on, text, ic) => `<a href="${href}" class="${on ? 'on' : ''}"><i class="ni ni-${ic}" aria-hidden="true"></i><span>${text}</span></a>`;
-  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf', TN.lib, 'k')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}${link('#okuma', S.view === 'okuma', TN.read, 'o')}${link('#profil', S.view === 'profil', TN.profile, 'p')}<a class="ara ${S.view === 'ara' ? 'on' : ''}" href="#ara">${T.navSearch}</a></nav>`;
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf', TN.lib, 'k')}${link('#okuma', S.view === 'okuma', TN.read, 'o')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}${link('#profil', S.view === 'profil', TN.profile, 'p')}<a class="ara ${S.view === 'ara' ? 'on' : ''}" href="#ara">${T.navSearch}</a></nav>`;
 };const clubTabs = () => {
   if (!S.club) return '';
   const k = '#k/' + encodeURIComponent(S.club.id), on = t => (S.view === 'k' && S.clubTab === t) || (t === 'kitaplar' && S.view === 'kb');
@@ -369,6 +369,20 @@ document.addEventListener('submit', async e => {
 });
 
 setOnFinish(() => finishSession());
+// Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu)
+const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu')) || []; } catch (e) { return []; } })());
+let filling = false;
+async function fillMissing(uid, list) {
+  if (filling) return;
+  filling = true;
+  for (const b of list.filter(x => (!x.cover || !x.pages) && x.title && !tried.has(x.id)).slice(0, 8)) {
+    tried.add(b.id);
+    try { localStorage.setItem('kuytu-doldu', JSON.stringify([...tried])); } catch (e) {}
+    try { const data = await fillInfo(b); if (Object.keys(data).length) await updateShelf(uid, b.id, data); } catch (e) {}
+  }
+  filling = false;
+}
+
 initClubs({ S, toast, fail, render: () => render(), coverHTML });
 route();
 if (configured) {
@@ -390,6 +404,7 @@ if (configured) {
       stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; if (first) { route(); } else redraw(); }));
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;
+        fillMissing(user.uid, list);
         // Aramada yazılan metin kaybolmasın: arama sayfasında yalnızca sonuçlar yenilenir
         if ((S.view === 'ara' || S.onb) && $('#results')) $('#results').innerHTML = resultsHTML();
         else redraw();
