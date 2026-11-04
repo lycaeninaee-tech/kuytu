@@ -390,6 +390,21 @@ async function fillMissing(uid, list) {
   filling = false;
 }
 
+// Kaynaklarda kapağı olmayan kitap için elindeki kitabın fotoğrafı: 900 piksel boya küçültülür, raf belgesine yazılır
+document.addEventListener('change', e => {
+  if (e.target.id !== 'cover-photo' || !e.target.files[0]) return;
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(img.src);
+    const k = Math.min(1, 900 / img.height), c = document.createElement('canvas');
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    updateShelf(S.user.uid, S.bookId, { cover: c.toDataURL('image/jpeg', 0.82) }).then(() => { S.editing = false; S.covers = null; toast(TN.coverSaved); render(); }).catch(fail);
+  };
+  img.onerror = () => fail(new Error('image'));
+  img.src = URL.createObjectURL(e.target.files[0]);
+});
+
 initClubs({ S, toast, fail, render: () => render(), coverHTML });
 route();
 if (configured) {
