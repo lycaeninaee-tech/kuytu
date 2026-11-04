@@ -1039,3 +1039,9 @@ body.in-room .lp > .ebru { display: none; }
 .clubline span:nth-child(2) { flex: 1; }
 .clubline:hover { color: var(--ink2); }
 @media (max-width: 860px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stats b { font-size: 32px; } .clubline { flex-wrap: wrap; } }
+/* Düzenlemede kapak seçimi */
+.covpick { display: grid; gap: 8px; }
+.covs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.covs button { flex: none; width: 64px; aspect-ratio: 2/3; padding: 0; border: 2px solid transparent; border-radius: 3px; background: var(--sand); cursor: pointer; overflow: hidden; }
+.covs button.on { border-color: var(--book); }
+.covs img { width: 100%; height: 100%; object-fit: cover; display: block; }
