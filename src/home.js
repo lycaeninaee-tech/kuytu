@@ -7,31 +7,52 @@ import { flat, emLast, edge } from './parts.js';
 
 const greet = () => { const h = new Date().getHours(); return h < 6 ? N.night : h < 12 ? N.morning : h < 18 ? N.noon : N.evening; };
 const brand = (extra = '') => `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a>${extra ? `<span class="cap">${extra}</span>` : ''}</div>`;
-// Bu haftanın günleri kitap sırtı gibi: okunan gün kitabın renginde
+// Bu haftanın günleri kitap sırtı gibi: okunan gün kitabın renginde, bugün altı çizili
 const spines = S => {
-  const days = new Set(S.sessions.map(sessDay)), mon = new Date();
+  const days = new Set(S.sessions.map(sessDay)), mon = new Date(), today = dayKey(new Date());
   mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
-  return `<div class="spines">${[0, 1, 2, 3, 4, 5, 6].map(i => { const d = new Date(mon); d.setDate(mon.getDate() + i); return `<span class="${days.has(dayKey(d)) ? 'on' : ''}" title="${esc(d.toLocaleDateString('tr-TR', { weekday: 'long' }))}"></span>`; }).join('')}</div>`;
+  return `<div class="spines">${[0, 1, 2, 3, 4, 5, 6].map(i => { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dayKey(d); return `<span class="${days.has(k) ? 'on' : ''}${k === today ? ' now' : ''}" title="${esc(d.toLocaleDateString('tr-TR', { weekday: 'long' }))}"><small>${d.toLocaleDateString('tr-TR', { weekday: 'narrow' })}</small></span>`; }).join('')}</div>`;
 };
 export const readingBook = S => S.shelf.find(b => b.status === 'okuyorum');
-// Yıl yolu: hedefteki her kitap patikada bir durak. Biten kitaplar duraklara sırayla yerleşir, yürüyen nokta okunan kitabın yüzdesi kadar ileride durur
-const trail = (done, goal, frac) => {
-  const n = Math.max(goal || 12, done.length + 1), W = 560;
-  const pt = t => [14 + t * (W - 28), 46 + 24 * Math.sin(t * Math.PI * 3)];
-  const d = Array.from({ length: 81 }, (_, i) => pt(i / 80)).map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
-  const stops = Array.from({ length: n }, (_, i) => {
-    const [x, y] = pt((i + 1) / n), b = done[i], end = i === n - 1;
-    return `<circle class="${b ? 'on' : ''}${end ? ' end' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${end ? 8 : 6}"><title>${b ? esc(b.title) : N.bookNo.replace('{n}', i + 1)}</title></circle>`;
-  }).join('');
-  const [wx, wy] = pt(Math.min(done.length + frac, n) / n);
-  return `<svg class="trail" viewBox="0 0 ${W} 92" role="img" aria-label="${done.length} / ${n}"><path d="${d}"/>${stops}<circle class="walker" cx="${wx.toFixed(1)}" cy="${wy.toFixed(1)}" r="9"/></svg>`;
+// Kitabın aşağı yukarı ne zaman biteceği: son iki haftanın sayfa kayıtlarından, yoksa başladığından beri gelinen sayfadan.
+// Başlangıcı bilinmeyen ya da çok eski olan kitapta hiç söylenmez
+const finishBy = (S, b, left) => {
+  if (!left) return '';
+  const from = Date.now() - 14 * 864e5, logged = S.sessions.filter(s => s.bookId === b.id && new Date(s.at) >= from).reduce((n, s) => n + (Number(s.pages) || 0), 0);
+  let perDay = logged / 14;
+  if (!perDay && b.page) {
+    const since = (Date.now() - new Date(b.startedAt || b.addedAt || 0)) / 864e5;
+    if (since > 0 && since <= 45) perDay = b.page / Math.max(1, since);
+  }
+  if (!perDay) return '';
+  const d = new Date(Date.now() + Math.ceil(left / perDay) * 864e5);
+  return N.finishBy.replace('{d}', d.toLocaleDateString('tr-TR', d.getFullYear() === new Date().getFullYear() ? { day: 'numeric', month: 'long' } : { month: 'long', year: 'numeric' }));
 };
-// Haftanın görevleri yalnızca var olan kayıtlardan hesaplanır: oturumlar ve alıntılar
-const tasks = (S, wk, wPages, mon) => {
-  const days = new Set(wk.map(sessDay)).size, long = wk.some(s => (Number(s.seconds) || 0) >= 1200), quote = (S.quotes || []).some(q => q.at && new Date(q.at) >= mon);
-  const list = [[N.t3days, Math.min(days, 3), 3], [N.t100, Math.min(wPages, 100), 100], [N.t20, long ? 1 : 0, 1], [N.tQuote, quote ? 1 : 0, 1]];
-  const all = list.every(([, v, max]) => v >= max);
-  return `<ul class="tasks">${list.map(([t, v, max]) => `<li class="${v >= max ? 'ok' : ''}"><i aria-hidden="true"></i><span>${t}</span>${max > 1 ? `<small>${v} / ${max}</small><b class="tbar"><b style="width:${Math.round(v / max * 100)}%"></b></b>` : ''}</li>`).join('')}</ul>${all ? `<p class="seal">${N.seal}</p>` : ''}`;
+// Bu hafta: günler, tek cümlelik özet ve kişinin kendi seçtiği gün hedefi
+const week = (S, wk, wPages, wMin, streak, mon, mine) => {
+  const days = new Set(wk.map(sessDay)).size, target = Number(S.profile.weekDays) || 3;
+  const goal = days >= target ? N.wGoalDone : N.wGoalLeft.replace('{n}', target - days);
+  const saved = (S.quotes || []).some(q => q.at && new Date(q.at) >= mon);
+  return `<div class="blk wk rule"><p class="cap">${N.week}</p>
+    <div class="wk-row">${spines(S)}<div class="wk-txt"><b>${N.weekLine.replace('{d}', days).replace('{p}', wPages).replace('{m}', wMin)}</b>
+      <span>${N.wGoal.replace('{n}', target)} · ${goal} <button type="button" class="linkbtn" data-act="wdedit">${N.change}</button></span>
+      ${streak > 1 ? `<span>${N.streakOn.replace('{n}', streak)}</span>` : ''}</div></div>
+    ${S.wdEdit ? `<div class="wk-pick"><span>${N.wGoalSet}</span>${[1, 2, 3, 4, 5, 6, 7].map(n => `<button type="button" class="pl${n === target ? ' on' : ''}" data-act="wdays" data-v="${n}">${n}</button>`).join('')}</div>` : ''}
+    ${mine && !saved ? `<a class="wk-q" href="#okuma">${N.keepLine}</a>` : ''}</div>`;
+};
+// Yılın rafı: bu yıl biten kitaplar kapaklarıyla, hedefe kalanlar boş sırt. Altında yılın kalanını bilen, suçlamayan bir cümle
+const yearShelf = (S, done, goal, year) => {
+  const now = new Date(), start = new Date(now.getFullYear(), 0, 1), end = new Date(now.getFullYear() + 1, 0, 1);
+  const weeks = Math.ceil((end - now) / (7 * 864e5)), more = Math.round(done.length / Math.max(1, (now - start) / 864e5) * ((end - now) / 864e5));
+  const line = !goal ? (done.length ? N.yrNoGoal : N.yrEmpty)
+    : done.length >= goal ? N.yrDone.replace('{n}', done.length)
+    : done.length + more >= goal ? N.yrReach.replace('{w}', weeks)
+    : more ? N.yrLeft.replace('{w}', weeks).replace('{p}', more) : N.yrWeeks.replace('{w}', weeks);
+  const gaps = goal > done.length ? Math.min(goal - done.length, 40) : 0;
+  return `<div class="blk ys"><p class="cap">${N.yearShelf.replace('{y}', year)}${goal ? ` · ${done.length} / ${goal}` : ''}</p>
+    <div class="ys-row">${done.map(b => `<button type="button" data-act="openbook" data-id="${esc(b.id)}" aria-label="${esc(b.title)}" title="${esc(b.title)}">${flat(b, 50)}</button>`).join('')}${'<i class="ys-gap" aria-hidden="true"></i>'.repeat(gaps)}</div>
+    <p class="lbl small">${line} <button type="button" class="linkbtn" data-act="ygedit">${goal ? N.goalEdit : N.goalSet}</button></p>
+    ${S.ygEdit ? `<form id="yg-form" class="pagebar"><label>${N.goalAsk}<input name="goal" type="number" min="0" max="500" value="${goal || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}</div>`;
 };
 
 // Bugün kişinin kendi okumasıdır: kitabı, haftası, yıl hedefi. Kulüp en altta tek satırlık bir köşe
@@ -48,8 +69,8 @@ export function viewToday(S, club) {
   const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
   const wk = S.sessions.filter(s => new Date(s.at) >= mon);
   const wPages = wk.reduce((n, s) => n + (Number(s.pages) || 0), 0), wMin = Math.round(wk.reduce((n, s) => n + (Number(s.seconds) || 0), 0) / 60);
-  const year = String(new Date().getFullYear()), doneList = S.shelf.filter(x => x.status === 'okudum' && String(x.finishedAt || '').startsWith(year)).sort((a, b) => String(a.finishedAt).localeCompare(String(b.finishedAt))), done = doneList.length;
-  const goal = Number(S.profile.yearGoal) || 0, gp = goal ? Math.min(100, Math.round(done / goal * 100)) : 0;
+  const year = String(new Date().getFullYear()), doneList = S.shelf.filter(x => x.status === 'okudum' && String(x.finishedAt || '').startsWith(year)).sort((a, b) => String(a.finishedAt).localeCompare(String(b.finishedAt)));
+  const goal = Number(S.profile.yearGoal) || 0, fin = mine && mine.pages ? finishBy(S, mine, left) : '';
   const cb = club && club.book;
   const lp = `${brand(mine ? N.colorOf : '')}
     <div class="lp-mid">${mine ? `<a href="#kitap/${encodeURIComponent(mine.id)}" aria-label="${esc(mine.title)}">${flat(mine, 250, 'big')}</a>` : `<a class="fc-empty" href="#ara">${N.findFirst}</a>`}</div>
@@ -57,19 +78,12 @@ export function viewToday(S, club) {
   const right = `${needsVerify ? `<p class="notice">${T.verify} <button class="linkbtn" type="button" data-act="resend">${T.resend}</button></p>` : ''}
     <p class="lbl">${greet()} ${name}. ${mine ? N.leftOff2 : ''}</p>
     ${mine ? `<h1 class="kt">${emLast(mine.title)}</h1>
-      ${pct !== null ? `${edge(mine, pct)}<p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}</p>` : ''}
+      ${pct !== null ? `${edge(mine, pct)}<p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}${fin ? ' · ' + fin : ''}</p>` : ''}
       <div class="acts"><a class="pl on" href="#okuma">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
       ${S.quick ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}`
     : `<h1 class="kt">${N.emptyHero}</h1><div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a></div>`}
-    <div class="stats rule">
-      <div><b>${wPages}</b><span>${N.wPages}</span></div>
-      <div><b>${wMin}</b><span>${N.wMin}</span></div>
-      <div><b>${now}</b><span>${N.dayStreak}</span></div>
-      <a href="#profil"><b>${done}${goal ? `<small>/${goal}</small>` : ''}</b><span>${N.yearBooks.replace('{y}', year)}</span>${goal ? `<i class="gbar"><i style="width:${gp}%"></i></i>` : ''}</a>
-    </div>
-    <div class="blk"><p class="cap">${N.week}</p>${spines(S)}</div>
-    <div class="blk"><p class="cap">${N.tasks}</p>${tasks(S, wk, wPages, mon)}</div>
-    <a class="blk" href="#profil"><p class="cap">${N.trail} · ${goal ? (done >= goal ? N.trailDone : N.trailLeft.replace('{n}', goal - done)) : N.trailNoGoal}</p>${trail(doneList, goal, pct !== null ? pct / 100 : 0)}</a>
+    ${week(S, wk, wPages, wMin, now, mon, mine)}
+    ${yearShelf(S, doneList, goal, year)}
     ${others.length ? `<div class="blk"><p class="cap">${N.alsoReading}</p><div class="mini">${others.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div></div>` : ''}
     <div class="two bottom">
       <div class="blk"><p class="cap">${N.waiting}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('') || `<a class="lbl" href="#ara">${N.placeBook}</a>`}</div></div>

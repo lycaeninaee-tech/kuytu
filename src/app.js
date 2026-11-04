@@ -203,7 +203,7 @@ document.addEventListener('click', e => {
     resetPassword(email).then(() => toast(T.resetSent)).catch(fail);
   }
   if (a === 'add') addToShelf(uid, S.results[Number(el.dataset.i)], 'istiyorum').then(() => toast(T.added)).catch(fail);
-  if (a === 'status') updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okudum' ? { finishedAt: new Date().toISOString() } : {}) }).catch(fail);
+  if (a === 'status') updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okudum' ? { finishedAt: new Date().toISOString() } : {}), ...(el.dataset.v === 'okuyorum' && !(shelfBook(S.bookId) || {}).startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
   if (a === 'rate') updateShelf(uid, S.bookId, { rating: Number(el.dataset.v) }).catch(fail);
   if (a === 'openbook') {
     const r = el.getBoundingClientRect();
@@ -236,6 +236,9 @@ document.addEventListener('click', e => {
   if (a === 'install' && S.installEvt) S.installEvt.prompt().finally(() => { S.installEvt = null; render(); });
   if (a === 'importclub') importClubBooks().then(() => toast(TN.imported)).catch(fail);
   if (a === 'quick') { S.quick = !S.quick; render(); }
+  if (a === 'wdedit') { S.wdEdit = !S.wdEdit; render(); }
+  if (a === 'ygedit') { S.ygEdit = !S.ygEdit; render(); }
+  if (a === 'wdays') { S.wdEdit = false; S.profile.weekDays = Number(el.dataset.v); render(); saveProfile(uid, { weekDays: S.profile.weekDays }).catch(fail); }
   if (a === 'qdel') remove(`users/${uid}/quotes/${el.dataset.id}`).catch(fail);
   if (a === 'onbmood') { const m = el.dataset.v; if (S.moods.has(m)) S.moods.delete(m); else S.moods.add(m); render(); }
   if (a === 'onbnext') {
@@ -350,6 +353,7 @@ document.addEventListener('submit', async e => {
     }
     if (S.user && await clubSubmit(id, f)) return;
     if (id === 'profile-form') { await profileSubmit(S, f); toast(TK.saved); }
+    if (id === 'yg-form') { S.ygEdit = false; await saveProfile(S.user.uid, { yearGoal: Math.min(500, Math.max(0, Math.round(Number(f.goal.value)) || 0)) }); toast(TK.saved); }
     if (id === 'log-form') {
       const min = Math.round(Number(f.min.value)) || 0, pages = Math.round(Number(f.pages.value)) || 0;
       if (!min && !pages) return toast(TK.needAmount);

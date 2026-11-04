@@ -31,20 +31,15 @@ export function viewProfile(S) {
   const longest = yearBooks.slice().sort((a, b) => (b.pages || 0) - (a.pages || 0))[0], top = yearBooks.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
   const four = S.shelf.filter(b => b.fav).slice(0, 4), colorBook = four[0] || S.shelf.find(b => b.status === 'okuyorum');
   const joined = p.createdAt ? new Date(p.createdAt).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) : '';
-  const field = (name, label, val, wide) => `<label class="${wide ? 'wide' : ''}">${label}<input name="${name}" maxlength="200" value="${esc(val || '')}"></label>`;
+  // Sol taraf kişinin kimliği: ad, kullanıcı adı, tek cümle. Başkalarının ileride göreceği kart da yalnızca bunlar ve dört kitaptır
   const left = `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a>${colorBook ? `<span class="cap">${esc(colorBook.title.toLocaleUpperCase('tr'))}</span>` : ''}</div>
     <div class="exl"><p class="cap">${N.exlibris}</p><span class="exl-av">${esc((p.name || '?').charAt(0).toLocaleUpperCase('tr'))}</span><h1 class="kt light sm">${esc(p.name)}</h1><p class="small">@${esc(p.username)}${joined ? ' · ' + esc(joined) + ' ' + N.since : ''}</p>${p.bio ? `<p class="lbl">${esc(p.bio)}</p>` : ''}</div>
-    ${p.moods && p.moods.length ? `<div><p class="cap">${N.style.toLocaleUpperCase('tr')}</p><p class="pq light">${esc(p.moods.join(', '))}.</p></div>` : ''}
-    ${(S.myClubs || []).length ? `<div class="ix"><p class="cap">${N.clubsMine}</p>${S.myClubs.map(c => `<a href="#k/${encodeURIComponent(c.id)}/ay"><span>${esc(c.name)}</span><span class="cap">${c.role === 'kurucu' ? N.owner : N.memberW}</span></a>`).join('')}</div>` : ''}
     <div class="lp-foot col"><button class="pl" type="button" data-act="pedit">${T.edit}</button>${installBox(S)}<button class="pl" type="button" data-act="logout">${T.logout}</button></div>`;
-  const right = `${editing ? `<form class="surface" id="profile-form"><div class="form-grid">
-      <label class="wide">${T.bio}<textarea name="bio" rows="3" maxlength="500">${esc(p.bio || '')}</textarea></label>
-      ${field('genres', T.genres, p.genres)}${field('favBook', T.favBook, p.favBook)}${field('favAuthor', T.favAuthor, p.favAuthor)}
-      <label>${T.yearGoal}<input name="yearGoal" type="number" min="0" max="500" value="${p.yearGoal || ''}"></label>
-      ${field('quote', T.quote, p.quote, true)}</div><button class="pl on" type="submit">${T.save}</button></form>` : ''}
+  const right = `${editing ? `<form class="pagebar" id="profile-form"><label>${N.bioHint}<input name="bio" maxlength="160" value="${esc(p.bio || '')}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}
     <p class="cap">${N.four.toLocaleUpperCase('tr')}</p>
     <div class="four-row">${[0, 1, 2, 3].map(i => four[i] ? `<button type="button" data-act="openbook" data-id="${esc(four[i].id)}" aria-label="${esc(four[i].title)}">${flat(four[i], 132)}</button>` : `<a class="fc-add" href="#raf" aria-label="${N.addHeart}">+</a>`).join('')}</div>
     ${four.length < 4 ? `<p class="lbl small">${N.heartHint}</p>` : ''}
+    <p class="cap onlyyou">${N.onlyYou}</p>
     <div class="two">
       <div><p class="cap">${N.stamps.toLocaleUpperCase('tr')}</p><div class="stamps">${BADGES.map(([t, d, ok], i) => `<span class="stamp ${ok(data) ? 'won' : ''}" style="--r:${(i * 37) % 17 - 8}deg" title="${esc(d)}">${esc(t)}</span>`).join('')}</div><p class="lbl small">${N.stampHint}</p></div>
       <div><p class="cap">${N.kunye} · ${year}</p><div class="toc">
@@ -57,6 +52,6 @@ export function viewProfile(S) {
   return { left, right, book: colorBook, ribbon: 'EX LIBRIS', folio: 5 };
 }
 export async function profileSubmit(S, f) {
-  await saveProfile(S.user.uid, { bio: f.bio.value.trim(), genres: f.genres.value.trim(), favBook: f.favBook.value.trim(), favAuthor: f.favAuthor.value.trim(), quote: f.quote.value.trim(), yearGoal: Number(f.yearGoal.value) || 0 });
+  await saveProfile(S.user.uid, { bio: f.bio.value.trim() });
   S.editProfile = false;
 }
