@@ -91,7 +91,7 @@ export const TC = {
 export const TN = {
   today: 'Bugün', lib: 'Kitaplığım', club: 'Kulüpler', read: 'Okuma', profile: 'Profilim',
   pagesLeft: 'bitmesine {n} sayfa', wPages: 'bu hafta sayfa', wMin: 'bu hafta dakika', yearBooks: '{y} içinde biten', alsoReading: 'BUNLARI DA OKUYORSUN',
-  otherCover: 'KAPAK YANLIŞ MI?', findCovers: 'Başka kapak seç', noCovers: 'Başka kapak bulunamadı; bağlantıyı aşağıya yapıştırabilirsin.', clubsCap: 'KULÜPLER', clubsInvite: 'İstersen bir kulübe katıl ya da kendi kulübünü kur',
+  otherCover: 'KAPAK YANLIŞ MI?', findCovers: 'Başka kapak seç', noCovers: 'Bu kitabın kapağı kitap kaynaklarında yok. Elindeki kitabın fotoğrafını çekebilirsin.', shootCover: 'Kapağın fotoğrafını çek', coverSaved: 'Kapak kaydedildi', clubsCap: 'KULÜPLER', clubsInvite: 'İstersen bir kulübe katıl ya da kendi kulübünü kur',
   morning: 'Günaydın', noon: 'Merhaba', evening: 'İyi akşamlar', night: 'İyi geceler', leftOff: 'kaldığın yer', clubReads: 'kulübün okuyor',
   enter: 'Kuytuya gir', addPage: 'Sayfa ekle', whichPage: 'Kaçıncı sayfadasın?', toClub: 'Kulübe git', emptyHero: 'İlk kitabın seni bekliyor', findFirst: 'Kitap ara',
   yourBook: 'Kitabın', page: 'Sayfa', meeting: 'Toplantı', noDate: 'Tarih yok', noClubBook: 'Bu ay için kitap seçilmedi.', noClub: 'Birlikte okuyacak birileriyle kulüp kur.',

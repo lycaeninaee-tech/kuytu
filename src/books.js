@@ -29,6 +29,16 @@ export async function searchBooks(q) {
   if (!list.length && words.length > 1) list = await openLibrary(words.slice().sort((a, b) => b.length - a.length)[0]);
   return list.filter(b => b.title);
 }
+async function olCovers(b) {
+  const res = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(b.title)}${b.author ? '&author=' + encodeURIComponent(b.author) : ''}&limit=8&fields=cover_i`);
+  return ((await res.json()).docs || []).filter(x => x.cover_i).map(x => `https://covers.openlibrary.org/b/id/${x.cover_i}-L.jpg`);
+}
+const olCover = async b => (await olCovers(b))[0] || '';
+// Kapak seçici için iki kaynaktaki bütün kapaklar
+export async function coverChoices(b) {
+  const [g, o] = await Promise.all([editions(b).catch(() => []), olCovers(b).catch(() => [])]);
+  return [...new Set([...g.map(r => r.cover), ...o].filter(Boolean))].slice(0, 16);
+}
 // Aynı kitabın baskıları: adın en az yarısı tutmalı, yazar biliniyorsa soyadı da
 export async function editions(b) {
   const norm = s => (s || '').toLocaleLowerCase('tr');
@@ -39,9 +49,11 @@ export async function editions(b) {
 }
 // Kapağı ya da sayfa sayısı eksik kitap için en uygun baskıyı seçer, yalnızca eksik alanları döndürür
 export async function fillInfo(b) {
-  const best = (await editions(b)).sort((x, y) => (y.cover ? 2 : 0) + (y.pages ? 1 : 0) - (x.cover ? 2 : 0) - (x.pages ? 1 : 0))[0];
-  if (!best) return {};
+  const best = (await editions(b)).sort((x, y) => (y.cover ? 2 : 0) + (y.pages ? 1 : 0) - (x.cover ? 2 : 0) - (x.pages ? 1 : 0))[0] || {};
   const out = {};
   for (const k of ['cover', 'pages', 'year', 'publisher']) if (!b[k] && best[k]) out[k] = best[k];
+  // Google'da kapak yoksa Open Library'de ad ve yazarla ayrıca aranır
+  if (!b.cover && !out.cover) out.cover = await olCover(b).catch(() => '') || undefined;
+  if (!out.cover) delete out.cover;
   return out;
 }

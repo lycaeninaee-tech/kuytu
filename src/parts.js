@@ -1,9 +1,15 @@
-// Tasarım dilinin ortak parçaları: önden görünen kapak, kitabın rengi, ebru iç kapak
+// Tasarım dilinin ortak parçaları: önden görünen kapak, kitabın rengi, kapaktan zemin
 import { esc } from './util.js';
 
 export const hueOf = s => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 360;
+// Kapaklar her zaman büyük boy istenir: Google'ın 128 piksellik küçük resmi 800x1200'e, Open Library'nin küçük ve orta boyu büyüğe çevrilir; köşe kıvrımı efekti kaldırılır
+export const hiRes = u => {
+  if (!u || u.startsWith('data:')) return u || '';
+  if (u.includes('books.google')) return u.replace(/&edge=curl/g, '').replace(/&fife=[^&]*/g, '') + '&fife=w800-h1200';
+  return u.replace(/-[SM]\.jpg$/, '-L.jpg');
+};
 export const coverHTML = b => (b.cover
-  ? `<img class="cover" src="${esc(b.cover)}" alt="" loading="lazy">`
+  ? `<img class="cover" src="${esc(hiRes(b.cover))}" alt="" loading="lazy">`
   : `<span class="cover ph" style="--h:${hueOf(b.title)}"><b>${esc(b.title)}</b></span>`);
 // Son kelime italik ve kitabın renginde
 export const emLast = s => { const w = esc(s || '').split(' '); return w.length > 1 ? w.slice(0, -1).join(' ') + ' <i>' + w[w.length - 1] + '</i>' : w[0]; };
@@ -51,12 +57,12 @@ export function learnColor(b, apply) {
 
 // Önden görünen ciltli kapak: altında sayfa katmanı, arasından sarkan kurdele. Resmi yoksa kitabın renginde adı ve yazarıyla çizilir
 export const flat = (b, w, cls = '') => `<span class="fcw ${cls}" style="--fw:${w}px;--c:${colorOf(b)}"><span class="fc">${b.cover
-  ? `<img src="${esc(b.cover)}" alt="${esc(b.title)}" loading="lazy">`
+  ? `<img src="${esc(hiRes(b.cover))}" alt="${esc(b.title)}" loading="lazy">`
   : `<b>${esc(b.title)}</b><small>${esc((b.author || '').toLocaleUpperCase('tr'))}</small>`}</span><i class="pgs"></i><i class="bm"></i></span>`;
 export const book3d = (b, w) => flat(b, w, 'big');
 
-// Ebru: eski kitapların iç kapak kâğıdı. Yalnızca kitabın renginin bir ton açığı ve koyusuyla, seyrek ve hareketsiz çizilir; göz yormaz
-export const ebru = p => `<svg class="ebru" viewBox="0 0 400 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><pattern id="${p}s" width="190" height="900" patternUnits="userSpaceOnUse"><rect width="190" height="900" fill="rgba(255,255,255,0)"/><rect width="46" height="900" fill="rgba(255,255,255,.07)"/><rect x="104" width="54" height="900" fill="rgba(0,0,0,.12)"/></pattern><filter id="${p}m" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.004 0.0025" numOctaves="2" seed="7" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="110" xChannelSelector="R" yChannelSelector="G"/></filter></defs><rect x="-100" y="-100" width="600" height="1100" fill="url(#${p}s)" filter="url(#${p}m)" transform="rotate(10 200 450)"/></svg>`;
+// Sol bölümün zemini kitabın kendi kapağıdır: büyütülüp yumuşakça bulanıklaştırılır, üstüne kitabın rengi biner. Kapak yoksa düz renk kalır
+export const backdrop = b => (b && b.cover ? `<div class="bd" aria-hidden="true" style="background-image:url('${esc(hiRes(b.cover))}')"></div>` : '');
 
 // Okuma odasında kullanılan küçük süsler
 export const MOON = '<svg class="moon" viewBox="0 0 32 32" aria-hidden="true"><path fill="#e1b56c" d="M20 3A13 13 0 1 0 29 22A10.5 10.5 0 0 1 20 3Z"/></svg>';

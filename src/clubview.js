@@ -3,7 +3,7 @@ import { $, esc } from './util.js';
 import { TC as T, TN as N } from './strings.js';
 import { searchBooks } from './books.js';
 import { addToShelf } from './shelf.js';
-import { book3d, flat } from './parts.js';
+import { book3d, flat, hiRes } from './parts.js';
 import { watchCol, watchDoc, add, patch, remove, createClub, makeInvite, getInvite, joinClub, leaveClub } from './clubs.js';
 
 const GENERIC_Q = ['Kitabın sonu sana tatmin edici geldi mi? Seni şaşırttı mı?', 'En çok hangi karakterle bağ kurdun, neden?', 'Karakterlerin kararları sana inandırıcı geldi mi?', 'Ana karakter kitabın başından sonuna nasıl değişti?', 'Olayların altında bu kitap sence aslında ne anlatıyor?', 'Hikâye bittikten sonra karakterlere ne olduğunu düşünüyorsun?', 'Sesli okumak istediğin bir bölüm var mı? Neden o bölüm?', 'Bu kitabı kime önerirdin?'];
@@ -96,7 +96,7 @@ function bigRing(pct, label) {
 }
 const avg = b => { const v = Object.values(b.ratings || {}); return v.length ? v.reduce((a, x) => a + x, 0) / v.length : 0; };
 const stars = n => (n ? `<span class="stars">${'★'.repeat(Math.round(n))}</span>` : '');
-const bg = b => (b.cover ? `background-image:url('${esc(b.cover)}')` : 'background:var(--forest)');
+const bg = b => (b.cover ? `background-image:url('${esc(hiRes(b.cover))}')` : 'background:var(--forest)');
 const railItem = b => `<a class="rail-item tilt" href="${bookLink(b)}"><span class="rail-cover">${coverHTML(b)}</span><span class="t">${esc(b.title)}</span><span class="a">${esc(b.author || '—')}</span>${stars(avg(b))}</a>`;
 function nextPicker() {
   const rs = readers();

@@ -1045,3 +1045,10 @@ body.in-room .lp > .ebru { display: none; }
 .covs button { flex: none; width: 64px; aspect-ratio: 2/3; padding: 0; border: 2px solid transparent; border-radius: 3px; background: var(--sand); cursor: pointer; overflow: hidden; }
 .covs button.on { border-color: var(--book); }
 .covs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Ebru yerine kapaktan zemin: kitabın kapağı büyütülüp bulanıklaştırılır, kitabın rengiyle karışır */
+.lp > .ebru, .cardk-l > .ebru { display: none; }
+.lp > .bd, .cardk-l > .bd { position: absolute; inset: -60px; z-index: 0; background-size: cover; background-position: center; filter: blur(40px) saturate(1.15); opacity: .6; pointer-events: none; }
+.lp::after { z-index: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .18), transparent 22%, transparent 70%, rgba(0, 0, 0, .28)), linear-gradient(270deg, rgba(0, 0, 0, .22), transparent 40px); }
+.cardk-l::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(60% 50% at 50% 50%, transparent, rgba(0, 0, 0, .22)); }
+.cardk-l > .cardk-cv { position: relative; z-index: 1; }
+body.in-room .lp > .bd { display: none; }

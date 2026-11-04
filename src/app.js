@@ -2,9 +2,9 @@ import { T, TK, TP, TN } from './strings.js';
 import { viewProfile, profileSubmit } from './profile.js';
 import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
 import { viewLibrary, cardHTML, playPanel, scanBarcode } from './library.js';
-import { coverHTML, flat, ebru, colorOf, learnColor } from './parts.js';
+import { coverHTML, flat, backdrop, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
-import { searchBooks, fillInfo, editions } from './books.js';
+import { searchBooks, fillInfo, coverChoices } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
@@ -28,7 +28,7 @@ const fail = err => toast(T.authErrors[err.code] || T.error);
 const shelfBook = id => S.shelf.find(b => b.id === id);
 function viewLanding() {
   const signup = S.mode === 'signup';
-  return `<div class="shell landing2" style="--book:#2c5a47"><aside class="lp">${ebru('l')}
+  return `<div class="shell landing2" style="--book:#2c5a47"><aside class="lp">
       <span class="cap">${TN.firstPage}</span><div class="lp-center"><h1 class="kt light xl">Kuytu</h1><span class="rule-s"></span><p class="pq light">${T.tagline.replace(' farklı', '<br>farklı')}</p></div><span class="cap">${TN.lpFoot}</span></aside>
     <section class="pp"><div class="pp-in narrow">
       <p class="cap">İÇİNDEKİLER</p>
@@ -108,13 +108,13 @@ function updateCard() {
   c.style.setProperty('--fx', f.x + 'px');
   c.style.setProperty('--fy', f.y + 'px');
 }
-// Her sayfa iki parça: solda kitabın renginde ebrulu iç kapak, sağda kitap sayfası. Kurdele yalnızca sayfaya girerken iner
+// Her sayfa iki parça: solda kitabın kapağından bulanık zemin, sağda kitap sayfası. Kurdele yalnızca sayfaya girerken iner
 const defaultLeft = () => { const b = readingBook(S); return `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a></div><div class="lp-mid">${b ? flat(b, 220, 'big') : ''}</div>`; };
 function shell(o) {
   const fresh = S.fresh;
   S.fresh = false;
   const book = o.book || readingBook(S);
-  const html = `<div class="shell" style="--book:${colorOf(book)}"><aside class="lp">${ebru('e')}${o.left || defaultLeft()}</aside>
+  const html = `<div class="shell" style="--book:${colorOf(book)}"><aside class="lp">${backdrop(book)}${o.left || defaultLeft()}</aside>
     <section class="pp">${o.ribbon ? `<div class="rbn${fresh ? ' drop' : ''}">${esc(o.ribbon)}</div>` : ''}${nav()}${S.view === 'k' || S.view === 'kb' ? clubTabs() : ''}<div class="pp-in">${o.right}</div>${o.folio ? `<div class="folio">— ${o.folio} —</div>` : ''}</section></div>`;
   if (book) setTimeout(() => learnColor(book, hex => { const s = $('.shell'); if (s) s.style.setProperty('--book', hex); }));
   return html;
@@ -218,7 +218,7 @@ document.addEventListener('click', e => {
   if (a === 'findcovers') {
     const b = shelfBook(S.bookId);
     S.covers = 'loading'; render();
-    editions(b).then(l => { S.covers = [...new Set(l.map(r => r.cover).filter(Boolean))].slice(0, 12); }).catch(() => { S.covers = []; }).then(() => render());
+    coverChoices(b).then(l => { S.covers = l; }).catch(() => { S.covers = []; }).then(() => render());
   }
   if (a === 'pickcover') { const f = $('#edit-form'); if (f) f.cover.value = el.dataset.u; document.querySelectorAll('.covs button').forEach(x => x.classList.toggle('on', x === el)); }
   if (a === 'bdel') {
@@ -376,19 +376,34 @@ document.addEventListener('submit', async e => {
 });
 
 setOnFinish(() => finishSession());
-// Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu)
-const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu')) || []; } catch (e) { return []; } })());
+// Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu2)
+const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu2')) || []; } catch (e) { return []; } })());
 let filling = false;
 async function fillMissing(uid, list) {
   if (filling) return;
   filling = true;
   for (const b of list.filter(x => (!x.cover || !x.pages) && x.title && !tried.has(x.id)).slice(0, 8)) {
     tried.add(b.id);
-    try { localStorage.setItem('kuytu-doldu', JSON.stringify([...tried])); } catch (e) {}
+    try { localStorage.setItem('kuytu-doldu2', JSON.stringify([...tried])); } catch (e) {}
     try { const data = await fillInfo(b); if (Object.keys(data).length) await updateShelf(uid, b.id, data); } catch (e) {}
   }
   filling = false;
 }
+
+// Kaynaklarda kapağı olmayan kitap için elindeki kitabın fotoğrafı: 900 piksel boya küçültülür, raf belgesine yazılır
+document.addEventListener('change', e => {
+  if (e.target.id !== 'cover-photo' || !e.target.files[0]) return;
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(img.src);
+    const k = Math.min(1, 900 / img.height), c = document.createElement('canvas');
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    updateShelf(S.user.uid, S.bookId, { cover: c.toDataURL('image/jpeg', 0.82) }).then(() => { S.editing = false; S.covers = null; toast(TN.coverSaved); render(); }).catch(fail);
+  };
+  img.onerror = () => fail(new Error('image'));
+  img.src = URL.createObjectURL(e.target.files[0]);
+});
 
 initClubs({ S, toast, fail, render: () => render(), coverHTML });
 route();
