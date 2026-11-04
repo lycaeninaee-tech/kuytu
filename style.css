@@ -1017,3 +1017,5 @@ body.in-room .lp > .ebru { display: none; }
 .search-page .searchbar { max-width: 760px; display: flex; gap: 12px; align-items: flex-end; }
 .search-page .searchbar input { flex: 1; }
 @media (max-width: 860px) { .chips-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-right: 46px; } .chips-row::-webkit-scrollbar { display: none; } .chips-row .pl { flex: none; } }@media (max-width: 860px) { .search-page .searchbar { margin-right: 46px; } .search-page .searchbar input { font-size: 20px; } }
+/* Kulüpten gelen not başlığın üstüne binmesin: sayfa akışında, kenar notu görünümünde durur */
+.marg { position: static; width: auto; max-width: 440px; transform: rotate(-1deg); margin: 4px 0 0 auto; }
