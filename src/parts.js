@@ -64,6 +64,18 @@ export const book3d = (b, w) => flat(b, w, 'big');
 // Sol bölümün zemini kitabın kendi kapağıdır: büyütülüp yumuşakça bulanıklaştırılır, üstüne kitabın rengi biner. Kapak yoksa düz renk kalır
 export const backdrop = b => (b && b.cover ? `<div class="bd" aria-hidden="true" style="background-image:url('${esc(hiRes(b.cover))}')"></div>` : '');
 
+// Kitabın sayfa kenarı: okunan sayfalar kitabın renginde, kurdele kaldığın yerde.
+// Son bakıştan bu yana okunanlar kısa bir animasyonla dolar; araya giren yeniden çizimlerde animasyon kaldığı yerden sürer
+let seen = {}, anim = null;
+try { seen = JSON.parse(localStorage.getItem('kuytu-kenar') || '{}'); } catch (e) {}
+export function edge(b, pct) {
+  const last = b.id in seen ? seen[b.id] : 0, running = anim && anim.id === b.id && anim.p === pct && Date.now() < anim.at + 2000;
+  if (!running) anim = last < pct ? { id: b.id, from: last, p: pct, at: Date.now() } : null;
+  if (seen[b.id] !== pct) { seen[b.id] = pct; try { localStorage.setItem('kuytu-kenar', JSON.stringify(seen)); } catch (e) {} }
+  const a = anim && anim.id === b.id ? anim : null;
+  return `<div class="pedge${a ? ' grow' : ''}" style="--p:${pct}%;--from:${a ? a.from : pct}%;--dl:${a ? a.at - Date.now() : 0}ms" role="img" aria-label="%${pct}"><i class="ed-read"></i><i class="ed-mark"></i></div>`;
+}
+
 // Okuma odasında kullanılan küçük süsler
 export const MOON = '<svg class="moon" viewBox="0 0 32 32" aria-hidden="true"><path fill="#e1b56c" d="M20 3A13 13 0 1 0 29 22A10.5 10.5 0 0 1 20 3Z"/></svg>';
 export const star = (x, y, size, delay = 0) => `<svg class="tw" style="left:${x};top:${y};width:${size}px;height:${size}px;animation-delay:${delay}s" viewBox="0 0 24 24" aria-hidden="true"><path fill="#e0cdaa" d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></svg>`;

@@ -91,6 +91,8 @@ export const TC = {
 export const TN = {
   today: 'Bugün', lib: 'Kitaplığım', club: 'Kulüpler', read: 'Okuma', profile: 'Profilim',
   pagesLeft: 'bitmesine {n} sayfa', wPages: 'bu hafta sayfa', wMin: 'bu hafta dakika', yearBooks: '{y} içinde biten', alsoReading: 'BUNLARI DA OKUYORSUN',
+  trail: 'YIL YOLU', trailLeft: 'hedefe {n} kitap', trailDone: 'hedefe vardın', trailNoGoal: 'Profilim’den yıl hedefi koyabilirsin', bookNo: '{n}. kitap',
+  tasks: 'HAFTANIN GÖREVLERİ', t3days: 'Bu hafta 3 gün oku', t100: 'Haftada 100 sayfa', t20: 'Bir oturumda 20 dakika', tQuote: 'Bir alıntı kaydet', seal: 'Bu haftanın mührü senin',
   otherCover: 'KAPAK YANLIŞ MI?', findCovers: 'Başka kapak seç', noCovers: 'Bu kitabın kapağı kitap kaynaklarında yok. Elindeki kitabın fotoğrafını çekebilirsin.', shootCover: 'Kapağın fotoğrafını çek', coverSaved: 'Kapak kaydedildi', clubsCap: 'KULÜPLER', clubsInvite: 'İstersen bir kulübe katıl ya da kendi kulübünü kur',
   morning: 'Günaydın', noon: 'Merhaba', evening: 'İyi akşamlar', night: 'İyi geceler', leftOff: 'kaldığın yer', clubReads: 'kulübün okuyor',
   enter: 'Kuytuya gir', addPage: 'Sayfa ekle', whichPage: 'Kaçıncı sayfadasın?', toClub: 'Kulübe git', emptyHero: 'İlk kitabın seni bekliyor', findFirst: 'Kitap ara',

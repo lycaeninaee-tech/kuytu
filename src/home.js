@@ -3,7 +3,7 @@ import { esc, dayKey, sessDay } from './util.js';
 import { TN as N, T } from './strings.js';
 import { streaks, viewTakip } from './takip.js';
 import { viewTimer, viewMusic } from './reading.js';
-import { flat, emLast } from './parts.js';
+import { flat, emLast, edge } from './parts.js';
 
 const greet = () => { const h = new Date().getHours(); return h < 6 ? N.night : h < 12 ? N.morning : h < 18 ? N.noon : N.evening; };
 const brand = (extra = '') => `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a>${extra ? `<span class="cap">${extra}</span>` : ''}</div>`;
@@ -14,6 +14,25 @@ const spines = S => {
   return `<div class="spines">${[0, 1, 2, 3, 4, 5, 6].map(i => { const d = new Date(mon); d.setDate(mon.getDate() + i); return `<span class="${days.has(dayKey(d)) ? 'on' : ''}" title="${esc(d.toLocaleDateString('tr-TR', { weekday: 'long' }))}"></span>`; }).join('')}</div>`;
 };
 export const readingBook = S => S.shelf.find(b => b.status === 'okuyorum');
+// Yıl yolu: hedefteki her kitap patikada bir durak. Biten kitaplar duraklara sırayla yerleşir, yürüyen nokta okunan kitabın yüzdesi kadar ileride durur
+const trail = (done, goal, frac) => {
+  const n = Math.max(goal || 12, done.length + 1), W = 560;
+  const pt = t => [14 + t * (W - 28), 46 + 24 * Math.sin(t * Math.PI * 3)];
+  const d = Array.from({ length: 81 }, (_, i) => pt(i / 80)).map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+  const stops = Array.from({ length: n }, (_, i) => {
+    const [x, y] = pt((i + 1) / n), b = done[i], end = i === n - 1;
+    return `<circle class="${b ? 'on' : ''}${end ? ' end' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${end ? 8 : 6}"><title>${b ? esc(b.title) : N.bookNo.replace('{n}', i + 1)}</title></circle>`;
+  }).join('');
+  const [wx, wy] = pt(Math.min(done.length + frac, n) / n);
+  return `<svg class="trail" viewBox="0 0 ${W} 92" role="img" aria-label="${done.length} / ${n}"><path d="${d}"/>${stops}<circle class="walker" cx="${wx.toFixed(1)}" cy="${wy.toFixed(1)}" r="9"/></svg>`;
+};
+// Haftanın görevleri yalnızca var olan kayıtlardan hesaplanır: oturumlar ve alıntılar
+const tasks = (S, wk, wPages, mon) => {
+  const days = new Set(wk.map(sessDay)).size, long = wk.some(s => (Number(s.seconds) || 0) >= 1200), quote = (S.quotes || []).some(q => q.at && new Date(q.at) >= mon);
+  const list = [[N.t3days, Math.min(days, 3), 3], [N.t100, Math.min(wPages, 100), 100], [N.t20, long ? 1 : 0, 1], [N.tQuote, quote ? 1 : 0, 1]];
+  const all = list.every(([, v, max]) => v >= max);
+  return `<ul class="tasks">${list.map(([t, v, max]) => `<li class="${v >= max ? 'ok' : ''}"><i aria-hidden="true"></i><span>${t}</span>${max > 1 ? `<small>${v} / ${max}</small><b class="tbar"><b style="width:${Math.round(v / max * 100)}%"></b></b>` : ''}</li>`).join('')}</ul>${all ? `<p class="seal">${N.seal}</p>` : ''}`;
+};
 
 // Bugün kişinin kendi okumasıdır: kitabı, haftası, yıl hedefi. Kulüp en altta tek satırlık bir köşe
 export function viewToday(S, club) {
@@ -29,7 +48,7 @@ export function viewToday(S, club) {
   const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
   const wk = S.sessions.filter(s => new Date(s.at) >= mon);
   const wPages = wk.reduce((n, s) => n + (Number(s.pages) || 0), 0), wMin = Math.round(wk.reduce((n, s) => n + (Number(s.seconds) || 0), 0) / 60);
-  const year = String(new Date().getFullYear()), done = S.shelf.filter(x => x.status === 'okudum' && String(x.finishedAt || '').startsWith(year)).length;
+  const year = String(new Date().getFullYear()), doneList = S.shelf.filter(x => x.status === 'okudum' && String(x.finishedAt || '').startsWith(year)).sort((a, b) => String(a.finishedAt).localeCompare(String(b.finishedAt))), done = doneList.length;
   const goal = Number(S.profile.yearGoal) || 0, gp = goal ? Math.min(100, Math.round(done / goal * 100)) : 0;
   const cb = club && club.book;
   const lp = `${brand(mine ? N.colorOf : '')}
@@ -38,7 +57,7 @@ export function viewToday(S, club) {
   const right = `${needsVerify ? `<p class="notice">${T.verify} <button class="linkbtn" type="button" data-act="resend">${T.resend}</button></p>` : ''}
     <p class="lbl">${greet()} ${name}. ${mine ? N.leftOff2 : ''}</p>
     ${mine ? `<h1 class="kt">${emLast(mine.title)}</h1>
-      ${pct !== null ? `<div class="prog big"><span style="width:${pct}%"></span></div><p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}</p>` : ''}
+      ${pct !== null ? `${edge(mine, pct)}<p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}</p>` : ''}
       <div class="acts"><a class="pl on" href="#okuma">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
       ${S.quick ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}`
     : `<h1 class="kt">${N.emptyHero}</h1><div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a></div>`}
@@ -49,6 +68,8 @@ export function viewToday(S, club) {
       <a href="#profil"><b>${done}${goal ? `<small>/${goal}</small>` : ''}</b><span>${N.yearBooks.replace('{y}', year)}</span>${goal ? `<i class="gbar"><i style="width:${gp}%"></i></i>` : ''}</a>
     </div>
     <div class="blk"><p class="cap">${N.week}</p>${spines(S)}</div>
+    <div class="blk"><p class="cap">${N.tasks}</p>${tasks(S, wk, wPages, mon)}</div>
+    <a class="blk" href="#profil"><p class="cap">${N.trail} · ${goal ? (done >= goal ? N.trailDone : N.trailLeft.replace('{n}', goal - done)) : N.trailNoGoal}</p>${trail(doneList, goal, pct !== null ? pct / 100 : 0)}</a>
     ${others.length ? `<div class="blk"><p class="cap">${N.alsoReading}</p><div class="mini">${others.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div></div>` : ''}
     <div class="two bottom">
       <div class="blk"><p class="cap">${N.waiting}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('') || `<a class="lbl" href="#ara">${N.placeBook}</a>`}</div></div>
