@@ -9,7 +9,7 @@ import { searchBooks, fillInfo, coverChoices } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
-import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn } from './reading.js';
+import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer } from './reading.js';
 import { shareRecap } from './takip.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
@@ -313,6 +313,8 @@ document.addEventListener('click', e => {
   if (a === 'roomtoggle') setRoom(!document.body.classList.contains('in-room'));
   if (a === 'roomopt') setOption(el.dataset.kind, el.dataset.v);
   if (a === 'tstop') finishSession();
+  if (a === 'tpause') togglePause();
+  if (a === 'rnote') { const on = document.body.classList.toggle('note-open'); el.setAttribute('aria-expanded', String(on)); if (on) { const n = $('#room-note'); if (n) n.focus(); } }
   if (a === 'recapshare') shareRecap(S).catch(fail);
   if (a === 'msave') {
     let v = $('#music-url').value.trim();
@@ -349,27 +351,45 @@ const bumpPage = (bookId, pages) => {
   if (reachedEnd(b, (b.page || 0) + pages)) finishBook(b);
   else updateShelf(S.user.uid, bookId, { page: (b.page || 0) + pages }).catch(fail);
 };
+// Bitir: saat durur ve kâğıt renginde bir kart "Kaçıncı sayfadasın?" diye sorar. Kaydedince oturum yazılır,
+// kaldığın sayfa güncellenir, odada yazılan kenar notu kitabın notlarına eklenir. "Odaya dön" hiçbir şey yazmaz
 function finishSession() {
-  const r = stopTimer();
-  if (!r || r.seconds < 5) return;
-  const added = addSession(S.user.uid, { bookId: r.bookId, title: r.title, seconds: r.seconds, at: new Date().toISOString() });
-  added.catch(fail);
-  if (r.seconds < 60) return;
+  if ($('.rsheet-wrap')) return;
+  const r = holdTimer();
+  if (!r) return;
+  if (r.seconds < 60 && !r.note.trim()) { stopTimer(); if (r.seconds >= 5) addSession(S.user.uid, { bookId: r.bookId, title: r.title, seconds: r.seconds, at: new Date().toISOString() }).catch(fail); return; }
+  const b = shelfBook(r.bookId) || { title: r.title }, total = b.pages || 0, start = r.startPage || b.page || 0;
   const el = document.createElement('div');
-  el.className = 'done-moment';
-  el.innerHTML = `<p class="label">${TK.done}</p><p class="dm-n">${Math.round(r.seconds / 60)}<small> ${TK.minutesWord}</small></p><p>${esc(r.title)}</p>
-    <form class="dm-form"><label>${TK.howMany}<input name="pages" type="number" min="1" max="5000" inputmode="numeric"></label><button class="btn" type="submit">${T.save}</button><button class="btn ghost" type="button" data-skip>${TK.skip}</button></form>`;
-  const close = () => { el.classList.add('off'); setTimeout(() => el.remove(), 400); };
-  el.querySelector('[data-skip]').addEventListener('click', close);
-  el.querySelector('form').addEventListener('submit', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    const pages = Math.round(Number(e.target.elements.pages.value)) || 0;
-    if (pages > 0 && pages <= 5000) { bumpPage(r.bookId, pages); added.then(d => patchSession(S.user.uid, d.id, { pages })).catch(fail); }
+  el.className = 'rsheet-wrap';
+  el.style.setProperty('--rc', colorOf(b));
+  el.innerHTML = `<form class="rsheet" role="dialog" aria-modal="true" aria-labelledby="rs-h">
+    <div class="rs-head">${b.cover ? `<img src="${esc(b.cover)}" alt="">` : ''}<div><span class="rs-cap">${TK.done}</span><h2 id="rs-h">${TK.whichPage}</h2></div></div>
+    <div class="rs-sum"><div><span class="rs-cap">${TK.dur}</span><b>${Math.max(1, Math.round(r.seconds / 60))} dk</b></div>${start ? `<div><span class="rs-cap">${TK.startedAt}</span><b>s. ${start}</b></div>` : ''}</div>
+    <div class="rs-page"><input name="page" type="number" min="0" max="${total || 20000}" inputmode="numeric" placeholder="${start || ''}" aria-label="${TK.whichPage.replace(/<[^>]+>/g, '')}">${total ? `<span>/ ${total} ${TK.ofPages}</span>` : ''}</div>
+    <div class="rs-quick">${[10, 20, 30].map(n => `<button type="button" data-q="${n}">+${n}</button>`).join('')}${total ? `<button type="button" data-q="end">${TK.finishedIt}</button>` : ''}</div>
+    <label class="rs-note">${TK.noteTitle}<input name="note" maxlength="600" value="${esc(r.note)}"></label>
+    <div class="rs-acts"><button type="button" class="q" data-nopage>${TK.saveNoPage}</button><span><button type="button" class="pl" data-back>${TK.enter2}</button><button type="submit" class="pl on">${T.save}</button></span></div>
+  </form>`;
+  const f = el.querySelector('form');
+  const close = () => { el.remove(); };
+  el.querySelectorAll('[data-q]').forEach(q => q.addEventListener('click', () => { f.page.value = q.dataset.q === 'end' ? total : Math.min(total || 20000, start + Number(q.dataset.q)); }));
+  el.querySelector('[data-back]').addEventListener('click', () => { close(); releaseTimer(r.was); });
+  const commit = withPage => {
+    const page = withPage ? Math.round(Number(f.page.value)) || 0 : 0;
+    if (withPage && page && page < start) return toast(TK.pageLow);
+    const fin = stopTimer() || r, note = f.note.value.trim(), uid = S.user.uid, diff = page ? page - start : 0;
+    addSession(uid, { bookId: r.bookId, title: r.title, seconds: r.seconds, at: new Date().toISOString(), ...(diff > 0 ? { pages: diff } : {}) }).catch(fail);
+    if (note && shelfBook(r.bookId)) add(`users/${uid}/notes`, { bookId: r.bookId, text: note, ...(page ? { page } : {}), at: new Date().toISOString() }).catch(fail);
+    if (page && shelfBook(r.bookId)) { if (reachedEnd(shelfBook(r.bookId), page)) finishBook(shelfBook(r.bookId)); else updateShelf(uid, r.bookId, { page }).catch(fail); }
     close();
-  });
+    toast(TK.saved);
+    return fin;
+  };
+  el.querySelector('[data-nopage]').addEventListener('click', () => commit(false));
+  f.addEventListener('submit', e => { e.preventDefault(); e.stopPropagation(); commit(true); });
+  el.addEventListener('keydown', e => { if (e.key === 'Escape') { close(); releaseTimer(r.was); } });
   document.body.appendChild(el);
-  el.querySelector('input').focus();
+  f.page.focus();
 }
 // Kullanıcı adı yazılırken düzeltilir: Türkçe harf, büyük harf ve boşluk hata vermesin
 const TR = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' };

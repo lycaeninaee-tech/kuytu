@@ -1,7 +1,7 @@
 // Okuma köşesi: zamanlayıcı, tam ekran oda, ışık, ortam sesi ve müzik
 import { $, esc, dayKey, sessDay } from './util.js';
 import { TK as T } from './strings.js';
-import { book3d, MOON, star, CAT } from './parts.js';
+import { book3d, colorOf } from './parts.js';
 
 export const MODES = [['serbest', '∞', 'Serbest okuma', 0, 0], ['k15', '15', 'Kısa tur · 15 / 3', 15, 3], ['p25', '25', 'Pomodoro · 25 / 5', 25, 5], ['p50', '50', 'Derin odak · 50 / 10', 50, 10], ['ozel', '+', 'Özel döngü', 0, 0], ['sayac', '↓', 'Geri sayım', 0, 0]];
 let timer = null, pref = 'p25', roomLight = 'alaca', sound = 'off', acx = null, src = null, onFinish = () => {}, custom = { f: 30, b: 5, c: 30 };
@@ -15,14 +15,16 @@ try {
 } catch (e) {}
 const save = () => { try { if (timer) localStorage.setItem('kuytu-timer', JSON.stringify(timer)); else localStorage.removeItem('kuytu-timer'); } catch (e) {} };
 const mmss = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
-const elapsed = () => Math.floor((Date.now() - timer.start) / 1000);
+// Duraklatılınca saat o anda donar; devam edince başlangıçlar duraklama kadar ileri kayar
+const now = () => (timer && timer.pausedAt) || Date.now();
+const elapsed = () => Math.floor((now() - timer.start) / 1000);
 // Odak ve mola sırayla döner; geçen süreden hangi fazda olunduğu hesaplanır, böylece sayfa yenilense de bozulmaz
 function advance() {
   if (!timer || !timer.focus) return false;
   let changed = false;
   while (true) {
     const len = timer.phase === 'focus' ? timer.focus : timer.brk;
-    if ((Date.now() - timer.phaseStart) / 1000 < len) break;
+    if ((now() - timer.phaseStart) / 1000 < len) break;
     if (timer.phase === 'focus') { timer.done += timer.focus; timer.cycles += 1; timer.phase = 'break'; } else timer.phase = 'focus';
     timer.phaseStart += len * 1000;
     changed = true;
@@ -30,10 +32,28 @@ function advance() {
   if (changed) save();
   return changed;
 }
-const focusSecs = () => (!timer ? 0 : timer.target ? Math.min(elapsed(), timer.target) : !timer.focus ? elapsed() : timer.done + (timer.phase === 'focus' ? Math.floor((Date.now() - timer.phaseStart) / 1000) : 0));
-const pct = () => (timer.target ? Math.min(1, elapsed() / timer.target) : !timer.focus ? (elapsed() % 3600) / 3600 : Math.min(1, (Date.now() - timer.phaseStart) / 1000 / (timer.phase === 'focus' ? timer.focus : timer.brk)));
-const label = () => (timer.target ? mmss(Math.max(0, timer.target - elapsed())) : !timer.focus ? mmss(elapsed()) : mmss(Math.max(0, (timer.phase === 'focus' ? timer.focus : timer.brk) - Math.floor((Date.now() - timer.phaseStart) / 1000))));
-const sub = () => (timer.target ? T.countdown + ' · ' + Math.round(timer.target / 60) + ' dk' : !timer.focus ? T.free : (timer.phase === 'focus' ? T.focus : T.rest) + ' · ' + timer.cycles + ' ' + T.rounds);
+const focusSecs = () => (!timer ? 0 : timer.target ? Math.min(elapsed(), timer.target) : !timer.focus ? elapsed() : timer.done + (timer.phase === 'focus' ? Math.floor((now() - timer.phaseStart) / 1000) : 0));
+const pct = () => (timer.target ? Math.min(1, elapsed() / timer.target) : !timer.focus ? (elapsed() % 3600) / 3600 : Math.min(1, (now() - timer.phaseStart) / 1000 / (timer.phase === 'focus' ? timer.focus : timer.brk)));
+const label = () => (timer.target ? mmss(Math.max(0, timer.target - elapsed())) : !timer.focus ? mmss(elapsed()) : mmss(Math.max(0, (timer.phase === 'focus' ? timer.focus : timer.brk) - Math.floor((now() - timer.phaseStart) / 1000))));
+const sub = () => (timer.target ? T.countdown + ' · ' + Math.round(timer.target / 60) + ' dk' : !timer.focus ? T.free : Math.round(timer.focus / 60) + ' dk ' + T.focus.toLocaleLowerCase('tr') + ' · ' + (timer.cycles + 1) + '. tur');
+const stateLbl = () => (timer.pausedAt ? T.paused : timer.target ? T.countdown + ' · ' + T.leftLbl : !timer.focus ? T.goneLbl : (timer.phase === 'focus' ? T.focus : T.rest) + ' · ' + T.leftLbl);
+export function togglePause() {
+  if (!timer) return;
+  if (timer.pausedAt) { const d = Date.now() - timer.pausedAt; timer.start += d; timer.phaseStart += d; timer.pausedAt = 0; } else timer.pausedAt = Date.now();
+  save();
+  refreshTimer();
+}
+// Bitirirken saat durur; "Odaya dön" denirse önceki haline döner
+export function holdTimer() {
+  if (!timer) return null;
+  const was = !!timer.pausedAt;
+  if (!was) timer.pausedAt = Date.now();
+  save();
+  refreshTimer();
+  return { seconds: focusSecs(), bookId: timer.bookId, title: timer.title, startPage: timer.startPage || 0, note: timer.note || '', was };
+}
+export function releaseTimer(was) { if (timer && !was && timer.pausedAt) togglePause(); }
+export function setNote(v) { if (timer) { timer.note = v; save(); } }
 function chime() {
   try {
     const ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -50,7 +70,7 @@ function chime() {
   } catch (e) {}
 }
 setInterval(() => {
-  if (!timer) return;
+  if (!timer || timer.pausedAt) return;
   if (timer.target && elapsed() >= timer.target) { chime(); onFinish(); return; }
   if (advance()) { chime(); refreshTimer(); return; }
   const el = $('#digits'); if (el) el.textContent = label();
@@ -61,7 +81,9 @@ setInterval(() => {
 export function setSound(k) {
   sound = k;
   if (src) { try { src.stop(); } catch (e) {} src = null; }
-  if (k === 'off') return;
+  // "Listem" ortam sesi çalmaz, kişinin kendi müzik çalarını odada gösterir
+  document.body.classList.toggle('show-music', k === 'list');
+  if (k === 'off' || k === 'list') return;
   try {
     acx = acx || new (window.AudioContext || window.webkitAudioContext)();
     acx.resume();
@@ -93,8 +115,9 @@ export function setRoom(on) {
     if (on && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
     if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
   } catch (e) {}
-  if (on) placeMusic();
+  if (on) { placeMusic(); document.body.classList.toggle('show-music', sound === 'list'); }
 }
+document.addEventListener('input', e => { if (e.target.id === 'room-note') setNote(e.target.value); });
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) document.body.classList.remove('in-room'); });
 
 let current = null; // son çizilen raf ve oturumlar
@@ -104,18 +127,18 @@ function timerBody() {
     const b = shelf.find(x => x.id === timer.bookId) || {};
     const key = dayKey(new Date());
     const today = Math.round(sessions.filter(s => sessDay(s) === key).reduce((a, s) => a + (s.seconds || 0), 0) / 60);
-    const chip = (kind, now, v, t) => `<button type="button" data-act="roomopt" data-kind="${kind}" data-v="${v}" aria-pressed="${now === v}">${t}</button>`;
-    return `<div class="room${timer.focus && timer.phase === 'break' ? ' is-break' : ''}" data-light="${esc(roomLight)}">
+    const chip = (kind, cur, v, t) => `<button type="button" data-act="roomopt" data-kind="${kind}" data-v="${v}" aria-pressed="${cur === v}">${t}</button>`;
+    const from = timer.startPage ? ` · ${T.startPage} ${timer.startPage}` : '';
+    return `<div class="room${timer.focus && timer.phase === 'break' ? ' is-break' : ''}${timer.pausedAt ? ' is-paused' : ''}" data-light="${esc(roomLight)}" style="--rc:${colorOf(b.id ? b : { title: timer.title || '' })}">
       <span class="lamp" aria-hidden="true"></span>
-      <span class="room-sky room-only" aria-hidden="true">${MOON}${star('22%', '16%', 18)}${star('74%', '12%', 13, 1.2)}${star('84%', '30%', 15, 2.3)}</span><span class="room-cat room-only" aria-hidden="true">${CAT}</span>
-      <div class="rtop"><span>${esc(sub())}</span><span>${T.today} ${today} dk</span></div>
-      <div class="rmid"><div class="room-book room-only">${book3d({ title: b.title || timer.title || '', cover: b.cover }, 130)}</div><div class="digits" id="digits">${label()}</div><p class="rtitle">${esc(b.title || timer.title || '')}</p><p class="rauthor">${esc(b.author || '')}</p></div>
-      <div class="rfoot"><div class="rline"><i id="tline" style="--pct:${pct().toFixed(4)}"></i></div>
+      <div class="rtop"><b class="rbrand room-only">Kuytu</b><span>${esc(sub())}</span><span>${T.today} ${today} dk</span><button type="button" class="rshrink room-only" data-act="roomtoggle">${T.shrink} ⌄</button></div>
+      <div class="rmid"><div class="room-book room-only">${book3d({ title: b.title || timer.title || '', cover: b.cover }, 132)}</div><div class="digits" id="digits">${label()}</div><span class="rstate room-only">${esc(stateLbl())}</span><p class="rtitle">${esc(b.title || timer.title || '')}</p><p class="rauthor">${esc(b.author || '')}<span class="room-only">${esc(from)}</span></p><div class="rline"><i id="tline" style="--pct:${pct().toFixed(4)}"></i></div></div>
+      <aside class="rnote room-only"><label for="room-note">${T.noteTitle}</label><textarea id="room-note" rows="3" maxlength="600" placeholder="${T.notePh}">${esc(timer.note || '')}</textarea><span>${T.noteHint}</span></aside>
       <div class="rbot">
-        <div class="chips room-only"><span>${T.light}</span>${chip('light', roomLight, 'gun', T.day)}${chip('light', roomLight, 'alaca', T.dusk)}${chip('light', roomLight, 'gece', T.night)}</div>
-        <div class="chips room-only"><span>${T.sound}</span>${chip('sound', sound, 'off', T.quiet)}${chip('sound', sound, 'rain', T.rain)}${chip('sound', sound, 'fire', T.fire)}</div>
-        <div class="ractions"><button type="button" class="btn ghost room-only" data-act="roomtoggle">${T.shrink}</button><button type="button" class="btn room-off" data-act="roomtoggle">${T.enter2}</button><button type="button" class="btn" data-act="tstop">${T.finish}</button><button type="button" class="btn ghost" data-act="treset">${T.reset}</button></div>
-      </div></div></div>`;
+        <div class="chips room-only" role="group" aria-label="${T.light}"><span>${T.light}</span><div class="rseg">${chip('light', roomLight, 'gun', T.day)}${chip('light', roomLight, 'alaca', T.dusk)}${chip('light', roomLight, 'gece', T.night)}</div></div>
+        <div class="chips room-only" role="group" aria-label="${T.sound}"><span>${T.sound}</span><div class="rseg">${chip('sound', sound, 'off', T.quiet)}${chip('sound', sound, 'rain', T.rain)}${chip('sound', sound, 'fire', T.fire)}${chip('sound', sound, 'list', T.myList)}</div></div>
+        <div class="ractions"><button type="button" class="btn ghost room-only rdesk" data-act="roomtoggle">${T.shrink}</button><button type="button" class="btn room-only rphone" data-act="rnote" aria-expanded="false">${T.noteBtn}</button><button type="button" class="btn room-off" data-act="roomtoggle">${T.enter2}</button><button type="button" class="btn" data-act="tpause">${timer.pausedAt ? T.resume : T.pause}</button><button type="button" class="btn rfin" data-act="tstop">${T.finish}</button><button type="button" class="btn ghost room-off" data-act="treset">${T.reset}</button></div>
+      </div></div>`;
   }
   const opts = shelf.filter(b => b.status !== 'biraktim').sort((a, b) => (a.status === 'okuyorum' ? -1 : 0) - (b.status === 'okuyorum' ? -1 : 0)).map(b => `<option value="${esc(b.id)}">${esc(b.title)}</option>`).join('');
   if (!opts) return `<h2>${T.ask}</h2><p class="muted">${T.needBook} <a href="#ara">${T.findBook}</a></p>`;
@@ -143,7 +166,8 @@ export function startTimer(shelf) {
   const num = (id, lo, hi, d) => Math.min(hi, Math.max(lo, Math.round(Number(($('#' + id) || {}).value)) || d));
   custom = { f: num('t-focus', 1, 180, custom.f), b: num('t-break', 1, 60, custom.b), c: num('t-count', 1, 300, custom.c) };
   try { localStorage.setItem('kuytu-custom', JSON.stringify(custom)); } catch (e) {}
-  timer = { bookId, title: b.title, start: now, phase: 'focus', phaseStart: now, done: 0, cycles: 0, focus: m[3] * 60, brk: m[4] * 60 };
+  timer = { bookId, title: b.title, start: now, phase: 'focus', phaseStart: now, done: 0, cycles: 0, focus: m[3] * 60, brk: m[4] * 60, startPage: b.page || 0, note: '' };
+  if (sound === 'off' && current && current.profile && current.profile.music) sound = 'list';
   if (m[0] === 'ozel') { timer.focus = custom.f * 60; timer.brk = custom.b * 60; }
   if (m[0] === 'sayac') timer.target = custom.c * 60;
   save();
