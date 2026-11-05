@@ -92,7 +92,9 @@ export function cardHTML(S, b, first) {
   const took = b.status === 'okudum' && b.finishedAt && firstSession ? Math.max(1, Math.round((new Date(b.finishedAt) - new Date(firstSession)) / 864e5)) : 0;
   const storyLine = [sess.length ? N.sessLine.replace('{s}', sess.length).replace('{m}', mins) : '', took ? N.tookDays.replace('{n}', took) : ''].filter(Boolean).join(' · ');
   const quotesN = bookQuotes(S, b).length;
-  const st = STATUS.map(([k, label]) => `<button type="button" class="pl sm ${b.status === k ? 'ink' : ''}" data-act="status" data-v="${k}">${label}</button>`).join('');
+  const st = STATUS.map(([k, label]) => `<button type="button" class="${b.status === k ? 'on' : ''}" aria-pressed="${b.status === k}" data-act="status" data-v="${k}">${label}</button>`).join('');
+  const tab = S.cardTab || 'okuma', notesN = (S.notes || []).filter(n => n.bookId === b.id).length + quotesN;
+  const tabs = [['okuma', N.tabRead, 0], ['notlar', N.tabNotes, notesN], ['kunye', N.tabInfo, 0]].map(([k, l, n]) => `<button type="button" role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-act="btab" data-v="${k}">${l}${n ? `<em>${n}</em>` : ''}</button>`).join('');
   const stars = [1, 2, 3, 4, 5].map(n => `<button type="button" class="${(b.rating || 0) >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n}">★</button>`).join('');
   const editForm = `<form id="edit-form" class="editf">
       <label>${T.bookTitle}<input name="title" required maxlength="200" value="${esc(b.title)}"></label>
@@ -114,19 +116,24 @@ export function cardHTML(S, b, first) {
       <p class="lbl">${esc([b.author || T.unknownAuthor, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p>
       ${b.thought && !S.editing ? `<p class="pq thought">“${esc(b.thought)}”</p>` : ''}
       ${S.editing ? editForm : `
-      <div class="chips-row">${st}</div>
-      <div class="rate" role="group" aria-label="${T.rating}">${stars}</div>
-      <form id="page-form" class="pagebar"><label>${T.currentPage}<input name="page" type="number" min="0" max="20000" value="${b.page || ''}"></label><label>${T.pages}<input name="pages" type="number" min="1" max="20000" value="${b.pages || ''}"></label><button class="pl" type="submit">${T.save}</button></form>
+      <div class="btabs" role="tablist">${tabs}</div>
+      ${tab === 'okuma' ? `
+      <div class="seg" role="group" aria-label="${T.status || N.story}">${st}</div>
+      <div class="cread">
+        <form id="page-form" class="pagebar"><label>${T.currentPage}<input name="page" type="number" min="0" max="20000" value="${b.page || ''}"></label><label>${T.pages}<input name="pages" type="number" min="1" max="20000" value="${b.pages || ''}"></label><button class="pl" type="submit">${T.save}</button></form>
+        <div class="rate" role="group" aria-label="${T.rating}">${stars}</div>
+      </div>
+      ${story.length ? `<div class="story"><p class="cap">${N.story}</p><ol>${story.map(([k, d]) => `<li><b>${esc(k)}</b><span>${fmt(d)}</span></li>`).join('')}</ol>${storyLine ? `<p class="lbl small">${storyLine}</p>` : ''}</div>` : ''}
+      <div class="acts"><a class="pl on" href="#okuma">${N.startRead}</a><button type="button" class="pl ${b.fav ? 'ink' : ''}" data-act="fav">♥ ${b.fav ? N.unheart : N.heart}</button></div>`
+      : tab === 'notlar' ? margin(S, b) : `
       <div class="kunye">
         <div><p class="cap">${N.who}</p><p class="sf">${b.lentTo ? esc(b.lentTo) + (b.lentAt ? ', ' + fmt(b.lentAt) : '') : N.mine}</p></div>
         <div><p class="cap">${N.inClub}</p><p class="sf">${b.status === 'okudum' && S.club && S.club.books.some(x => x.title === b.title) ? N.readTogether : '–'}</p></div>
         <div><p class="cap">${N.from}</p><p class="sf">${b.source ? esc(b.source) : `<span class="muted">–</span>`}</p></div>
         <div><p class="cap">${N.quoteN}</p><p class="sf">${quotesN}</p></div>
       </div>
-      ${story.length ? `<div class="story"><p class="cap">${N.story}</p><ol>${story.map(([k, d]) => `<li><b>${esc(k)}</b><span>${fmt(d)}</span></li>`).join('')}</ol>${storyLine ? `<p class="lbl small">${storyLine}</p>` : ''}</div>` : ''}
-      ${margin(S, b)}
       ${b.lentTo ? `<div class="acts"><button type="button" class="pl on" data-act="lendback">${N.back}</button></div>` : `<form id="lend-form" class="pagebar"><label>${N.lendTo}<input name="who" maxlength="60" required></label><button class="pl" type="submit">${N.lend}</button></form>`}
-      <div class="acts"><button type="button" class="pl ${b.fav ? 'ink' : ''}" data-act="fav">♥ ${b.fav ? N.unheart : N.heart}</button><button type="button" class="pl" data-act="wish">${b.wish ? N.gotIt : N.toWish}</button><a class="pl" href="#okuma">${N.startRead}</a></div>`}
+      <div class="acts"><button type="button" class="pl" data-act="wish">${b.wish ? N.gotIt : N.toWish}</button></div>`}`}
     </div>
   </div>`;
 }

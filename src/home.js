@@ -1,7 +1,7 @@
 // Bugün, Okuma ve Arama sayfaları. Her sayfa iki parça döndürür: sol (kitabın rengi) ve sağ (kitap sayfası)
 import { esc, dayKey, sessDay } from './util.js';
 import { TN as N, T } from './strings.js';
-import { streaks, viewTakip } from './takip.js';
+import { streaks, logForm, sessionsList } from './takip.js';
 import { viewTimer, viewMusic } from './reading.js';
 import { flat, emLast, edge } from './parts.js';
 
@@ -14,15 +14,15 @@ const spines = S => {
   return `<div class="spines">${[0, 1, 2, 3, 4, 5, 6].map(i => { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dayKey(d); return `<span class="${days.has(k) ? 'on' : ''}${k === today ? ' now' : ''}" title="${esc(d.toLocaleDateString('tr-TR', { weekday: 'long' }))}"><small>${d.toLocaleDateString('tr-TR', { weekday: 'narrow' })}</small></span>`; }).join('')}</div>`;
 };
 export const readingBook = S => S.shelf.find(b => b.status === 'okuyorum');
-// Kitabın aşağı yukarı ne zaman biteceği: son iki haftanın sayfa kayıtlarından, yoksa başladığından beri gelinen sayfadan.
-// Başlangıcı bilinmeyen ya da çok eski olan kitapta hiç söylenmez
+// Kitabın aşağı yukarı ne zaman biteceği: başladığından beri gelinen sayfadan (son 45 gün içinde başladıysa),
+// yoksa son iki haftanın sayfa kayıtlarından. İkisi de yoksa hiç söylenmez
 const finishBy = (S, b, left) => {
   if (!left) return '';
-  const from = Date.now() - 14 * 864e5, logged = S.sessions.filter(s => s.bookId === b.id && new Date(s.at) >= from).reduce((n, s) => n + (Number(s.pages) || 0), 0);
-  let perDay = logged / 14;
-  if (!perDay && b.page) {
-    const since = (Date.now() - new Date(b.startedAt || b.addedAt || 0)) / 864e5;
-    if (since > 0 && since <= 45) perDay = b.page / Math.max(1, since);
+  const since = (Date.now() - new Date(b.startedAt || b.addedAt || 0)) / 864e5;
+  let perDay = b.page && since > 0 && since <= 45 ? b.page / Math.max(1, since) : 0;
+  if (!perDay) {
+    const from = Date.now() - 14 * 864e5;
+    perDay = S.sessions.filter(s => s.bookId === b.id && new Date(s.at) >= from).reduce((n, s) => n + (Number(s.pages) || 0), 0) / 14;
   }
   if (!perDay) return '';
   const d = new Date(Date.now() + Math.ceil(left / perDay) * 864e5);
@@ -95,21 +95,19 @@ export function viewToday(S, club) {
   return { left: lp, right, book: mine, ribbon: mine ? `S. ${mine.page || 0}` : '', folio: 1 };
 }
 
-function quotes(S, cur) {
-  const list = S.quotes || [];
-  return `<section class="surface"><h3>${N.quotes}</h3>
-    ${list.slice(0, 6).map(q => `<figure class="quote"><blockquote>“${esc(q.text)}”</blockquote><figcaption>${esc(q.book || '')} · <button type="button" class="linkbtn small" data-act="qdel" data-id="${esc(q.id)}">${N.del}</button></figcaption></figure>`).join('') || `<p class="muted small">${N.noQuotes}</p>`}
-    <form id="quote-form" class="panel"><label>${N.addQuote}<textarea name="text" rows="2" required maxlength="1000"></textarea></label><input type="hidden" name="book" value="${esc(cur ? cur.title : '')}"><input type="hidden" name="bookId" value="${esc(cur ? cur.id : '')}"><button class="pl" type="submit">${T.save}</button></form></section>`;
-}
+// Oku: solda odaya giriş, sağda okuma defteri (başka yerde okunanı yaz, son oturumlar, kendi listen).
+// Grafikler Profilim'de, alıntılar kitabın kartında
 export function viewOkuma(S) {
   const cur = readingBook(S) || S.shelf.find(b => b.status === 'istiyorum');
-  const [now] = streaks(new Set(S.sessions.map(sessDay).filter(Boolean)));
   const left = `${brand()}
     <div class="ok-head">${cur ? flat(cur, 104) : ''}<h1 class="kt light">${N.enterTitle.split(' ')[0]} <i>${N.enterTitle.split(' ').slice(1).join(' ')}</i></h1></div>
     <p class="lbl">${N.enterSub}</p>
     ${viewTimer(S)}`;
-  const right = `${viewMusic(S)}${quotes(S, cur)}${viewTakip(S)}`;
-  return { left, right, book: cur, ribbon: `${now} ${N.dayStreak.split(' ')[0].toLocaleUpperCase('tr')}`, folio: 4 };
+  const right = `<h1 class="kt sm">${N.logbook.split(' ')[0]} <i>${N.logbook.split(' ').slice(1).join(' ')}</i></h1>
+    <div class="blk rule"><p class="cap">${N.elsewhere}</p>${logForm(S)}</div>
+    <div class="blk rule"><p class="cap">${N.lastSessions}</p>${sessionsList(S)}</div>
+    <div class="blk rule">${viewMusic(S)}</div>`;
+  return { left, right, book: cur };
 }
 export function searchLeft(S) {
   return `${brand()}<h1 class="kt light lp-title">Kitap <i>ara</i></h1><p class="lbl">${N.searchSmall}</p>

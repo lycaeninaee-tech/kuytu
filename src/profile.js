@@ -2,7 +2,7 @@
 import { esc, sessDay } from './util.js';
 import { TP as T, TN as N } from './strings.js';
 import { saveProfile } from './sessions.js';
-import { streaks } from './takip.js';
+import { streaks, viewHistory } from './takip.js';
 import { flat } from './parts.js';
 import { freshLogin } from './account.js';
 
@@ -54,7 +54,8 @@ export function viewProfile(S) {
     <p class="cap">${N.four.toLocaleUpperCase('tr')}</p>
     <div class="four-row">${[0, 1, 2, 3].map(i => four[i] ? `<button type="button" data-act="openbook" data-id="${esc(four[i].id)}" aria-label="${esc(four[i].title)}">${flat(four[i], 132)}</button>` : `<a class="fc-add" href="#raf" aria-label="${N.addHeart}">+</a>`).join('')}</div>
     ${four.length < 4 ? `<p class="lbl small">${N.heartHint}</p>` : ''}
-    <p class="cap onlyyou">${N.onlyYou}</p>
+    <p class="cap onlyyou">${N.history}</p>
+    ${viewHistory(S)}
     <div class="two">
       <div><p class="cap">${N.stamps.toLocaleUpperCase('tr')}</p><div class="stamps">${BADGES.map(([t, d, ok], i) => `<span class="stamp ${ok(data) ? 'won' : ''}" style="--r:${(i * 37) % 17 - 8}deg" title="${esc(d)}">${esc(t)}</span>`).join('')}</div><p class="lbl small">${N.stampHint}</p></div>
       <div><p class="cap">${N.kunye} · ${year}</p><div class="toc">

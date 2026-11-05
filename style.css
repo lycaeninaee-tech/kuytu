@@ -1183,4 +1183,59 @@ body:not(.in-room) .lp .rtop, body:not(.in-room) .lp .rauthor { color: rgba(251,
 :root[data-dark] .pp .polaroid { background: #2a2622; }
 :root[data-dark] .pp .mode { background: #23201c; }
 :root[data-dark] :is(.bmenu) { background: #23201c; }
-:root[data-dark] .bk-dots { background: rgba(35, 32, 28, .92); color: var(--ink2); }
+:root[data-dark] .bk-dots { background: rgba(35, 32, 28, .92); color: var(--ink2); }/* K4: tek sistem. Eski katmanların üstüne son söz: yazı, renk, düğme, bölüm aynı kurala uyar */
+:root { --soft: #716a5d; --mute2: #55524b; --line2: #ddd3c2; }
+.label { font: 600 11px var(--font-body); letter-spacing: .14em; color: var(--soft); }
+.muted { color: var(--mute2); }
+/* Düğmeler: eski .btn de yeni hap düğme; dolu olan kitabın renginde, hepsi en az 44 px */
+.btn, .pl { min-height: 44px; padding: 0 22px; border-radius: 999px; font: 600 14px var(--font-body); box-shadow: none !important; }
+.pl.sm, .btn.sm { min-height: 36px; padding: 0 16px; font-size: 13px; }
+.btn { background: var(--book); border: 1.5px solid var(--book); color: var(--paper); }
+.btn.ghost { background: transparent; border-color: var(--ink2); color: var(--ink2); }
+.btn:hover, .pl:hover { transform: none; filter: brightness(1.06); }
+.btn.ghost:hover { background: var(--sand); color: var(--ink2); }
+/* Alanlar: 8 px köşe, 44 px yükseklik */
+.pp input:not([type=checkbox]):not([type=radio]):not([type=range]), .pp select, #card input:not([type=checkbox]), #card select { min-height: 44px; border-radius: 8px; }
+.pp textarea, #card textarea { border-radius: 8px; }
+/* Seçim: kum zeminde tek tip segment */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: var(--sand); border: 0; border-radius: 999px; }
+.seg button { padding: 8px 14px; font: 500 13px var(--font-body); color: var(--mute2); border-radius: 999px; }
+.seg button.on { background: var(--paper); color: var(--ink2); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.seg.wrap { border-radius: 20px; }
+/* Başlıklar: sayfa başlığı 34, ara başlık 22 */
+.pagehead h1, .pagehead h2 { font: 700 clamp(30px, 3.4vw, 40px)/1.05 var(--font-display); letter-spacing: -.02em; }
+.surface h3, .sec-title { font: 500 22px/1.2 var(--font-display); }
+.loglist .t { color: var(--ink2); }
+.loglist em { color: var(--soft); }
+/* Kitap kartı: üç sekme */
+.btabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line2); }
+.btabs button { padding: 0 0 10px; border: 0; background: none; font: 500 14px var(--font-body); color: var(--mute2); cursor: pointer; }
+.btabs button.on { background: none; border-radius: 0; color: var(--ink2); font-weight: 600; box-shadow: inset 0 -2px 0 var(--book); }
+.btabs em { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--sand); font: 600 11px var(--font-body); font-style: normal; }
+.cread { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 28px; }
+.cread .pagebar { margin: 0; }
+/* Oku: okuma defteri */
+.logform { display: grid; gap: 12px; }
+.log-grid label { display: grid; gap: 6px; font: 500 13px var(--font-body); color: var(--mute2); }
+.qmins { display: flex; align-items: center; gap: 6px; }
+@media (max-width: 860px) { .log-grid { grid-template-columns: 1fr 1fr; } .log-grid label:first-child { grid-column: 1 / -1; } }
+/* Profilim: okuma geçmişi */
+.history { display: grid; gap: 20px; }
+.hnums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.hnums div { display: grid; gap: 4px; }
+.hnums b { font: 700 24px/1.1 var(--font-display); color: var(--ink2); }
+.hnums span { font-size: 13px; color: var(--mute2); }
+.h30 { display: grid; gap: 10px; }
+.hmore { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 36px; margin-top: 14px; }
+.hmore > div { display: grid; gap: 10px; align-content: start; }
+.hbars .bar i { background: var(--book); }
+.more > summary { color: var(--ink2); }
+@media (max-width: 860px) { .hnums { grid-template-columns: 1fr 1fr; } .hmore { grid-template-columns: minmax(0, 1fr); } }
+/* Telefonda Bugün: kapak alanı küçülür, önemli her şey ilk ekrana sığar */
+@media (max-width: 860px) {
+  .v-bugun .lp { padding-bottom: 14px; }
+  .v-bugun .lp-mid .fcw { --fw: 108px !important; }
+  .v-bugun .lp-top .cap { display: none; }
+}
+/* Oku: müzik bölümü defterin içinde, kendi çizgisi ve tam genişlik düğmesi olmadan */
+.blk #music-card { border-top: 0; padding-top: 0; } #music-card .pl { justify-self: start; } #music-card h3 { font: 600 11px var(--font-body); letter-spacing: .14em; color: var(--soft); text-transform: uppercase; }
