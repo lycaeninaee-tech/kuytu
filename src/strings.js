@@ -76,8 +76,10 @@ export const T = {
 // Okuma köşesi ve Takip
 export const TK = {
   free: 'Serbest okuma', countdown: 'Geri sayım', focusMin: 'Odak (dk)', breakMin: 'Mola (dk)', countMin: 'Süre (dk)', shareRecap: 'Aylık özetimi paylaş', focus: 'Odak', rest: 'Mola', rounds: 'tur bitti', today: 'Bugün', todayLow: 'bugün',
-  light: 'Işık', day: 'Gündüz', dusk: 'Alacakaranlık', night: 'Gece', sound: 'Ses', quiet: 'Sessiz', rain: 'Yağmur', fire: 'Şömine',
-  shrink: 'Küçült', enter2: 'Odaya dön', finish: 'Bitir ve kaydet', reset: 'Sıfırla', ask: 'Bugün ne kadar <em>okuyoruz?</em>',
+  light: 'Işık', day: 'Gün', dusk: 'Alaca', night: 'Gece', sound: 'Ses', quiet: 'Sessiz', rain: 'Yağmur', fire: 'Şömine', myList: 'Listem',
+  shrink: 'Küçült', enter2: 'Odaya dön', finish: 'Bitir', reset: 'Sıfırla', pause: 'Duraklat', resume: 'Devam et', paused: 'Duraklatıldı',
+  leftLbl: 'kalan', goneLbl: 'geçen', startPage: 'başlangıç s.', noteTitle: 'Kenar notu', notePh: 'Aklına geleni yaz, oda kapanınca kitabın notlarına düşer', noteHint: 'Sayfa sonra sorulur.', noteBtn: 'Not',
+  whichPage: 'Kaçıncı <i>sayfadasın?</i>', dur: 'Süre', startedAt: 'Başladığın', ofPages: 'sayfa', finishedIt: 'Bitirdim', saveNoPage: 'Sayfa girmeden kaydet', pageLow: 'Başladığın sayfadan geride bir sayfa yazdın.', ask: 'Bugün ne kadar <em>okuyoruz?</em>',
   needBook: 'Önce rafına bir kitap ekle.', findBook: 'Kitap ara', book: 'Kitap', enter: 'Odaya gir', music: 'Müzik', moveMusic: 'Müzik çaları taşı',
   musicHint: 'Spotify ya da YouTube bağlantını ekle, okurken burada çalsın.', link: 'Bağlantı', save: 'Kaydet',
   done: 'Oturum bitti', minutesWord: 'dakika', howMany: 'Kaç sayfa okudun?', skip: 'Geç',
