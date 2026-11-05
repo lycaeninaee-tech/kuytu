@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, updateProfile, onAuthStateChanged, signOut, deleteUser } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, updateProfile, onAuthStateChanged, signOut, deleteUser, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { FIREBASE } from './config.js';
 
@@ -11,6 +11,8 @@ export const fs = app ? getFirestore(app) : null;
 export const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 export const onUser = cb => onAuthStateChanged(auth, cb);
 export const logout = () => signOut(auth);
+// "Beni hatırla": işaretliyse oturum tarayıcı kapanınca da sürer, değilse yalnızca bu sekme açıkken
+export const remember = on => setPersistence(auth, on ? browserLocalPersistence : browserSessionPersistence);
 export const deleteMe = () => deleteUser(auth.currentUser);
 export const loginGoogle = () => signInWithPopup(auth, new GoogleAuthProvider());
 export const loginEmail = (email, pass) => signInWithEmailAndPassword(auth, email, pass);

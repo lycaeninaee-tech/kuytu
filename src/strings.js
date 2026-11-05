@@ -53,11 +53,24 @@ export const T = {
   error: 'Bir şeyler ters gitti. Tekrar dene.',
   authErrors: {
     'auth/invalid-credential': 'E-posta ya da şifre yanlış.',
-    'auth/email-already-in-use': 'Bu e-postayla zaten üyelik var.',
+    'auth/wrong-password': 'E-posta ya da şifre yanlış.',
+    'auth/user-not-found': 'Bu e-postayla bir üyelik bulamadık. Üye ol sekmesine geçebilirsin.',
+    'auth/email-already-in-use': 'Bu e-postayla zaten üyelik var. Giriş yap sekmesinden girebilirsin.',
     'auth/weak-password': 'Şifre en az 6 karakter olmalı.',
     'auth/invalid-email': 'E-posta adresi geçersiz.',
+    'auth/missing-password': 'Şifreni yaz.',
+    'auth/missing-email': 'E-postanı yaz.',
+    'auth/too-many-requests': 'Çok fazla deneme oldu. Birkaç dakika sonra yeniden dene ya da şifreni yenile.',
+    'auth/network-request-failed': 'İnternet bağlantısı yok gibi. Bağlanınca yeniden dene.',
     'auth/popup-closed-by-user': 'Google penceresi kapatıldı.',
+    'auth/popup-blocked': 'Tarayıcı Google penceresini engelledi. Açılır pencerelere izin verip yeniden dene.',
+    'auth/requires-recent-login': 'Güvenlik için çıkış yapıp yeniden girmen gerekiyor.',
   },
+  // Giriş ve üyelik formu
+  remember: 'Beni hatırla', rememberHint: 'Ortak bir bilgisayardaysan işareti kaldır; tarayıcı kapanınca çıkış yapılır.', showPw: 'Göster', hidePw: 'Gizle', showPwLabel: 'Şifreyi göster',
+  pwHint: 'En az 6 karakter.', pass2: 'Şifreni tekrar yaz', pwMismatch: 'İki şifre birbirini tutmuyor.', needName: 'Adını yaz.',
+  consent: 'Üye olarak <a href="#gizlilik">gizlilik metnini</a> okumuş ve kabul etmiş olursun.', or: 'ya da', verifySent: 'Doğrulama bağlantısını e-postana gönderdik.',
+  welcomeBack: 'Tekrar hoş geldin', joinTitle: 'Kuytu’ya katıl',
 };
 
 // Okuma köşesi ve Takip
@@ -125,7 +138,6 @@ export const TN = {
   // Hesap, verin ve gizlilik
   account: 'HESABIN VE VERİN', look: 'Görünüm', lookLight: 'Açık', lookDark: 'Koyu', lookAuto: 'Cihaza göre', export: 'Verilerimi indir', exported: 'Dosya indirildi', remind: 'Takvimime okuma hatırlatıcısı ekle', remindAt: 'Her gün saat', remindHint: 'Telefonunun takvimine her gün tekrarlayan bir etkinlik eklenir; istediğin zaman takviminden silebilirsin.', privacy: 'Gizlilik', delAcc: 'Hesabımı sil',
   delTitle: 'Hesabını silmek üzeresin', delWhat: 'Kitaplığın, okuma kayıtların, alıntıların, kenar notların, profilin ve kullanıcı adın kalıcı olarak silinir. Kulüplerden çıkarsın. Kulüplere yazdığın notlar ve verdiğin puanlar kulübün ortak defterinde kalır; istersen önce onları silebilirsin.', delType: 'Onaylamak için kullanıcı adını yaz', delGo: 'Her şeyi kalıcı olarak sil', delWrong: 'Kullanıcı adı tutmadı.', delFresh: 'Güvenlik için son birkaç dakika içinde giriş yapmış olman gerekiyor. Çıkış yapıp yeniden gir, sonra buradan sil.', delBusy: 'Siliniyor…', delDone: 'Hesabın silindi.',
-  grImport: 'Goodreads’ten aktar', grHint: 'Goodreads’te My Books → Import and export → Export library ile indirdiğin dosyayı seç.', grBusy: '{n} kitap aktarıldı…', grDone: '{n} kitap Goodreads’ten geldi', grBad: 'Bu dosya Goodreads dışa aktarma dosyasına benzemiyor.',
 };
 
 // Profil

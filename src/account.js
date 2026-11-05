@@ -1,7 +1,6 @@
-// Hesap: verini indirme, Goodreads'ten aktarma, takvime okuma hatırlatıcısı, gizlilik sayfası ve hesabı silme
+// Hesap: verini indirme, takvime okuma hatırlatıcısı, gizlilik sayfası ve hesabı silme
 import { collection, doc, getDoc, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { fs, deleteMe } from './auth.js';
-import { addToShelf, updateShelf } from './shelf.js';
 
 const SUBS = ['shelf', 'sessions', 'quotes', 'notes', 'clubs', 'demoMeta'];
 const save = (name, text, type) => {
@@ -29,46 +28,6 @@ export function reminderICS(time) {
   save('kuytu-okuma.ics', ics, 'text/calendar');
 }
 
-// Goodreads dışa aktarma dosyası (CSV). Rafta aynı adda kitap varsa atlanır; kapaklar sonradan arka planda tamamlanır
-const parseCSV = text => {
-  const rows = [];
-  let row = [], cell = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
-    else if (c === '"') q = true;
-    else if (c === ',') { row.push(cell); cell = ''; }
-    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
-    else cell += c;
-  }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  return rows.filter(r => r.length > 1);
-};
-const grDay = s => (/^\d{4}\/\d{2}\/\d{2}$/.test(s) ? s.replace(/\//g, '-') + 'T12:00:00.000Z' : '');
-export async function importGoodreads(uid, file, shelf, progress) {
-  const [head = [], ...rows] = parseCSV((await file.text()).replace(/^﻿/, ''));
-  const col = name => head.indexOf(name);
-  if (['Title', 'Author', 'Exclusive Shelf'].some(n => col(n) < 0)) throw new Error('csv');
-  const have = new Set(shelf.map(b => (b.title || '').toLocaleLowerCase('tr')));
-  const STATUS = { read: 'okudum', 'currently-reading': 'okuyorum', 'to-read': 'istiyorum' };
-  let n = 0;
-  for (const r of rows) {
-    const g = k => (col(k) >= 0 ? (r[col(k)] || '').trim() : '');
-    const title = g('Title').replace(/\s*\([^()]*#[\d.]+\)\s*$/, '');
-    if (!title || have.has(title.toLocaleLowerCase('tr'))) continue;
-    const status = STATUS[g('Exclusive Shelf')] || 'istiyorum', id = 'gr_' + (g('Book Id') || crypto.randomUUID());
-    await addToShelf(uid, { id, title, author: g('Author'), cover: '', pages: Number(g('Number of Pages')) || 0, year: g('Original Publication Year') || g('Year Published'), publisher: g('Publisher') }, status);
-    const extra = { importedFrom: 'goodreads' }, isbn = g('ISBN13').replace(/[="]/g, '');
-    if (Number(g('My Rating'))) extra.rating = Number(g('My Rating'));
-    if (status === 'okudum' && grDay(g('Date Read'))) extra.finishedAt = grDay(g('Date Read'));
-    if (grDay(g('Date Added'))) extra.addedAt = grDay(g('Date Added'));
-    if (isbn) extra.isbn = isbn;
-    await updateShelf(uid, id, extra);
-    have.add(title.toLocaleLowerCase('tr'));
-    progress(++n);
-  }
-  return n;
-}
 
 // Hesabı silme: kişisel her şey ve kulüp üyelikleri. Kulüplerin ortak defteri (kitaplar, notlar) hiçbir zaman silinmez
 export const freshLogin = user => Date.now() - new Date(user.metadata.lastSignInTime).getTime() < 5 * 60 * 1000;
