@@ -73,7 +73,7 @@ export function viewToday(S, club) {
   const goal = Number(S.profile.yearGoal) || 0, fin = mine && mine.pages ? finishBy(S, mine, left) : '';
   const cb = club && club.book;
   const lp = `${brand(mine ? N.colorOf : '')}
-    <div class="lp-mid">${mine ? `<a href="#kitap/${encodeURIComponent(mine.id)}" aria-label="${esc(mine.title)}">${flat(mine, 250, 'big')}</a>` : `<a class="fc-empty" href="#ara">${N.findFirst}</a>`}</div>
+    <div class="lp-mid">${mine ? `<a href="#kitap/${encodeURIComponent(mine.id)}" aria-label="${esc(mine.title)}">${flat(mine, 250, 'big')}</a>` : `<a class="fc-empty" href="#ara"><span aria-hidden="true">+</span>${N.findFirst}</a>`}</div>
     <div class="lp-foot"><span>${mine ? esc(mine.author || '') : ''}</span>${mine && mine.pages ? `<span>${mine.page || 0} / ${mine.pages}</span>` : ''}</div>`;
   const right = `${needsVerify ? `<p class="notice">${T.verify} <button class="linkbtn" type="button" data-act="resend">${T.resend}</button></p>` : ''}
     <p class="lbl">${greet()} ${name}. ${mine ? N.leftOff2 : ''}</p>
@@ -81,14 +81,16 @@ export function viewToday(S, club) {
       ${pct !== null ? `${edge(mine, pct)}<p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}${fin ? ' · ' + fin : ''}</p>` : ''}
       <div class="acts"><a class="pl on" href="#okuma">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
       ${S.quick ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}`
-    : `<h1 class="kt">${N.emptyHero}</h1><div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a></div>`}
-    ${week(S, wk, wPages, wMin, now, mon, mine)}
-    ${yearShelf(S, doneList, goal, year)}
+    : `<h1 class="kt">${N.emptyHero}</h1><p class="lbl">${N.emptySub}</p>
+      <div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a><button type="button" class="pl" data-act="scan">${N.scan}</button><label class="pl">${N.grImport}<input id="gr-file" type="file" accept=".csv,text/csv" hidden></label></div>
+      ${waiting.length ? `<div class="blk rule"><p class="cap">${N.startOne}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="startbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}" title="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div><p class="lbl small">${N.startHint}</p></div>` : ''}`}
+    ${S.sessions.length ? week(S, wk, wPages, wMin, now, mon, mine) : ''}
+    ${doneList.length || (goal && mine) ? yearShelf(S, doneList, goal, year) : ''}
     ${others.length ? `<div class="blk"><p class="cap">${N.alsoReading}</p><div class="mini">${others.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div></div>` : ''}
-    <div class="two bottom">
+    ${mine ? `<div class="two bottom">
       <div class="blk"><p class="cap">${N.waiting}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('') || `<a class="lbl" href="#ara">${N.placeBook}</a>`}</div></div>
       ${quote ? `<div class="blk"><p class="cap">${N.todayLine}</p><p class="pq">“${esc(quote.text)}”</p><p class="cap">${esc((quote.book || '').toLocaleUpperCase('tr'))}</p></div>` : ''}
-    </div>
+    </div>` : ''}
     <a class="clubline" href="${club ? `#k/${encodeURIComponent(club.id)}/ay` : '#kulup'}">${club && cb
       ? `<span class="cap">${esc(club.name).toLocaleUpperCase('tr')}</span><span>${esc(cb.title)}${cb.meetingDate ? ' · ' + N.meetOn + ' ' + esc(new Date(cb.meetingDate + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })) : ''}</span>`
       : `<span class="cap">${N.clubsCap}</span><span>${N.clubsInvite}</span>`}<span aria-hidden="true">→</span></a>`;
