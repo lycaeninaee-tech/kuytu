@@ -1291,3 +1291,18 @@ body:not(.in-room) .lp .rtop, body:not(.in-room) .lp .rauthor { color: rgba(251,
 .lp .mode:has(input:checked) { background: var(--paper); border-color: var(--paper); }
 @media (prefers-reduced-motion: reduce) { .ld i { animation: none; } }
 @media (max-width: 860px) { .v-onb .lp { min-height: 0; padding: 18px; } .v-onb .lp .kt.xl { font-size: 56px; } .v-onb .lp > .cap { display: none; } .v-onb .pp-in.narrow { margin-top: 18px; } }
+/* Giriş ve üyelik formu */
+.auth { display: grid; gap: 14px; }
+.auth label { display: grid; gap: 6px; font: 500 13px var(--font-body); color: var(--mute2); }
+.auth .seg { justify-self: start; }
+.auth .kt.sm { margin: 4px 0 0; font-size: 30px; }
+.pw { position: relative; display: block; }
+.pw input { width: 100%; padding-right: 76px; box-sizing: border-box; }
+.pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--sand); font: 600 12px var(--font-body); color: var(--ink2); cursor: pointer; }
+.auth-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.auth .check-row { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--ink2); }
+.auth .check-row input { width: 18px; height: 18px; accent-color: #2c5a47; }
+.auth > .pl { width: 100%; }
+.or { display: flex; align-items: center; gap: 12px; margin: 0; font: italic 400 14px var(--font-display); color: var(--soft); }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1px solid var(--line2); }
+.landing2 .pl.on { background: #2c5a47; border-color: #2c5a47; color: #fbf6ec; }
