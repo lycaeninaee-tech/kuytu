@@ -14,22 +14,15 @@ export const coverHTML = b => (b.cover
 // Son kelime italik ve kitabın renginde
 export const emLast = s => { const w = esc(s || '').split(' '); return w.length > 1 ? w.slice(0, -1).join(' ') + ' <i>' + w[w.length - 1] + '</i>' : w[0]; };
 
-// Kitabın rengi: kapaktan okunabiliyorsa ondan, okunamıyorsa adından seçilen koyu bir tondan gelir.
-// Her renk aynı doygunluk ve koyuluk bandına çekilir; böylece hangi kitap gelirse gelsin krem sayfa ve kırmızı kurdeleyle uyumlu kalır
-const PAL = ['#2f5446', '#3d4f72', '#7a3b30', '#2f5e62', '#6b4a2e', '#55436b', '#7a5530', '#34506a'];
-const tame = hex => {
-  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), hi = Math.max(r, g, b), lo = Math.min(r, g, b), d = hi - lo;
-  let h = 0;
-  if (d) h = hi === r ? ((g - b) / d) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  h = (h * 60 + 360) % 360;
-  const l = (hi + lo) / 2, s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
-  return `hsl(${Math.round(h)} ${Math.round(Math.min(s, .42) * 100)}% ${Math.round(Math.min(Math.max(l, .24), .32) * 100)}%)`;
-};
+// Kitabın rengi: kişi seçtiyse o; yoksa kapağın baskın renginin en yakını sekiz mücevher tonundan biri.
+// Kapak okunamazsa ya da rengi yoksa (siyah, beyaz, gri) adından biri seçilir. Hepsi aynı derinlikte; krem sayfa ve kurdeleyle uyumlu, hiçbiri kahveye dönmez
+export const JEWELS = [['yakut', '#8a2f45', 0], ['kiremit', '#a8492a', 30], ['çimen', '#3f6b3a', 75], ['zümrüt', '#1f6b52', 140], ['deniz', '#1f6470', 185], ['safir', '#2f4f86', 220], ['lavanta', '#55438a', 265], ['mürdüm', '#7a2f6b', 310]];
+const nearest = h => JEWELS.reduce((best, j) => { const d = Math.min(Math.abs(h - j[2]), 360 - Math.abs(h - j[2])); return d < best[0] ? [d, j[1]] : best; }, [999, JEWELS[0][1]])[1];
 let cache = {};
-try { cache = JSON.parse(localStorage.getItem('kuytu-renk2') || '{}'); } catch (e) {}
-export const colorOf = b => (b && (cache[b.id] || PAL[hueOf(b.title || '') % PAL.length])) || PAL[0];
+try { cache = JSON.parse(localStorage.getItem('kuytu-renk3') || '{}'); } catch (e) {}
+export const colorOf = b => (b && (b.color || cache[b.id] || JEWELS[hueOf(b.title || '') % JEWELS.length][1])) || JEWELS[0][1];
 export function learnColor(b, apply) {
-  if (!b || !b.cover || b.id in cache) return;
+  if (!b || b.color || !b.cover || b.id in cache) return;
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
@@ -39,16 +32,21 @@ export function learnColor(b, apply) {
       const g = c.getContext('2d');
       g.drawImage(img, 0, 0, 24, 24);
       const d = g.getImageData(0, 0, 24, 24).data;
-      let r = 0, gr = 0, bl = 0, n = 0;
+      // Ortalama değil baskın renk: renkli noktalar 30 derecelik dilimlere doygunluklarıyla oy verir
+      const votes = new Array(12).fill(0), sum = new Array(12).fill(0);
+      let n = 0;
       for (let i = 0; i < d.length; i += 4) {
-        const hi = Math.max(d[i], d[i + 1], d[i + 2]), lo = Math.min(d[i], d[i + 1], d[i + 2]);
-        if (hi - lo < 40 || hi < 40 || lo > 220) continue;
-        r += d[i]; gr += d[i + 1]; bl += d[i + 2]; n++;
+        const r = d[i] / 255, gr = d[i + 1] / 255, bl = d[i + 2] / 255, hi = Math.max(r, gr, bl), lo = Math.min(r, gr, bl), c = hi - lo;
+        if (c < .16 || hi < .16 || lo > .86) continue;
+        let h = hi === r ? ((gr - bl) / c) % 6 : hi === gr ? (bl - r) / c + 2 : (r - gr) / c + 4;
+        h = (h * 60 + 360) % 360;
+        const k = Math.floor(h / 30) % 12;
+        votes[k] += c; sum[k] += h * c; n++;
       }
       if (n < 12) { cache[b.id] = ''; return; }
-      const hex = tame('#' + [r / n, gr / n, bl / n].map(v => Math.round(v).toString(16).padStart(2, '0')).join(''));
+      const k = votes.indexOf(Math.max(...votes)), hex = nearest(sum[k] / votes[k]);
       cache[b.id] = hex;
-      try { localStorage.setItem('kuytu-renk2', JSON.stringify(cache)); } catch (e) {}
+      try { localStorage.setItem('kuytu-renk3', JSON.stringify(cache)); } catch (e) {}
       apply(hex);
     } catch (e) { cache[b.id] = ''; }
   };

@@ -2,7 +2,7 @@
 import { esc } from './util.js';
 import { TN as N, T } from './strings.js';
 import { STATUS } from './shelf.js';
-import { flat, emLast, backdrop, colorOf } from './parts.js';
+import { flat, emLast, backdrop, colorOf, JEWELS } from './parts.js';
 
 const homeBooks = S => S.shelf.filter(b => !b.wish && !b.lentTo);
 const statusOf = k => (STATUS.find(s => s[0] === k) || ['', ''])[1];
@@ -132,6 +132,9 @@ export function cardHTML(S, b, first) {
         <div><p class="cap">${N.from}</p><p class="sf">${b.source ? esc(b.source) : `<span class="muted">–</span>`}</p></div>
         <div><p class="cap">${N.quoteN}</p><p class="sf">${quotesN}</p></div>
       </div>
+      <div class="bcolor"><p class="cap">${N.bookColor}</p><div class="swatches" role="group" aria-label="${N.bookColor}">
+        <button type="button" class="auto${b.color ? '' : ' on'}" data-act="bcolor" data-v="" aria-pressed="${!b.color}">${N.fromCover}</button>
+        ${JEWELS.map(([name, hex]) => `<button type="button" class="${b.color === hex ? 'on' : ''}" style="--c:${hex}" data-act="bcolor" data-v="${hex}" aria-pressed="${b.color === hex}" aria-label="${name}" title="${name}"></button>`).join('')}</div></div>
       ${b.lentTo ? `<div class="acts"><button type="button" class="pl on" data-act="lendback">${N.back}</button></div>` : `<form id="lend-form" class="pagebar"><label>${N.lendTo}<input name="who" maxlength="60" required></label><button class="pl" type="submit">${N.lend}</button></form>`}
       <div class="acts"><button type="button" class="pl" data-act="wish">${b.wish ? N.gotIt : N.toWish}</button></div>`}`}
     </div>
