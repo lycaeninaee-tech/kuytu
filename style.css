@@ -1239,3 +1239,15 @@ body:not(.in-room) .lp .rtop, body:not(.in-room) .lp .rauthor { color: rgba(251,
 }
 /* Oku: müzik bölümü defterin içinde, kendi çizgisi ve tam genişlik düğmesi olmadan */
 .blk #music-card { border-top: 0; padding-top: 0; } #music-card .pl { justify-self: start; } #music-card h3 { font: 600 11px var(--font-body); letter-spacing: .14em; color: var(--soft); text-transform: uppercase; }
+/* Telefon kontrolünden: tek düğme satırı boydan boya uzamaz; kitap kartı telefonda kayar ve kapak alanı küçülür */
+.blk > .pl, .meet > .pl, .surface > .pl, .surface > .btn { justify-self: start; }
+@media (max-width: 860px) {
+  .cardk { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cardk-r { overflow: visible; }
+  .cardk-l { padding: 18px; }
+  .cardk-l .fcw { --fw: 120px !important; }
+  .loglist li { grid-template-columns: 4.2em minmax(0, 1fr) auto; }
+  .loglist li b { grid-column: 2; }
+  .loglist li .linkbtn { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+}
+@media (max-width: 860px) { .cardk-head .cap { display: none; } .cardk-head .pl:first-of-type { margin-left: auto; } }
