@@ -38,30 +38,26 @@ function chart(byDay, pg) {
   return `<svg class="c30" viewBox="0 0 ${W} ${H}" role="img" aria-label="${T.last30}">${vals.map((v, i) => { const h = v / max * (H - 2 * P); return `<rect x="${(P + i * bw + 1).toFixed(1)}" y="${(H - P - h).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="2"><title>${esc(lbl(days[i]))}: ${v} ${pg ? 'sayfa' : 'dk'}</title></rect>`; }).join('')}</svg>
     <div class="axis"><span>${esc(lbl(days[0]))}</span><span>${T.todayLow}</span></div>`;
 }
-function pace(state, mine) {
-  const b = state.shelf.find(x => x.status === 'okuyorum');
-  if (!b) return '';
-  if (!b.pages) return `<section class="surface pace"><p class="label">${T.reading}</p><h2>${esc(b.title)}</h2><p class="muted">${T.addPages} <a href="#kitap/${encodeURIComponent(b.id)}">${T.openBook}</a></p></section>`;
-  const read = Math.min(b.pages, b.page || 0), left = b.pages - read;
-  const week = [...Array(7)].map((_, i) => dayKey(new Date(Date.now() - i * 86400000)));
-  const perDay = Math.round(mine.filter(s => week.includes(sessDay(s))).reduce((a, s) => a + (s.pages || 0), 0) / 7);
-  const line = !left ? T.finished : perDay ? `${T.perDay} ${perDay} ${T.perDay2} <b>${Math.ceil(left / perDay)} ${T.perDay3}</b>` : T.noPace;
-  return `<section class="surface pace"><p class="label">${T.reading}</p><h2>${esc(b.title)}</h2>
-    <div class="pace-nums"><b>${read}<small> / ${b.pages}</small></b><b class="left">${left}<small> ${T.leftPages}</small></b></div>
-    <div class="meter"><span style="width:${read / b.pages * 100}%"></span></div><p class="muted">${line}</p></section>`;
-}
-function logForm(state) {
+// Başka yerde okunanı kaydetme: Oku sayfasında her zaman açık durur
+export function logForm(state) {
   const list = state.shelf.filter(b => b.status !== 'biraktim');
-  if (!list.length) return `<p class="empty-note">${T.needBook} <a href="#ara">${T.findBook}</a></p>`;
+  if (!list.length) return `<p class="lbl small">${T.needBook} <a href="#ara">${T.findBook}</a></p>`;
   const cur = list.find(b => b.status === 'okuyorum');
   const now = new Date(), time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-  return `<form class="surface logform" id="log-form"><h3>${T.logTitle}</h3><p class="muted small">${T.logHint}</p>
+  return `<form class="logform" id="log-form">
     <div class="log-grid"><label>${T.book}<select name="book">${list.map(b => `<option value="${esc(b.id)}"${cur && b.id === cur.id ? ' selected' : ''}>${esc(b.title)}</option>`).join('')}</select></label>
     <label>${T.pagesRead}<input name="pages" type="number" min="1" max="5000" inputmode="numeric" placeholder="25"></label>
     <label>${T.minutes}<input name="min" type="number" min="1" max="1440" inputmode="numeric" placeholder="45"></label>
     <label>${T.date}<input name="day" type="date" max="${dayKey(now)}" value="${dayKey(now)}" required></label>
     <label>${T.time}<input name="time" type="time" value="${time}"></label></div>
-    <div class="log-foot"><div class="qmins">${[10, 20, 30, 50].map(p => `<button type="button" data-act="logpg" data-v="${p}">${p}</button>`).join('')}<span class="muted small">${T.pageWord}</span></div><button class="btn" type="submit">${T.save}</button></form>`;
+    <div class="log-foot"><div class="qmins">${[10, 20, 30, 50].map(p => `<button type="button" class="pl sm" data-act="logpg" data-v="${p}">${p}</button>`).join('')}<span class="lbl small">${T.pageWord}</span></div><button class="pl" type="submit">${T.save}</button></div></form>`;
+}
+// Son oturumlar: içindekiler satırı gibi, silinebilir
+export function sessionsList(state) {
+  const mine = state.sessions, shown = state.logAll ? mine : mine.slice(0, 6);
+  if (!mine.length) return `<p class="lbl small">${T.noRecord}</p>`;
+  const amount = s => [s.pages ? s.pages + ' sayfa' : '', s.seconds ? dk(s.seconds) : ''].filter(Boolean).join(' · ');
+  return `<ul class="loglist">${shown.map(s => `<li><span class="d">${esc(new Date(s.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}</span><span class="t">${esc(s.title || '')}${s.manual ? `<em>${T.manual}</em>` : ''}</span><b>${esc(amount(s))}</b><button type="button" class="linkbtn small" data-act="delsess" data-id="${esc(s.id)}">${state.armed === s.id ? T.sure : T.del}</button></li>`).join('')}</ul>${mine.length > shown.length ? `<button type="button" class="linkbtn" data-act="logall">${T.showAll} (${mine.length})</button>` : ''}`;
 }
 // Aylık özeti 1080x1350 bir resme çizer; telefonda paylaşım menüsü, bilgisayarda indirme
 export async function shareRecap(state) {
@@ -96,8 +92,10 @@ export async function shareRecap(state) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
-export function viewTakip(state) {
-  const mine = state.sessions, prof = state.profile || {};
+// Okuma geçmişi Profilim'de, yalnızca kişiye açık: ay, seri, son 30 gün ve ayrıntılar.
+// Haftalık sayı ve kitabın bitiş tahmini yalnızca Bugün'de hesaplanır, burada tekrar edilmez
+export function viewHistory(state) {
+  const mine = state.sessions;
   // Sayfa ve dakika tek ekranda: grafikler sayfa kaydı varsa sayfaya göre çizilir, yazılarda ikisi birlikte görünür
   const pg = mine.some(s => s.pages);
   state.metricNow = pg ? 'pages' : 'min';
@@ -126,35 +124,21 @@ export function viewTakip(state) {
   const speed = timed.length ? Math.round(timed.reduce((a, s) => a + s.pages, 0) / (timed.reduce((a, s) => a + s.seconds, 0) / 3600)) : 0;
   const [now, best] = streaks(days);
   const month = dayKey(today).slice(0, 7), mList = mine.filter(s => sessDay(s).startsWith(month));
-  const monthV = mList.reduce((a, s) => a + val(s), 0);
-  const wk = [...Array(7)].map((_, i) => dayKey(new Date(Date.now() - i * 86400000)));
-  const wkV = mine.filter(s => wk.includes(sessDay(s))).reduce((a, s) => a + val(s), 0), wkN = pg ? wkV : Math.round(wkV / 60);
-  const goal = (pg ? prof.goalPages : prof.goalMin) || 0, unit = pg ? 'sayfa' : 'dk';
-  const shown = state.logAll ? mine : mine.slice(0, 8);
-  const amount = s => [s.pages ? s.pages + ' sayfa' : '', s.seconds ? dk(s.seconds) : ''].filter(Boolean).join(' · ');
   const open = k => (opened[k] ? ' open' : '');
-  return `<div class="pagehead"><div><p class="label">${T.track}</p><h2>${T.habit}</h2></div></div>
-    <div class="habit">
-    ${pace(state, mine)}
-    <div class="statrow three">
+  return `<div class="history">
+    <div class="hnums">
       <div><b>${esc(both(mList))}</b><span>${T.thisMonth}</span></div>
       <div><b>${now} gün</b><span>${T.streak}</span></div>
-      <div><b>${esc(both(mine.filter(s => wk.includes(sessDay(s)))))}</b><span>${T.thisWeek}${goal ? ' · ' + T.goal + ' ' + goal + ' ' + unit : ''}</span></div>
+      <div><b>${best} gün</b><span>${T.best}</span></div>
+      <div><b>${speed ? speed + ' s/sa' : '–'}</b><span>${T.speed}</span></div>
     </div>
-    <details class="logbox" data-k="log"${open('log')}><summary class="btn">${T.logTitle}</summary>${logForm(state)}</details>
-    <section class="surface"><h3>${T.last30}</h3>${chart(byDay, pg)}</section>
-    ${has ? `<p class="insight">En çok <b>${esc(topP[0].toLocaleLowerCase('tr-TR'))}</b> saatlerinde ve <b>${esc(topD)}</b> günleri okuyorsun.</p>` : ''}
-    <details class="more" data-k="more"${open('more')}><summary>${T.details}</summary><div class="habit">
-      <section class="surface"><h3>${T.lastWeeks}</h3><div class="heat">${cells}</div><p class="muted small">${T.heatHint}</p></section>
-      <div class="statrow"><div><b>${best} gün</b><span>${T.best}</span></div><div><b>${speed ? speed + ' s/sa' : '–'}</b><span>${T.speed}</span></div></div>
-      <div class="grid2">
-        <section class="surface"><h3>${T.weekGoal}</h3><div class="meter"><span style="width:${goal ? Math.min(100, wkN / goal * 100) : 0}%"></span></div><div class="goalrow"><input id="goal" type="number" min="0" value="${goal || ''}" placeholder="${unit}" aria-label="${T.weekGoal}"><button class="btn ghost" type="button" data-act="gsave">${T.save}</button></div></section>
-        <section class="surface"><h3>${T.dayParts}</h3>${bars(parts, fmt)}</section>
-        <section class="surface"><h3>${T.weekDays}</h3>${bars(week, fmt)}</section>
-        <section class="surface"><h3>${T.byBook}</h3>${books.length ? bars(books, fmt) : `<p class="muted small">${T.noRecord}</p>`}</section>
-      </div>
-      ${mine.length ? `<section class="surface"><h3>${T.records}</h3><ul class="loglist">${shown.map(s => `<li><span class="d">${esc(new Date(s.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}</span><span class="t">${esc(s.title || '')}${s.manual ? `<em>${T.manual}</em>` : ''}</span><b>${esc(amount(s))}</b><button type="button" class="linkbtn small" data-act="delsess" data-id="${esc(s.id)}">${state.armed === s.id ? T.sure : T.del}</button></li>`).join('')}</ul>${mine.length > shown.length ? `<button type="button" class="linkbtn" data-act="logall">${T.showAll} (${mine.length})</button>` : ''}</section>` : ''}
-      ${mList.length ? `<button class="btn ghost share" type="button" data-act="recapshare">${T.shareRecap}</button>` : ''}
+    <div class="h30"><p class="cap">${T.last30.toLocaleUpperCase('tr')}</p>${chart(byDay, pg)}</div>
+    ${has ? `<p class="lbl">En çok <b>${esc(topP[0].toLocaleLowerCase('tr-TR'))}</b> saatlerinde ve <b>${esc(topD)}</b> günleri okuyorsun.</p>` : ''}
+    <details class="more" data-k="more"${open('more')}><summary>${T.details}</summary><div class="hmore">
+      <div><p class="cap">${T.lastWeeks.toLocaleUpperCase('tr')}</p><div class="heat">${cells}</div><p class="lbl small">${T.heatHint}</p></div>
+      <div><p class="cap">${T.dayParts.toLocaleUpperCase('tr')}</p>${bars(parts, fmt)}</div>
+      <div><p class="cap">${T.weekDays.toLocaleUpperCase('tr')}</p>${bars(week, fmt)}</div>
+      <div><p class="cap">${T.byBook.toLocaleUpperCase('tr')}</p>${books.length ? bars(books, fmt) : `<p class="lbl small">${T.noRecord}</p>`}</div>
     </div></details>
-    </div>`;
+  </div>`;
 }

@@ -113,6 +113,7 @@ function updateCard() {
   if (!b) { c.hidden = true; c.innerHTML = ''; S.cardOpen = null; S.editing = false; S.covers = null; return; }
   const a = document.activeElement, first = S.cardOpen !== b.id;
   if (!first && a && c.contains(a) && a.matches('input,textarea')) return;
+  if (first) S.cardTab = 'okuma';
   c.innerHTML = cardHTML(S, b, first);
   c.style.setProperty('--book', colorOf(b));
   if (first) learnColor(b, hex => c.style.setProperty('--book', hex));
@@ -128,8 +129,8 @@ function shell(o) {
   const fresh = S.fresh;
   S.fresh = false;
   const book = o.book || readingBook(S);
-  const html = `<div class="shell" style="--book:${colorOf(book)}"><aside class="lp">${backdrop(book)}${o.left || defaultLeft()}</aside>
-    <section class="pp">${o.ribbon ? `<div class="rbn${fresh ? ' drop' : ''}">${esc(o.ribbon)}</div>` : ''}${nav()}${S.view === 'k' || S.view === 'kb' ? clubTabs() : ''}<div class="pp-in">${o.right}</div>${o.folio ? `<div class="folio">— ${o.folio} —</div>` : ''}</section></div>`;
+  const html = `<div class="shell v-${S.view}" style="--book:${colorOf(book)}"><aside class="lp">${backdrop(book)}${o.left || defaultLeft()}</aside>
+    <section class="pp">${o.ribbon && S.view === 'bugun' ? `<div class="rbn${fresh ? ' drop' : ''}">${esc(o.ribbon)}</div>` : ''}${nav()}${S.view === 'k' || S.view === 'kb' ? clubTabs() : ''}<div class="pp-in">${o.right}</div></section></div>`;
   if (book) setTimeout(() => learnColor(book, hex => { const s = $('.shell'); if (s) s.style.setProperty('--book', hex); }));
   return html;
 }
@@ -227,7 +228,8 @@ document.addEventListener('click', e => {
     if (el.dataset.v === 'okudum' && (shelfBook(S.bookId) || {}).status !== 'okudum') finishBook(shelfBook(S.bookId));
     else updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okuyorum' && !(shelfBook(S.bookId) || {}).startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
   }
-  if (a === 'frate') updateShelf(uid, S.finish, { rating: Number(el.dataset.v) }).catch(fail);
+  if (a === 'btab') { S.cardTab = el.dataset.v; render(); }
+  if (a === 'frate')updateShelf(uid, S.finish, { rating: Number(el.dataset.v) }).catch(fail);
   if (a === 'fclose') { S.finish = null; render(); }
   if (a === 'fnext') { S.finish = null; updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).then(() => { location.hash = '#bugun'; }).catch(fail); }
   if (a === 'mndel') remove(`users/${uid}/${el.dataset.coll === 'quotes' ? 'quotes' : 'notes'}/${el.dataset.id}`).catch(fail);

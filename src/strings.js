@@ -89,7 +89,8 @@ export const TC = {
 
 // Yeni yapı: Bugün, Kitaplığım, Okuma, Profil ve karşılama
 export const TN = {
-  today: 'Bugün', lib: 'Kitaplığım', club: 'Kulüpler', read: 'Okuma', profile: 'Profilim',
+  today: 'Bugün', lib: 'Kitaplığım', club: 'Kulüpler', read: 'Oku', profile: 'Profilim',
+  logbook: 'Okuma defterin', elsewhere: 'BAŞKA YERDE OKUDUM', lastSessions: 'SON OTURUMLAR', history: 'OKUMA GEÇMİŞİN · YALNIZCA SEN', tabRead: 'Okuma', tabNotes: 'Kenar notları', tabInfo: 'Künye', willEnd: 'Bitecek',
   pagesLeft: 'bitmesine {n} sayfa', wPages: 'bu hafta sayfa', wMin: 'bu hafta dakika', yearBooks: '{y} içinde biten', alsoReading: 'BUNLARI DA OKUYORSUN',
   finishBy: 'bu tempoyla {d} civarı biter',
   weekLine: '{d} gün · {p} sayfa · {m} dakika', wGoal: 'Hedefin haftada {n} gün', wGoalLeft: '{n} gün kaldı', wGoalDone: 'bu hafta tamam', wGoalSet: 'Haftada kaç gün okumak istersin?', change: 'değiştir', streakOn: '{n} gündür ara vermeden okuyorsun', keepLine: 'Bu hafta aklında kalan bir cümle oldu mu? Okuma’da sakla →',
