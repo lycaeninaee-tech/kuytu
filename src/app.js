@@ -229,6 +229,7 @@ document.addEventListener('click', e => {
     else updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okuyorum' && !(shelfBook(S.bookId) || {}).startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
   }
   if (a === 'btab') { S.cardTab = el.dataset.v; render(); }
+  if (a === 'bcolor') updateShelf(uid, S.bookId, { color: el.dataset.v }).catch(fail);
   if (a === 'frate')updateShelf(uid, S.finish, { rating: Number(el.dataset.v) }).catch(fail);
   if (a === 'fclose') { S.finish = null; render(); }
   if (a === 'fnext') { S.finish = null; updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).then(() => { location.hash = '#bugun'; }).catch(fail); }
