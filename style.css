@@ -1251,3 +1251,10 @@ body:not(.in-room) .lp .rtop, body:not(.in-room) .lp .rauthor { color: rgba(251,
   .loglist li .linkbtn { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
 }
 @media (max-width: 860px) { .cardk-head .cap { display: none; } .cardk-head .pl:first-of-type { margin-left: auto; } }
+/* Kitabın rengi: sekiz mücevher tonu ya da kapaktan */
+.bcolor { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line2); }
+.swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.swatches button { width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 2px solid var(--paper); background: var(--c); box-shadow: 0 0 0 1px var(--line2); cursor: pointer; }
+.swatches button.on { box-shadow: 0 0 0 2px var(--ink2); }
+.swatches .auto { width: auto; height: 32px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line2); background: transparent; box-shadow: none; font: 500 13px var(--font-body); color: var(--ink2); }
+.swatches .auto.on { border-color: var(--ink2); box-shadow: none; font-weight: 600; }
