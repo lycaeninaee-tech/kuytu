@@ -31,8 +31,7 @@ export function viewLibrary(S, enter, clubMissing = 0) {
   const left = `${brand()}<h1 class="kt light lp-title">Kitap<i>lığım</i></h1><p class="lbl">${home.length} ${N.evdeN}, ${lent.length} ${N.lentN}</p>
     <div class="ix">${ix}</div>
     ${clubMissing ? `<button type="button" class="pl" data-act="importclub">${N.importClub} (${clubMissing})</button>` : ''}
-    <div class="lp-foot col"><button type="button" class="pl on" data-act="scan">${N.scan}</button><a class="pl" href="#ara">${N.addManual}</a>
-      <label class="pl" title="${N.grHint}">${S.grBusy ? N.grBusy.replace('{n}', S.grBusy) : N.grImport}<input id="gr-file" type="file" accept=".csv,text/csv" hidden></label></div>`;
+    <div class="lp-foot col"><button type="button" class="pl on" data-act="scan">${N.scan}</button><a class="pl" href="#ara">${N.addManual}</a></div>`;
   // Raflar örnek uygulamadaki gibi: her bölüm bir sıra, kapakların önünden renkli cam raf geçer
   const ROWS = tab === 'evde'
     ? [['okuyorum', N.nowReading, home.filter(b => b.status === 'okuyorum'), 'var(--book)'], ['sirada', N.secNext, home.filter(b => b.status === 'istiyorum' || b.status === 'biraktim'), '#e9a64a'], ['okudum', N.secRead, home.filter(b => b.status === 'okudum'), '#4f8fd6'], ['kalp', N.secHeart, home.filter(b => b.fav), '#d9655b']]

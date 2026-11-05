@@ -2,9 +2,9 @@ import { T, TK, TP, TN } from './strings.js';
 import { viewProfile, profileSubmit } from './profile.js';
 import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
 import { viewLibrary, cardHTML, finishHTML, playPanel, scanBarcode } from './library.js';
-import { exportData, reminderICS, importGoodreads, freshLogin, deleteAccount, privacyHTML } from './account.js';
+import { exportData, reminderICS, freshLogin, deleteAccount, privacyHTML } from './account.js';
 import { coverHTML, flat, backdrop, colorOf, learnColor } from './parts.js';
-import { configured, USERNAME_RE, onUser, logout, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
+import { configured, USERNAME_RE, onUser, logout, remember, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
 import { searchBooks, fillInfo, coverChoices } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
@@ -47,13 +47,17 @@ function viewLanding() {
       <p class="cap">İÇİNDEKİLER</p>
       <div class="toc"><div><span>${TN.tocI}</span><span class="dots"></span><span class="r">I</span></div><div><span>${TN.tocII}</span><span class="dots"></span><span class="r">II</span></div><div><span>${TN.tocIII}</span><span class="dots"></span><span class="r">III</span></div></div>
       ${configured ? `<form class="panel auth" id="auth-form">
-        <div class="chips-row"><button type="button" class="pl sm ${signup ? '' : 'ink'}" data-act="mode" data-v="login">${T.login}</button><button type="button" class="pl sm ${signup ? 'ink' : ''}" data-act="mode" data-v="signup">${T.signup}</button></div>
-        ${signup ? `<label>${T.name}<input name="name" required autocomplete="name"></label>` : ''}
-        <label>${T.email}<input name="email" type="email" required autocomplete="email"></label>
-        <label>${T.password}<input name="pass" type="password" required minlength="6" autocomplete="${signup ? 'new-password' : 'current-password'}"></label>
-        <button class="pl ink" type="submit">${signup ? T.signup : T.login}</button>
+        <div class="seg" role="tablist"><button type="button" role="tab" aria-selected="${!signup}" class="${signup ? '' : 'on'}" data-act="mode" data-v="login">${T.login}</button><button type="button" role="tab" aria-selected="${signup}" class="${signup ? 'on' : ''}" data-act="mode" data-v="signup">${T.signup}</button></div>
+        <h2 class="kt sm">${signup ? T.joinTitle : T.welcomeBack}</h2>
+        ${signup ? `<label>${T.name}<input name="name" required autocomplete="name" maxlength="60" value="${esc(S.authName || '')}"></label>` : ''}
+        <label>${T.email}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(S.authEmail || '')}"></label>
+        <label>${T.password}<span class="pw"><input name="pass" type="password" required minlength="6" autocomplete="${signup ? 'new-password' : 'current-password'}"><button type="button" class="pw-eye" data-act="pweye" aria-label="${T.showPwLabel}" aria-pressed="false">${T.showPw}</button></span>${signup ? `<small class="lbl small">${T.pwHint}</small>` : ''}</label>
+        ${signup ? `<label>${T.pass2}<input name="pass2" type="password" required minlength="6" autocomplete="new-password"></label>` : ''}
+        <div class="auth-row"><label class="check-row" title="${T.rememberHint}"><input type="checkbox" name="remember" checked>${T.remember}</label>${signup ? '' : `<button class="linkbtn small" type="button" data-act="reset">${T.forgot}</button>`}</div>
+        ${signup ? `<p class="lbl small">${T.consent}</p>` : ''}
+        <button class="pl on" type="submit">${signup ? T.signup : T.login}</button>
+        <p class="or"><span>${T.or}</span></p>
         <button class="pl" type="button" data-act="google">${T.google}</button>
-        ${signup ? '' : `<button class="linkbtn small" type="button" data-act="reset">${T.forgot}</button>`}
       </form>` : `<p class="notice">${T.setup}</p>`}
       <a class="linkbtn small" href="#gizlilik">${TN.privacy}</a>
     </div></section></div>`;
@@ -112,7 +116,7 @@ function viewOnb() {
   if (n === 1) return `${head}<h1 class="kt sm">${TN.mood}</h1><div class="tags">${TN.moods.map(m => `<button type="button" class="${S.moods.has(m) ? 'on' : ''}" aria-pressed="${S.moods.has(m)}" data-act="onbmood" data-v="${m}">${m}</button>`).join('')}</div><div class="acts"><button class="pl on" type="button" data-act="onbnext">${TN.next}</button>${skip}</div>`;
   if (n === 2) return `${head}<h1 class="kt sm">${TN.bring}</h1><p class="lbl">${TN.bringSub}</p>
     <form class="searchbar" id="search-form"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="pl ink" type="submit">${T.search}</button></form>
-    <div class="acts"><button class="pl sm" type="button" data-act="scan">${TN.scan}</button><label class="pl sm">${TN.grImport}<input id="gr-file" type="file" accept=".csv,text/csv" hidden></label></div>
+    <div class="acts"><button class="pl sm" type="button" data-act="scan">${TN.scan}</button></div>
     <div id="results">${resultsHTML()}</div><p class="lbl small">${S.shelf.length} ${TN.bookWord}</p><div class="acts"><button class="pl on" type="button" data-act="onbnext">${TN.next}</button>${skip}</div>`;
   if (n === 3) return `${head}<h1 class="kt sm">${TN.together}</h1>
     <form class="panel" id="onb-invite"><label>${TN.invite}<input name="code" required autocomplete="off"></label><button class="pl on" type="submit">${TN.joinClub}</button></form>
@@ -226,8 +230,19 @@ document.addEventListener('click', e => {
   if (!el) return;
   const a = el.dataset.act, uid = S.user && S.user.uid;
   if (S.user && clubClick(a, el)) return;
-  if (a === 'mode') { S.mode = el.dataset.v; render(); }
-  if (a === 'google') loginGoogle().catch(fail);
+  if (a === 'mode') {
+    const f = $('#auth-form');
+    if (f) { S.authEmail = f.elements.email.value; if (f.elements.name) S.authName = f.elements.name.value; }
+    S.mode = el.dataset.v; render();
+  }
+  if (a === 'pweye') {
+    const i = el.previousElementSibling, show = i.type === 'password';
+    i.type = show ? 'text' : 'password';
+    el.textContent = show ? T.hidePw : T.showPw;
+    el.setAttribute('aria-pressed', String(show));
+  }
+  // Açılır pencere tıklamanın hemen ardından açılmalı; hatırlama ayarı beklenmeden sıraya konur
+  if (a === 'google') { const f = $('#auth-form'); remember(!f || f.elements.remember.checked).catch(() => {}); loginGoogle().catch(fail); }
   if (a === 'logout') logout().catch(fail);
   if (a === 'resend') resendVerify().then(() => toast(T.sent)).catch(fail);
   if (a === 'reset') {
@@ -367,8 +382,17 @@ document.addEventListener('submit', async e => {
   const f = e.target.elements, id = e.target.id;
   try {
     if (id === 'auth-form') {
-      if (S.mode === 'signup') await signupEmail(f.name.value.trim(), f.email.value.trim(), f.pass.value);
-      else await loginEmail(f.email.value.trim(), f.pass.value);
+      const email = f.email.value.trim();
+      if (!email) return toast(T.authErrors['auth/missing-email']);
+      if (!f.pass.value) return toast(T.authErrors['auth/missing-password']);
+      if (S.mode === 'signup') {
+        if (!f.name.value.trim()) return toast(T.needName);
+        if (f.pass.value.length < 6) return toast(T.authErrors['auth/weak-password']);
+        if (f.pass.value !== f.pass2.value) return toast(T.pwMismatch);
+      }
+      await remember(f.remember.checked);
+      if (S.mode === 'signup') { await signupEmail(f.name.value.trim(), email, f.pass.value); toast(T.verifySent); }
+      else await loginEmail(email, f.pass.value);
     }
     if (id === 'name-form') {
       const username = cleanUsername(f.username.value);
@@ -473,15 +497,6 @@ async function fillMissing(uid, list) {
 }
 
 // Kaynaklarda kapağı olmayan kitap için elindeki kitabın fotoğrafı: 900 piksel boya küçültülür, raf belgesine yazılır
-// Goodreads dosyası seçilince kitaplar sırayla rafa girer; sol taraftaki düğme sayıyı gösterir
-document.addEventListener('change', e => {
-  if (e.target.id !== 'gr-file' || !e.target.files[0] || S.grBusy) return;
-  S.grBusy = 1; render();
-  importGoodreads(S.user.uid, e.target.files[0], S.shelf, n => { S.grBusy = Math.max(1, n); })
-    .then(n => toast(TN.grDone.replace('{n}', n)))
-    .catch(err => (err.message === 'csv' ? toast(TN.grBad) : fail(err)))
-    .finally(() => { S.grBusy = 0; render(); });
-});
 document.addEventListener('change', e => {
   if (e.target.id !== 'cover-photo' || !e.target.files[0]) return;
   const img = new Image();
