@@ -57,10 +57,20 @@ function viewLanding() {
       </form>` : `<p class="notice">${T.setup}</p>`}
       <a class="linkbtn small" href="#gizlilik">${TN.privacy}</a>
     </div></section></div>`;
-}function viewUsername() {
-  return `<section class="landing solo"><h2>${T.chooseTitle}</h2>
+}
+// İlk adımlar giriş ekranıyla aynı çerçevede: solda Kuytu ve adım sırtları, sağda tek bir soru
+const frame = (step, right) => `<div class="shell landing2 v-onb" style="--book:#2c5a47"><aside class="lp">
+    <span class="cap">${TN.firstPage}</span>
+    <div class="lp-center"><h1 class="kt light xl">Kuytu</h1><span class="rule-s"></span>
+      <div class="onb-steps" aria-label="${TN.step} ${Math.min(step + 1, 4)} / 4">${[0, 1, 2, 3].map(i => `<i class="${i <= step ? 'on' : ''}"></i>`).join('')}</div></div>
+    <span class="cap">${TN.lpFoot}</span></aside>
+  <section class="pp"><div class="pp-in narrow onb-r">${right}</div></section></div>`;
+// Açılışta, hesap ve profil gelene kadar: giriş ekranı bir an bile görünmez
+const loader = () => `<div class="loading" role="status"><span class="kt light">Kuytu</span><span class="ld" aria-hidden="true"><i></i><i></i><i></i></span><span class="sr-only">${TN.loading}</span></div>`;
+function viewUsername() {
+  return `<p class="cap">${TN.begin}</p><h1 class="kt sm">${T.chooseTitle}</h1>
     <form class="panel" id="name-form"><label>${T.username}<input name="username" required autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="ornek_okur"></label>
-    <p class="muted small">${T.chooseHelp}</p><button class="btn" type="submit">${T.save}</button></form></section>`;
+    <p class="lbl small">${T.chooseHelp}</p><button class="pl on" type="submit">${T.save}</button></form>`;
 }
 // Etkin kulüp: son açılan; yoksa ilk kulüp. Menü ve açılış sayfası buna göre çalışır
 const activeClub = () => {
@@ -86,7 +96,7 @@ function resultsHTML() {
   if (S.results === 'fail') return `<p class="muted">${T.searchFail}</p>`;
   if (!S.results.length) return `<p class="muted">${T.noResults}</p>`;
   return `<ul class="results">${S.results.map((b, i) => `<li>${coverHTML(b)}<div><b>${esc(b.title)}</b><p class="muted small">${esc([b.author, b.year, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p></div>
-    ${shelfBook(b.id) ? `<span class="muted small">${T.inShelf}</span>` : `<button class="btn ghost" type="button" data-act="add" data-i="${i}">${T.add}</button>`}</li>`).join('')}</ul>`;
+    ${shelfBook(b.id) ? `<span class="lbl small">${T.inShelf}</span>` : `<button class="pl sm" type="button" data-act="add" data-i="${i}">${T.add}</button>`}</li>`).join('')}</ul>`;
 }
 function viewSearch() {
   return `<div class="search-page">
@@ -98,15 +108,16 @@ function viewSearch() {
 }
 // Yeni üye karşılaması: kullanıcı adından hemen sonra, üç kısa adım
 function viewOnb() {
-  const n = S.onb, head = `<p class="lbl">${TN.step} ${Math.min(n, 3)} / 3</p>`, skip = `<button type="button" class="linkbtn" data-act="onbnext">${TN.skip}</button>`;
-  if (n === 1) return `<section class="onb">${head}<h2>${TN.mood}</h2><div class="tags">${TN.moods.map(m => `<button type="button" class="${S.moods.has(m) ? 'on' : ''}" data-act="onbmood" data-v="${m}">${m}</button>`).join('')}</div><button class="btn" type="button" data-act="onbnext">${TN.next}</button>${skip}</section>`;
-  if (n === 2) return `<section class="onb">${head}<h2>${TN.bring}</h2><p class="muted">${TN.bringSub}</p>
-    <form class="searchbar" id="search-form"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="btn" type="submit">${T.search}</button><button class="btn ghost" type="button" data-act="scan">${TN.scan}</button></form>
-    <div id="results">${resultsHTML()}</div><p class="muted small">${S.shelf.length} ${TN.bookWord}</p><button class="btn" type="button" data-act="onbnext">${TN.next}</button>${skip}</section>`;
-  if (n === 3) return `<section class="onb">${head}<h2>${TN.together}</h2>
-    <form class="panel" id="onb-invite"><label>${TN.invite}<input name="code" required autocomplete="off"></label><button class="btn" type="submit">${TN.joinClub}</button></form>
-    <a class="btn ghost" href="#kulup" data-act="onbdone">${TN.newClub}</a><p class="muted small">${TN.soloOk}</p>${skip}</section>`;
-  return `<section class="onb center"><span class="stamp won big">${TN.member}</span><h2>${TN.ready}</h2><p class="muted">${TN.readyNext}</p><a class="btn" href="#bugun" data-act="onbdone">${TN.goIn}</a></section>`;
+  const n = S.onb, head = `<p class="cap">${TN.step.toLocaleUpperCase('tr')} ${Math.min(n, 3)} / 3</p>`, skip = `<button type="button" class="linkbtn" data-act="onbnext">${TN.skip}</button>`;
+  if (n === 1) return `${head}<h1 class="kt sm">${TN.mood}</h1><div class="tags">${TN.moods.map(m => `<button type="button" class="${S.moods.has(m) ? 'on' : ''}" aria-pressed="${S.moods.has(m)}" data-act="onbmood" data-v="${m}">${m}</button>`).join('')}</div><div class="acts"><button class="pl on" type="button" data-act="onbnext">${TN.next}</button>${skip}</div>`;
+  if (n === 2) return `${head}<h1 class="kt sm">${TN.bring}</h1><p class="lbl">${TN.bringSub}</p>
+    <form class="searchbar" id="search-form"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="pl ink" type="submit">${T.search}</button></form>
+    <div class="acts"><button class="pl sm" type="button" data-act="scan">${TN.scan}</button><label class="pl sm">${TN.grImport}<input id="gr-file" type="file" accept=".csv,text/csv" hidden></label></div>
+    <div id="results">${resultsHTML()}</div><p class="lbl small">${S.shelf.length} ${TN.bookWord}</p><div class="acts"><button class="pl on" type="button" data-act="onbnext">${TN.next}</button>${skip}</div>`;
+  if (n === 3) return `${head}<h1 class="kt sm">${TN.together}</h1>
+    <form class="panel" id="onb-invite"><label>${TN.invite}<input name="code" required autocomplete="off"></label><button class="pl on" type="submit">${TN.joinClub}</button></form>
+    <a class="pl" href="#kulup" data-act="onbdone">${TN.newClub}</a><p class="lbl small">${TN.soloOk}</p>${skip}`;
+  return `<span class="stamp won big">${TN.member}</span><h1 class="kt sm">${TN.ready}</h1><p class="lbl">${TN.readyNext}</p><div class="acts"><a class="pl on" href="#bugun" data-act="onbdone">${TN.goIn}</a></div>`;
 }
 function updateCard() {
   const c = $('#card'), b = S.user && S.view === 'raf' && S.bookId ? shelfBook(S.bookId) : null;
@@ -139,10 +150,11 @@ function render() {
   // Bitirme anında cümle yazılırken arka plandaki kayıtlar sayfayı yeniden çizmez
   if (focus && focus.closest && focus.closest('.finish') && focus.matches('input')) return;
   if (S.view === 'gizlilik' && !S.user) v.innerHTML = `<div class="solo-page">${privacyHTML()}<a class="pl" href="#">${TN.close}</a></div>`;
+  else if (configured && !S.authReady) v.innerHTML = loader();
   else if (!S.user) v.innerHTML = viewLanding();
-  else if (S.profile === undefined) v.innerHTML = '';
-  else if (!S.profile) v.innerHTML = `<div class="solo-page">${viewUsername()}</div>`;
-  else if (S.onb && S.view !== 'davet') v.innerHTML = `<div class="solo-page">${viewOnb()}</div>`;
+  else if (S.profile === undefined) v.innerHTML = loader();
+  else if (!S.profile) v.innerHTML = frame(0, viewUsername());
+  else if (S.onb && S.view !== 'davet') v.innerHTML = frame(S.onb, viewOnb());
   else {
     const enter = S.enter;
     S.enter = false;
@@ -229,6 +241,7 @@ document.addEventListener('click', e => {
     else updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okuyorum' && !(shelfBook(S.bookId) || {}).startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
   }
   if (a === 'btab') { S.cardTab = el.dataset.v; render(); }
+  if (a === 'startbook') updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).catch(fail);
   if (a === 'bcolor') updateShelf(uid, S.bookId, { color: el.dataset.v }).catch(fail);
   if (a === 'frate')updateShelf(uid, S.finish, { rating: Number(el.dataset.v) }).catch(fail);
   if (a === 'fclose') { S.finish = null; render(); }
@@ -490,6 +503,7 @@ if (configured) {
   onUser(user => {
     stops.forEach(s => s());
     stops = [];
+    S.authReady = true;
     S.user = user;
     S.profile = undefined;
     S.shelf = [];
