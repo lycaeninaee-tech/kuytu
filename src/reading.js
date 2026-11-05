@@ -285,6 +285,8 @@ export function startTimer(shelf) {
   custom = { f: num('t-focus', 1, 180, custom.f), b: num('t-break', 1, 60, custom.b), c: num('t-count', 1, 300, custom.c) };
   try { localStorage.setItem('kuytu-custom', JSON.stringify(custom)); } catch (e) {}
   timer = { bookId, title: b.title, start: now, phase: 'focus', phaseStart: now, done: 0, cycles: 0, focus: m[3] * 60, brk: m[4] * 60, startPage: b.page || 0, note: '' };
+  // Ses paneli odaya girince açık gelir; telefonda saati kapatmasın diye kapalı
+  panelOpen = innerWidth > 860; panelTab = 'ortam'; saving = false;
   // Kitaba bağlı bir liste varsa oda onunla açılır
   if (b.music && b.music.url) playMusic(b.music.url, b.music.name);
   if (m[0] === 'ozel') { timer.focus = custom.f * 60; timer.brk = custom.b * 60; }
