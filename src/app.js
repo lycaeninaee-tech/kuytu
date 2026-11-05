@@ -9,7 +9,7 @@ import { searchBooks, fillInfo, coverChoices } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
-import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer } from './reading.js';
+import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer, setHooks, clearNow } from './reading.js';
 import { shareRecap } from './takip.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
@@ -319,7 +319,7 @@ document.addEventListener('click', e => {
   if (a === 'msave') {
     let v = $('#music-url').value.trim();
     if (v && !/^https?:/.test(v)) v = 'https://' + v;
-    saveProfile(uid, { music: v }).then(() => { toast(TK.saved); render(); }).catch(fail);
+    saveProfile(uid, { music: v }).then(() => { clearNow(); toast(TK.saved); render(); }).catch(fail);
   }
   if (a === 'metric') { try { localStorage.setItem('kuytu-metric', el.dataset.v); } catch (err) {} render(); }
   if (a === 'logpg') $('#log-form [name="pages"]').value = el.dataset.v;
@@ -502,6 +502,7 @@ document.addEventListener('submit', async e => {
 });
 
 setOnFinish(() => finishSession());
+setHooks({ toast, saveBook: (id, data) => updateShelf(S.user.uid, id, data).then(() => true, e => { fail(e); return false; }) });
 // Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu2)
 const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu2')) || []; } catch (e) { return []; } })());
 let filling = false;
