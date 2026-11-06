@@ -45,6 +45,26 @@ service cloud.firestore {
         && request.resource.data.text is string && request.resource.data.text.size() <= 2000
         && request.resource.data.rating is int && request.resource.data.rating >= 0 && request.resource.data.rating <= 5;
     }
+    // Arkadaş hareketleri: başladı, bitirdi. Giriş yapmış herkes okur, yalnızca sahibi yazar ve siler
+    match /activity/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.type in ['started', 'finished'];
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+    // Herkese açık kulüp vitrini: yalnızca kulübün kurucusu yazar
+    match /clubDirectory/{c} {
+      allow read: if signedIn();
+      allow write: if isOwner(c);
+    }
+    // Katılma isteği: belge adı kulüp_uid. İsteyen ve kurucu görür; kurucu yalnızca onay alanını değiştirir
+    match /clubRequests/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || resource.data.ownerId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.approved == false
+        && id == request.resource.data.clubId + '_' + request.auth.uid
+        && request.resource.data.ownerId == get(/databases/$(database)/documents/clubDirectory/$(request.resource.data.clubId)).data.ownerId;
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['approved']);
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || resource.data.ownerId == request.auth.uid);
+    }
     // --- bitiş ---
     match /usernames/{name} {
       allow read: if signedIn();
@@ -67,7 +87,8 @@ service cloud.firestore {
       allow update, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
       match /members/{m} {
         allow read: if isMember(c);
-        allow create: if signedIn() && m == request.auth.uid && ((request.resource.data.role == 'kurucu' && getAfter(/databases/$(database)/documents/clubs/$(c)).data.ownerId == request.auth.uid) || (request.resource.data.role == 'uye' && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.clubId == c));
+        // Üyelik: kurucu kendini yazar; ya da davet koduyla; ya da kurucunun onayladığı katılma isteğiyle
+        allow create: if signedIn() && m == request.auth.uid && ((request.resource.data.role == 'kurucu' && getAfter(/databases/$(database)/documents/clubs/$(c)).data.ownerId == request.auth.uid) || (request.resource.data.role == 'uye' && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.clubId == c) || (request.resource.data.role == 'uye' && get(/databases/$(database)/documents/clubRequests/$(c + '_' + m)).data.approved == true));
         // Kurucu rolleri değiştirir; her üye yalnızca kendi kartını (tek cümle, dört kitap, okunan kitap) günceller
         allow update: if isOwner(c) || (signedIn() && m == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['card']));
         allow delete: if signedIn() && (m == request.auth.uid || isOwner(c));

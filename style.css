@@ -1693,3 +1693,19 @@ body.in-room .bp-jump { display: none; }
   .srch-ic::before { content: ""; position: absolute; inset: 9px; background: var(--ink2); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E") center / contain no-repeat; }
 }
 @media (max-width: 860px) { .lp-top { padding-right: 96px; } }
+/* Herkese açık kulüpler, katılma istekleri ve arkadaş hareketleri (2026-11) */
+.cl-list { list-style: none; display: grid; margin: 0 0 14px; padding: 0; }
+.cl-row { display: grid; grid-template-columns: 46px 1fr auto; gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line2); }
+.cl-row b { font: 500 17px var(--font-display); color: var(--ink2); }
+.cl-row small { display: block; font: 400 12.5px var(--font-body); color: var(--soft); }
+.cl-row p { margin: 4px 0 0; font: 400 13.5px/1.4 var(--font-body); color: var(--mute2); }
+.cl-ph { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 8px; background: var(--sand); font: 600 18px var(--font-display); color: var(--mute2); }
+.cl-owner { display: grid; gap: 10px; }
+.cl-pub { display: grid; gap: 10px; }
+.cl-pub label:not(.check-row) { display: grid; gap: 4px; font: 500 13px var(--font-body); color: var(--mute2); }
+.cl-pub .check-row { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; font: 500 14px var(--font-body); }
+.cl-pub .pl { justify-self: start; }
+.act-list { list-style: none; display: grid; margin: 0; padding: 0; }
+.act { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 9px 0; border-bottom: 1px solid rgba(0, 0, 0, .06); font: 400 13.5px var(--font-body); color: var(--mute2); }
+.act i { font: italic 500 14.5px var(--font-display); color: var(--ink2); }
+@media (max-width: 860px) { .cl-row { grid-template-columns: 46px 1fr; } .cl-row > :last-child { grid-column: 2; justify-self: start; } }
