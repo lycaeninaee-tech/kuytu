@@ -6,12 +6,29 @@ Kitap Kulübü'nün herkese açık sürümü (çalışma adı Kuytu). Arayüz me
 - `src/auth.js`: Firebase başlatma, üyelik, kullanıcı adı. `src/app.js`: ekranlar ve olaylar.
 - Tasarım dili kullanıcının paylaştığı Kuytu rehberinden: orman yeşili `#1F3D33`, zeytin `#6B7D63`, krem `#F5EFE7`, kahve `#A8865A`, koyu gri `#2F2E2E`; Playfair Display ve Inter; yumuşak köşeler, hap düğmeler. Slogan: "Aynı sayfalarda farklı hayatlar."
 - `users/{uid}` e-posta tutmaz; e-posta yalnızca Firebase Auth'ta kalır.
-- Aşamalar: temel, kişisel raf, kulüpler, veri taşıma, arkadaşlar, yayın hazırlığı. Taşıma bitmeden arkadaşlık ve akış eklenmez.
+- Aşamalar: temel, kişisel raf, kulüpler, veri taşıma, arkadaşlar, yayın hazırlığı. (2026-11-06: kullanıcı arkadaşlık ve akışı taşıma beklemeden istedi; yapıldı.)
+
+## Kullanıcıyla çalışma kuralları (her oturumda geçerli)
+- Konuşma Türkçe. Kullanıcı: Aslı (@aslilhan), kulüpteki arkadaşları Eda (@sebnemeda), Ebrar (@elifebrar_), Buse (@buse).
+- Birleştirme yalnızca kullanıcı o PR için "Birleştir" deyince. Her değişiklik ayrı dal ve PR; `sw.js` önbellek adı her PR'da bir artar (son: `kuytu-v40`).
+- Eski proje `book-club-a5eff` ve eski site (`/kitap-kulubu/`) asla silinmez; kızlarla olan ortak veriler kaybolmamalı.
+- Fotoğraf özelliği yalnızca kendi kulüpleri için; izinli e-posta listesi yalnızca Firebase konsolundaki kurallarda durur, repodaki `firestore.rules` yer tutucu içerir. Konsola kural yayımlanırken önce konsoldaki metinle satır satır karşılaştır, izin listesini aynen koru (konsoldaki listeyi dosyaya yerleştirip tamamını yapıştırmak en güvenlisi; o dosyayı repoya koyma).
+- Kural değişikliği gerekiyorsa kod, kurallar yayımlanmadan da bozulmamalı (okuma hatası olunca bölüm "açılamadı" der).
+- Büyük tasarım değişikliği önce tasarım panosunda çizilir: https://claude.ai/artifact/TbV1k8VYBxJLS6s1EN4fu7 ("K5 · Yeni yapı" sayfası güncel).
+- Uydurma sayı ya da alıntı yok; yer tutucu kullanılır ([dk], [yorum metni]).
+- Kitaplığım rafları (kemer ve cam raf görünümü) kullanıcı istemedikçe değişmez.
+- Canlı sitede önizleme yaparken kullanıcının gerçek verisine yazan düğmelere basılmaz. Önizleme yöntemi: canlı sitenin bir sayfasında dosyalar blob olarak yüklenir, `shareCard()`, `sharePublic(S)`, `fillMissing(...)`, `refreshDirectory(...)` çağrıları önizlemede çıkarılır.
+- Kullanıcının sevmedikleri: turuncu lamba topu, "Kuytuna gir" adı (şimdilik "Kuytun"; yeni isim aranıyor), önerilen dört uygulama ikonu (şimdiki ikon kalıyor), YouTube çalar, sıkıcı kahverengi, yoğun ebru.
+
+## Kaldığımız yer (2026-11-06)
+- Canlı: v39 (#34 kulüp vitrini, katılma istekleri, arkadaş hareketleri). #35 bildirim zili birleşti, v40 yayını bekleniyordu.
+- Firebase kuralları güncel (okurlar, arkadaşlık, yorumlar, hareketler, kulüp vitrini ve istekleri yayımlandı).
+- Yapılacaklar (sırayla): 3. adım: odada ses notu (ücretsiz planda kısa kayıt, Firestore'da), okuma odasını güzelleştirme, künyede kitabın ödülleri (ör. Wikidata), aylık özet kartını görünür yapma. Ayrıca: yeni uygulama ikonu için örnek tarayıp öneri, "Kuytun" için yeni isim (kullanıcı marka yenilemeyi düşünüyor), gizlilik sayfasına iletişim adresi (kullanıcıdan bekleniyor).
 - Modüller: `reading.js` (oda, zamanlayıcı, müzik), `takip.js`, `clubs.js` (veri), `clubview.js` (kulüp ekranları ve olayları), `sessions.js`, `books.js`, `shelf.js`, `util.js`.
 - Kulüp üyeliği `clubs/{id}/members/{uid}` (rol: kurucu, uye, izleyici); kişinin listesi `users/{uid}/clubs`. Davet `invites/{kod}`, yalnızca kodla okunur. Kurallar `firestore.rules` içinde; Firebase konsolunda da yayımlanmalı.
 - Henüz taşınmadı: fotoğraflar (Storage/Blaze ister), ses notları.
 - Fotoğraflar herkese açık bir özellik değil: yalnızca `photosEnabled: true` olan kulüpte sekme görünür ve yazma izni izinli e-postalarda (kullanıcının kararı: Kuytu herkese açık, foto yalnızca kendi kulüpleri için). Veriler `clubs/{c}/books/{b}/photos`, küçültülmüş JPEG data URL, Storage ve Blaze yok. İzinli e-posta listesi yalnızca konsoldaki kurallarda; repodaki `firestore.rules` yer tutucu içerir, olduğu gibi yayımlanmaz.
-- Eski siteden veriler "Kitap Kulübü" kulübüne kopyalandı (2026-10-30): 4 kitap, 54 not, 6 oturum. Ebrar ve Şebnem'in ilerleme, puan ve katılım bilgileri eski slug anahtarlarıyla duruyor; üye olunca uid'lerine eşlenmeli. Şebnem 2026-11-05'te Şebnem Eda Taşkıran (@sebnemeda) olarak katıldı; eski projede ona ait ilerleme, puan ya da not çıkmadı, kulüpteki `legacyMembers` listesinden "Şebnem" çıkarıldı (2026-11-06). Ebrar listede kalıyor. Eski proje silinmedi.
+- Eski siteden veriler "Kitap Kulübü" kulübüne kopyalandı (2026-10-30): 4 kitap, 54 not, 6 oturum. Ebrar ve Şebnem'in ilerleme, puan ve katılım bilgileri eski slug anahtarlarıyla duruyor; üye olunca uid'lerine eşlenmeli. Şebnem 2026-11-05'te Şebnem Eda Taşkıran (@sebnemeda) olarak katıldı; eski projede ona ait ilerleme, puan ya da not çıkmadı, kulüpteki `legacyMembers` listesinden "Şebnem" çıkarıldı (2026-11-06). Ebrar da @elifebrar_ olarak katıldı; kullanıcının isteğiyle "Ebrar" da listeden çıkarıldı, `legacyMembers` artık boş (2026-11-06). Eski proje silinmedi.
 - github.io adresi eski siteyle aynı origin; önbellek ve localStorage adları `kuytu-` önekiyle ayrı tutulmalı.
 - Dört yer ve profil: Bugün (`home.js`), Kitaplığım (`library.js`, tek kitaplık, evdeki kitaplık), Kulüp (`clubview.js`, kendi alt menüsüyle), Okuma (`home.js`: oda, Takip, alıntılar), Profil. Ortak parçalar `parts.js`: kemer, üç boyutlu kitap, ay, yıldız, kedi. Raf belgesine eklenen alanlar: `fav`, `wish`, `lentTo`, `lentAt`; alıntılar `users/{uid}/quotes`. Yeni üye karşılaması yalnızca kullanıcı adı alındıktan hemen sonra gösterilir. Değişikliği ana dala almadan önce `new Function` ile yazım kontrolü yap.
 - Kapak tasarımı (2026-11): her sayfa iki parça, `shell()` app.js içinde. Sol (`.lp`) okunan kitabın renginde ve ebrulu, sağ (`.pp`) kitap sayfası; görünüm fonksiyonları `{ left, right, book, ribbon, folio }` döndürür. Kitabın rengi `parts.js` içindeki `colorOf`/`learnColor` ile kapaktan okunur, okunamazsa addan seçilir. Kitaplık sıralar halinde, önünden renkli cam raf geçer; her kapakta kart, düzenle, ödünç ve sil menüsü var. Kulüpte bölüm odaları: kitapta `chapters`, notta `chapter`; kişinin ilerlemesini geçen bölümler kilitli. Raf belgesinde `source` (nereden aldım) alanı da var.
