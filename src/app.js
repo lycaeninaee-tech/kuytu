@@ -26,7 +26,8 @@ const S = { user: null, profile: undefined, shelf: [], sessions: [], quotes: [],
 try { S.libGroup = localStorage.getItem('kuytu-duzen') || 'durum'; } catch (e) {}
 
 // Görünüm tercihi yalnızca bu cihazda tutulur; "cihaza göre" seçiliyken telefonun gece ayarını izler
-const themeOf = () => { try { return localStorage.getItem('kuytu-tema') || 'sistem'; } catch (e) { return 'sistem'; } };
+// Varsayılan açık görünüm (2026-11-07, kullanıcının isteği); gece görünümü yalnızca seçilince
+const themeOf = () => { try { return localStorage.getItem('kuytu-tema') || 'acik'; } catch (e) { return 'acik'; } };
 const darkMQ = matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
   const t = themeOf(), dark = t === 'koyu' || (t === 'sistem' && darkMQ.matches);
