@@ -81,7 +81,7 @@ export const TK = {
   leftLbl: 'kalan', goneLbl: 'geçen', startPage: 'başlangıç s.', noteTitle: 'Kenar notu', notePh: 'Aklına geleni yaz, oda kapanınca kitabın notlarına düşer', noteHint: 'Sayfa sonra sorulur.', noteBtn: 'Not',
   whichPage: 'Kaçıncı <i>sayfadasın?</i>', dur: 'Süre', startedAt: 'Başladığın', ofPages: 'sayfa', finishedIt: 'Bitirdim', saveNoPage: 'Sayfa girmeden kaydet', pageLow: 'Başladığın sayfadan geride bir sayfa yazdın.', ask: 'Bugün ne kadar <em>okuyoruz?</em>',
   needBook: 'Önce rafına bir kitap ekle.', findBook: 'Kitap ara', book: 'Kitap', enter: 'Odaya gir', music: 'Müzik', moveMusic: 'Müzik çaları taşı',
-  musicHint: 'Spotify ya da YouTube bağlantını ekle, okurken burada çalsın.', link: 'Bağlantı', save: 'Kaydet',
+  musicHint: 'Spotify bağlantını ekle, okurken burada çalsın.', link: 'Bağlantı', save: 'Kaydet',
   done: 'Oturum bitti', minutesWord: 'dakika', howMany: 'Kaç sayfa okudun?', skip: 'Geç',
   track: 'Takip', habit: 'Okuma <em>alışkanlığım</em>', pageTab: 'Sayfa', minTab: 'Dakika', reading: 'Şu an okuduğun',
   addPages: 'Kalan sayfayı görmek için kitabın sayfa sayısını gir.', openBook: 'Kitabı aç', finished: 'Kitabı bitirdin.', perDay: 'Son 7 günde günde ortalama', perDay2: 'sayfa okudun; bu hızla', perDay3: 'günde bitirirsin.', noPace: 'Sayfa ekledikçe bitiş tahminin burada görünecek.', leftPages: 'sayfa kaldı',
@@ -92,7 +92,7 @@ export const TK = {
   layers: { rain: 'Yağmur', fire: 'Şömine', clock: 'Saat tıkırtısı', cafe: 'Kafe uğultusu', forest: 'Orman, kuşlar', night: 'Gece böcekleri', waves: 'Dalga', train: 'Tren', wind: 'Rüzgâr', thunder: 'Gök gürültüsü' },
   presets: { yagmur: 'Yağmurlu gece', somine: 'Şömine başı', kafe: 'Kafe köşesi', orman: 'Orman', kutuphane: 'Kütüphane' },
   bookMusic: 'Bu kitabın müziği', noBookMusic: 'Henüz bir liste bağlı değil', bindNow: 'Çalanı bağla', unbind: 'Kaldır', play: 'Çal', playingNow: 'çalıyor', secki: 'Kuytu seçkisi', ownList: 'Kendi listen',
-  pastePh: 'YouTube, YouTube Music ya da Spotify bağlantısı', paste: 'Yapıştır', spotifyNote: "Spotify tam şarkıyı yalnızca bu tarayıcıda Spotify'a girişliysen çalar, yoksa kısa önizleme çalar.", stopMusic: 'Müziği kapat', pasteFail: 'Bağlantıyı kutuya yapıştır.', badLink: 'Bu bağlantıyı tanıyamadım.', bound: 'Bu kitaba bağlandı.', removedMusic: 'Kitabın müziği kaldırıldı.', svc: { yt: 'YouTube', ytm: 'YouTube Music', sp: 'Spotify' }, svcFound: 'bağlantısı',
+  pastePh: 'Spotify bağlantısı', ytSoon: 'YouTube şimdilik çalmıyor, Spotify bağlantısı ekleyebilirsin.', paste: 'Yapıştır', spotifyNote: "Spotify tam şarkıyı yalnızca bu tarayıcıda Spotify'a girişliysen çalar, yoksa kısa önizleme çalar.", stopMusic: 'Müziği kapat', pasteFail: 'Bağlantıyı kutuya yapıştır.', badLink: 'Bu bağlantıyı tanıyamadım.', bound: 'Bu kitaba bağlandı.', removedMusic: 'Kitabın müziği kaldırıldı.', svc: { yt: 'YouTube', ytm: 'YouTube Music', sp: 'Spotify' }, svcFound: 'bağlantısı',
   needAmount: 'Sayfa ya da süre yaz.', tooBig: 'Sayfa ya da süre çok büyük görünüyor.', future: 'İleri tarihli kayıt eklenemez.', badDate: 'Tarihi kontrol et.', added: 'eklendi', saved: 'Kaydedildi', spaceClub: 'Kulüp', spaceMe: 'Okumam', navMembers: 'Üyeler', navHome: 'Bu ay', navLibrary: 'Kitaplık', navSugg: 'Öneriler', navClubs: 'Kulüpler', navRoom: 'Okuma köşesi', navTrack: 'Takip',
 };
 

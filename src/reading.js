@@ -5,13 +5,6 @@ import { book3d, colorOf } from './parts.js';
 import { LAYERS, PRESETS, getLevels, presetOf, anyOn, setLevel, applyMix, playMix, stopMix, fadeOn, setFade } from './ambience.js';
 
 export const MODES = [['serbest', '∞', 'Serbest okuma', 0, 0], ['k15', '15', 'Kısa tur · 15 / 3', 15, 3], ['p25', '25', 'Pomodoro · 25 / 5', 25, 5], ['p50', '50', 'Derin odak · 50 / 10', 50, 10], ['ozel', '+', 'Özel döngü', 0, 0], ['sayac', '↓', 'Geri sayım', 0, 0]];
-// Kuytu seçkisi: gömülmeye izin veren, uzun ve yıllardır yayında olan YouTube videoları
-export const SECKI = [
-  ['Klasik · piyano', 'mIYzp5rcTvU', 'HALIDONMUSIC', '#2f4f86,#55438a'],
-  ['Caz · gece', '8w5ELqXNlvk', 'Coffee Jazz Melody', '#7a2f6b,#8a2f45'],
-  ['Lo-fi', 'lTRiuFIWV54', 'Lofi Girl', '#1f6b52,#3f6b3a'],
-  ['Sakin ambient', 'HPyu0PGqGkU', 'Sacred Symphony', '#a8492a,#8a2f45'],
-];
 let timer = null, pref = 'p25', roomLight = 'alaca', onFinish = () => {}, custom = { f: 30, b: 5, c: 30 };
 let panelOpen = false, panelTab = 'ortam', saving = false, nowUrl = '', nowName = '', musicOff = false;
 const hooks = { saveBook: () => Promise.resolve(), toast: () => {} };
@@ -111,18 +104,20 @@ export function setRoom(on) {
   document.body.classList.toggle('show-music', on && !!playerUrl());
 }
 
-// Müzik: kitabın listesi, Kuytu seçkisi ya da kişinin yapıştırdığı bağlantı. Çalar odanın dışında durur, oda yeniden çizilince kesilmez.
-const profMusic = () => ((current && current.profile) || {}).music || '';
-const playerUrl = () => (musicOff ? '' : nowUrl || profMusic());
+// Müzik: kitabın listesi ya da kişinin yapıştırdığı Spotify bağlantısı. Çalar odanın dışında durur, oda yeniden çizilince kesilmez.
+// Eskiden kaydedilmiş YouTube bağlantıları yok sayılır.
+const profMusic = () => { const u = ((current && current.profile) || {}).music || ''; return musicEmbed(u) ? u : ''; };
+const nowOk = () => (musicEmbed(nowUrl) ? nowUrl : '');
+const playerUrl = () => (musicOff ? '' : nowOk() || profMusic());
 const service = u => (/open\.spotify\.com\//.test(u) ? 'sp' : /music\.youtube\.com/.test(u) ? 'ytm' : /youtube\.com|youtu\.be/.test(u) ? 'yt' : '');
 const svcName = u => T.svc[service(u)] || '';
-const playerName = () => (musicOff ? '' : nowUrl ? nowName || svcName(nowUrl) : profMusic() ? T.myList : '');
+const playerName = () => (musicOff ? '' : nowOk() ? nowName || svcName(nowUrl) : profMusic() ? T.myList : '');
 function playMusic(url, name) {
-  if (!musicEmbed(url)) { hooks.toast(T.badLink); return false; }
+  if (!musicEmbed(url)) { hooks.toast(/youtube\.com|youtu\.be/.test(url) ? T.ytSoon : T.badLink); return false; }
   const p = $('#mplayer'), same = !musicOff && playerUrl() === url && p && p.querySelector('iframe');
   musicOff = false; nowUrl = url; nowName = name || '';
   try { localStorage.setItem('kuytu-mnow', JSON.stringify({ url, name: nowName })); } catch (e) {}
-  if (p && !same) p.innerHTML = musicEmbed(url, true);
+  if (p && !same) p.innerHTML = musicEmbed(url);
   const d = $('#music-drag'); if (d) d.textContent = '⠿ ' + T.music + ' · ' + playerName();
   document.body.classList.toggle('show-music', document.body.classList.contains('in-room'));
   return true;
@@ -165,8 +160,6 @@ function musicTab() {
     : now && b.id ? `<button type="button" class="q" data-act="musbind" data-v="1">${T.bindNow}</button>` : '';
   return `<span class="sp-cap">${T.bookMusic}</span>
     <div class="sp-book"><span class="sp-cv" style="--bc:${colorOf(b.id ? b : { title: timer.title || '' })}"></span><div><b>${esc(b.title || timer.title || '')}</b><small>${bm ? esc(bm.name || svcName(bm.url)) + (on(bm.url) ? ' · ' + T.playingNow : '') : T.noBookMusic}</small></div><span class="sp-bacts">${bookActs}</span></div>
-    <span class="sp-cap">${T.secki}</span>
-    <div class="sp-lists">${SECKI.map(([n, id, by, bg]) => tile(n, 'https://www.youtube.com/watch?v=' + id, by, bg)).join('')}</div>
     <span class="sp-cap">${T.ownList}</span>
     ${prof ? `<div class="sp-lists one">${tile(T.myList, prof, svcName(prof), '#55524b,#1b1b1b')}</div>` : ''}
     <form class="sp-paste"><input id="sp-url" name="u" inputmode="url" autocomplete="off" placeholder="${T.pastePh}" aria-label="${T.link}"><button type="button" class="q" data-act="muspaste">${T.paste}</button><button class="sp-go">${T.play}</button></form>
@@ -206,7 +199,7 @@ document.addEventListener('click', e => {
 });
 function detect(u) {
   const s = $('#sp-svc'); if (!s) return;
-  s.textContent = !u ? '' : service(u) && musicEmbed(u) ? T.svc[service(u)] + ' ' + T.svcFound : T.badLink;
+  s.textContent = !u ? '' : musicEmbed(u) ? T.svc[service(u)] + ' ' + T.svcFound : /youtube\.com|youtu\.be/.test(u) ? T.ytSoon : T.badLink;
 }
 document.addEventListener('submit', e => {
   const f = e.target;
@@ -315,17 +308,12 @@ export function stopTimer() {
   refreshTimer();
   return { seconds, bookId: t.bookId, title: t.title };
 }
-// Spotify, YouTube ve YouTube Music bağlantılarını tanır; tanımazsa boş döner
-function musicEmbed(url, auto) {
+// Yalnızca Spotify bağlantılarını tanır; tanımazsa boş döner.
+// YouTube kaldırıldı (2026-11): oynatıcısı görünür kalmak zorunda, odada kötü duruyordu. Daha iyi bir yol bulununca geri gelecek.
+function musicEmbed(url) {
   if (!url) return '';
   const sp = url.match(/open\.spotify\.com\/(?:intl-[\w-]+\/)?(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]+)/);
-  if (sp) return `<iframe src="https://open.spotify.com/embed/${sp[1]}/${sp[2]}" width="100%" height="80" frameborder="0" allow="autoplay; encrypted-media" loading="lazy" title="Spotify"></iframe>`;
-  const vid = (url.match(/[?&]v=([\w-]{11})|youtu\.be\/([\w-]{11})|\/(?:live|shorts|embed)\/([\w-]{11})/) || []).slice(1).find(Boolean);
-  const list = (url.match(/[?&]list=([\w-]+)/) || [])[1];
-  if (!vid && !list) return '';
-  // Tek video bitince başa döner; YouTube kuralları gereği oynatıcı görünür kalır
-  const q = ['playsinline=1', list ? 'list=' + list : 'loop=1&playlist=' + vid, auto ? 'autoplay=1' : ''].filter(Boolean).join('&');
-  return `<iframe src="https://www.youtube.com/embed/${vid || 'videoseries'}?${q}" width="100%" height="170" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen title="YouTube"></iframe>`;
+  return sp ? `<iframe src="https://open.spotify.com/embed/${sp[1]}/${sp[2]}" width="100%" height="80" frameborder="0" allow="autoplay; encrypted-media" loading="lazy" title="Spotify"></iframe>` : '';
 }
 export const setCurrent = state => { current = state; };
 // Yeni düzende zamanlayıcı sol tarafta, müzik sağ sayfada durur
@@ -334,7 +322,7 @@ export function viewMusic(state) {
   current = state;
   const music = (state.profile || {}).music || '', embed = musicEmbed(playerUrl()), name = playerName();
   return `<section class="surface" id="music-card"><button type="button" class="mdrag" id="music-drag" aria-label="${T.moveMusic}">⠿ ${T.music}${name ? ' · ' + esc(name) : ''}</button><h3>${T.music}</h3><div id="mplayer">${embed || `<p class="muted small">${T.musicHint}</p>`}</div>
-    <label>${T.link}<input id="music-url" value="${esc(music)}" placeholder="open.spotify.com/... ya da youtube.com/..."></label><button type="button" class="pl" data-act="msave">${T.save}</button></section>`;
+    <label>${T.link}<input id="music-url" value="${esc(music)}" placeholder="open.spotify.com/..."></label><button type="button" class="pl" data-act="msave">${T.save}</button></section>`;
 }
 export function viewOda(state) { current = state; return `<div class="oda"><section class="surface" id="timer-card">${timerBody()}</section>${viewMusic(state)}</div>`; }
 
