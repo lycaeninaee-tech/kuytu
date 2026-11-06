@@ -28,6 +28,38 @@ export function genreOf(cats) {
   return (GENRES.find(([, re]) => re.test(c)) || ['Diğer'])[0];
 }
 // Kitabın türü: aynı kitabın baskılarının kategorilerinden
+// Künye: Google Books'un kitap ayrıntısından yayınevi, yıl, sayfa, ISBN, dil ve kısa özet.
+// Kitap yabancı bir baskıdan eklenmişse ya da yayınevi yoksa aynı kitabın Türkçe baskısı aranır. Yalnızca eksik alanlar döner
+const clean = s => (s || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+async function volume(id) {
+  const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(id)}?key=${BOOKS_KEY}`);
+  if (!res.ok) throw new Error('google');
+  const v = (await res.json()).volumeInfo || {}, ids = v.industryIdentifiers || [];
+  const isbn = (ids.find(x => x.type === 'ISBN_13') || ids.find(x => x.type === 'ISBN_10') || {}).identifier || '';
+  return { publisher: v.publisher || '', year: String(v.publishedDate || '').slice(0, 4), pages: v.pageCount || 0, isbn, lang: v.language || '', desc: clean(v.description).slice(0, 900) };
+}
+export async function fetchKunye(b) {
+  const own = String(b.id).startsWith('gb_') ? await volume(b.id.slice(3)).catch(() => ({})) : {};
+  const foreign = !!own.lang && own.lang !== 'tr';
+  let tr = null;
+  if (!own.publisher || foreign) {
+    const surname = (b.author || '').split(',')[0].trim().split(' ').pop();
+    const list = await googleBooks(`intitle:"${b.title}"${surname ? ` inauthor:"${surname}"` : ''}`, '&langRestrict=tr').catch(() => []);
+    const hit = list.find(r => r.publisher && (!r.lang || r.lang === 'tr'));
+    if (hit) { const more = await volume(hit.id.slice(3)).catch(() => ({})); tr = { ...hit, ...Object.fromEntries(Object.entries(more).filter(([, v]) => v)), lang: 'tr' }; }
+  }
+  const info = tr ? { ...own, ...Object.fromEntries(Object.entries(tr).filter(([, v]) => v)) } : own;
+  const out = {};
+  // Kitap yabancı baskıdan eklendiyse ve Türkçe baskısı bulunduysa yayınevi, yıl ve ISBN Türkçe baskınınkiyle değişir
+  const swap = foreign && tr;
+  for (const k of ['publisher', 'year', 'isbn', 'lang']) if (info[k] && (!b[k] || swap)) out[k] = info[k];
+  // Özet yalnızca Türkçe baskıdan (yabancı baskının özeti başka dilde olur)
+  const desc = (tr && tr.desc) || (!foreign ? own.desc : '');
+  if (!b.desc && desc) out.desc = desc;
+  if (!b.pages && info.pages) out.pages = info.pages;
+  for (const k of Object.keys(out)) if (out[k] === b[k]) delete out[k];
+  return out;
+}
 // Baskıların kategorileri tek tek yanlış olabilir (ör. "Gulls"); en çok baskıda geçen anlamlı tür seçilir
 export async function fetchGenre(b) {
   const eds = (await editions(b)).filter(r => r.cats), votes = {};

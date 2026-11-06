@@ -113,6 +113,7 @@ export const TN = {
   // Kitap sayfası (2026-11): her kitabın kendi adresi var, Oku sayfası buraya taşındı
   bpRead: 'Okuman', bpReviews: 'Yorumlar', bpLog: 'Okuduğunu ekle', bpNotes: 'Notların', bpSess: 'Oturumlar', bpInfo: 'Künye', bpLogHint: 'Odanın dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', bpGone: 'Bu kitap rafında yok.', bpBack: 'Kitaplarıma dön', bpStatus: 'Durumu',
   goRoom: 'Kuytuna gir', bookPage: 'Kitabın sayfası',
+  kPublisher: 'Yayınevi', kYear: 'Basım yılı', kPages: 'Sayfa', kIsbn: 'ISBN', kTranslator: 'Çevirmen', kOrig: 'Özgün adı', kHint: 'Eksik bilgileri kitap kaynaklarından arka planda tamamlamaya çalışıyoruz; çevirmen ve özgün ad kaynaklarda çoğu zaman yok, elinle ekleyebilirsin.',
   noGenre: 'Türü bilinmiyor', groupBy: 'Düzen', byStatus: 'Duruma göre', byGenre: 'Türe göre', genreLbl: 'Tür',
   recTitle: 'SANA ÖNERİLER', recWhy: 'okuduğun için', recWhyG: 'sevdiğin için', recLoading: 'Rafına bakıp öneri hazırlıyorum…', recEmpty: 'Öneri için önce birkaç kitabı "okudum" yap ya da kalbine al.', recMore: 'Yenile',
   lentShelf: 'Ödünçte', wishShelf: 'İstek listem', clubMembers: 'Üyeler', clubSwitch: 'Kulüp değiştir',

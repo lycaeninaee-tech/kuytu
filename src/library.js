@@ -109,6 +109,11 @@ export function cardHTML(S, b, first) {
       <label>${T.author}<input name="author" maxlength="200" value="${esc(b.author || '')}"></label>
       <label>${T.pages}<input name="pages" type="number" min="0" max="20000" value="${b.pages || ''}"></label>
       <label>${N.source}<input name="source" maxlength="120" value="${esc(b.source || '')}"></label>
+      <label>${N.kPublisher}<input name="publisher" maxlength="120" value="${esc(b.publisher || '')}"></label>
+      <label>${N.kYear}<input name="year" maxlength="4" inputmode="numeric" value="${esc(b.year || '')}"></label>
+      <label>${N.kTranslator}<input name="translator" maxlength="120" value="${esc(b.translator || '')}"></label>
+      <label>${N.kOrig}<input name="origTitle" maxlength="200" value="${esc(b.origTitle || '')}"></label>
+      <label>${N.kIsbn}<input name="isbn" maxlength="17" inputmode="numeric" value="${esc(b.isbn || '')}"></label>
       <label>${N.genreLbl}<select name="genre"><option value="">${N.noGenre}</option>${GENRE_NAMES.map(g => `<option${b.genre === g ? ' selected' : ''}>${g}</option>`).join('')}</select></label>
       <div class="wide covpick"><p class="cap">${N.otherCover}</p>${S.covers === 'loading' ? `<p class="lbl small">${T.searching}</p>` : Array.isArray(S.covers)
         ? (S.covers.length ? `<div class="covs">${S.covers.map(u => `<button type="button" data-act="pickcover" data-u="${esc(u)}" class="${u === b.cover ? 'on' : ''}"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join('')}</div>` : `<p class="lbl small">${N.noCovers}</p>`)
@@ -183,6 +188,10 @@ export function viewBook(S, b, p = {}) {
     <section class="bp-sec" id="bp-not">${margin(S, b)}</section>
     <section class="bp-sec" id="bp-oturum"><p class="cap">${N.bpSess.toLocaleUpperCase('tr')}</p>${p.sess || ''}</section>
     <section class="bp-sec" id="bp-kunye"><p class="cap">${N.bpInfo.toLocaleUpperCase('tr')}</p>
+      ${b.desc ? `<p class="bp-desc">${esc(b.desc)}</p>` : ''}
+      <dl class="kunye-dl">${[[N.kPublisher, b.publisher], [N.kYear, b.year], [N.kPages, b.pages], [N.kIsbn, b.isbn], [N.kTranslator, b.translator], [N.kOrig, b.origTitle], [N.genreLbl, b.genre]]
+        .map(([k, v]) => `<div><dt>${k}</dt><dd>${v ? esc(String(v)) : '<span class="muted">–</span>'}</dd></div>`).join('')}</dl>
+      ${!b.publisher || !b.year || !b.translator ? `<p class="lbl small">${N.kHint} <button type="button" class="linkbtn small" data-act="bedit" data-id="${esc(b.id)}">✎ ${N.edit}</button></p>` : ''}
       <div class="kunye">
         <div><p class="cap">${N.who}</p><p class="sf">${b.lentTo ? esc(b.lentTo) + (b.lentAt ? ', ' + fmt(b.lentAt) : '') : N.mine}</p></div>
         <div><p class="cap">${N.inClub}</p><p class="sf">${b.status === 'okudum' && S.club && S.club.books.some(x => x.title === b.title) ? N.readTogether : '–'}</p></div>

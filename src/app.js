@@ -5,7 +5,7 @@ import { viewLibrary, cardHTML, finishHTML, playPanel, scanBarcode, viewBook, ed
 import { exportData, reminderICS, freshLogin, deleteAccount, privacyHTML } from './account.js';
 import { coverHTML, flat, backdrop, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, remember, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
-import { searchBooks, fillInfo, coverChoices, fetchGenre, recommend, GENRE_NAMES } from './books.js';
+import { searchBooks, fillInfo, coverChoices, fetchGenre, recommend, GENRE_NAMES, fetchKunye } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
@@ -372,7 +372,13 @@ document.addEventListener('click', e => {
   if (a === 'findme') saveProfile(uid, { findable: S.profile.findable === false }).catch(fail);
   if (a === 'bpjump') { const t = document.getElementById(el.dataset.v); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   if (a === 'bmenu') { S.menuFor = S.menuFor === el.dataset.id ? null : el.dataset.id; S.armed = false; render(); }
-  if (a === 'bedit') { S.editing = true; S.covers = null; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
+  // Düzenle: kitap sayfasındaysan form hemen açılır; başka yerdeysen önce kitabın sayfasına gidilir
+  if (a === 'bedit') {
+    const id = el.dataset.id;
+    S.covers = null; S.menuFor = null;
+    if (S.view === 'kitap' && S.bookId === id) { S.editing = true; render(); scrollTo({ top: 0, behavior: 'smooth' }); }
+    else { S.lastBook = id; S.editing = true; location.hash = '#kitap/' + encodeURIComponent(id); }
+  }
   if (a === 'bnoedit') { S.editing = false; S.covers = null; render(); }
   // Otomatik gelen kapak yanlışsa aynı kitabın başka baskılarının kapaklarından biri seçilir
   if (a === 'findcovers') {
@@ -543,7 +549,8 @@ document.addEventListener('submit', async e => {
     }
     if (id === 'onb-invite') { S.onb = 0; location.hash = '#davet/' + encodeURIComponent(f.code.value.trim().split('/').pop()); }
     if (id === 'edit-form') {
-      const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim(), ...(f.genre ? { genre: f.genre.value } : {}) };
+      const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim(), ...(f.genre ? { genre: f.genre.value } : {}),
+        ...Object.fromEntries(['publisher', 'year', 'translator', 'origTitle', 'isbn'].filter(k => f[k]).map(k => [k, f[k].value.trim()])) };
       if (cover || !(b.cover || '').startsWith('data:')) data.cover = cover;
       await updateShelf(S.user.uid, S.bookId, data);
       S.editing = false; S.covers = null;
@@ -632,6 +639,7 @@ setHooks({
 });
 // Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu2)
 const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu2')) || []; } catch (e) { return []; } })());
+const triedKunye = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-kunye1')) || []; } catch (e) { return []; } })());
 const triedGenre = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-tur1')) || []; } catch (e) { return []; } })());
 let filling = false;
 async function fillMissing(uid, list) {
@@ -641,6 +649,12 @@ async function fillMissing(uid, list) {
     tried.add(b.id);
     try { localStorage.setItem('kuytu-doldu2', JSON.stringify([...tried])); } catch (e) {}
     try { const data = await fillInfo(b); if (Object.keys(data).length) await updateShelf(uid, b.id, data); } catch (e) {}
+  }
+  // Künyesi eksik kitaplar (yayınevi, yıl, ISBN, özet) Türkçe baskıdan tamamlanır; her kitap bir kez denenir (kuytu-kunye1)
+  for (const b of list.filter(x => x.title && (!x.publisher || !x.year || !x.isbn) && !triedKunye.has(x.id)).slice(0, 6)) {
+    triedKunye.add(b.id);
+    try { localStorage.setItem('kuytu-kunye1', JSON.stringify([...triedKunye])); } catch (e) {}
+    try { const k = await fetchKunye(b); if (Object.keys(k).length) await updateShelf(uid, b.id, k); } catch (e) {}
   }
   // Türü olmayan kitapların türü kitap kaynaklarından bulunur; her kitap bir kez denenir (kuytu-tur1)
   for (const b of list.filter(x => !x.genre && x.title && !triedGenre.has(x.id)).slice(0, 8)) {
