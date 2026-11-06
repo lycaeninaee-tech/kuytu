@@ -109,7 +109,11 @@ export const TC = {
 
 // Yeni yapı: Bugün, Kitaplığım, Okuma, Profil ve karşılama
 export const TN = {
-  today: 'Bugün', lib: 'Kitaplığım', club: 'Kulüpler', read: 'Oku', profile: 'Profilim',
+  today: 'Bugün', lib: 'Kitaplarım', club: 'Kulüpler', read: 'Oku', profile: 'Profilim', explore: 'Keşfet',
+  // Kitap sayfası (2026-11): her kitabın kendi adresi var, Oku sayfası buraya taşındı
+  bpRead: 'Okuman', bpLog: 'Okuduğunu ekle', bpNotes: 'Notların', bpSess: 'Oturumlar', bpInfo: 'Künye', bpLogHint: 'Odanın dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', bpGone: 'Bu kitap rafında yok.', bpBack: 'Kitaplarıma dön', bpStatus: 'Durumu',
+  lentShelf: 'Ödünçte', wishShelf: 'İstek listem', clubMembers: 'Üyeler', clubSwitch: 'Kulüp değiştir',
+  exBooks: 'Kitap', exReaders: 'Okurlar', exClubs: 'Kulüpler', exSoon: 'Okurları ve kulüpleri aramak, arkadaş eklemek bir sonraki adımda geliyor. Şimdilik buradan kitap arayıp rafına ekleyebilirsin.', exTitle: 'Keşfet',
   logbook: 'Okuma defterin', elsewhere: 'BAŞKA YERDE OKUDUM', lastSessions: 'SON OTURUMLAR', history: 'OKUMA GEÇMİŞİN · YALNIZCA SEN', tabRead: 'Okuma', tabNotes: 'Kenar notları', tabInfo: 'Künye', emptySub: 'Rafına bir kitap koy, kaldığın sayfayı yaz; gerisini Kuytu tutar.', startOne: 'SIRADAKİLERDEN BİRİNE BAŞLA', startHint: 'Birine dokununca "okuyorum" olur ve Bugün onunla açılır.', loading: 'Kitap açılıyor', begin: 'BAŞLARKEN', bookColor: 'KİTABIN RENGİ', fromCover: 'Kapaktan', willEnd: 'Bitecek',
   pagesLeft: 'bitmesine {n} sayfa', wPages: 'bu hafta sayfa', wMin: 'bu hafta dakika', yearBooks: '{y} içinde biten', alsoReading: 'BUNLARI DA OKUYORSUN',
   finishBy: 'bu tempoyla {d} civarı biter',

@@ -1,7 +1,7 @@
 import { T, TK, TP, TN } from './strings.js';
 import { viewProfile, profileSubmit } from './profile.js';
-import { viewToday, viewOkuma, searchLeft, readingBook } from './home.js';
-import { viewLibrary, cardHTML, finishHTML, playPanel, scanBarcode } from './library.js';
+import { viewToday, searchLeft, readingBook, exploreRight } from './home.js';
+import { viewLibrary, cardHTML, finishHTML, playPanel, scanBarcode, viewBook, editHTML } from './library.js';
 import { exportData, reminderICS, freshLogin, deleteAccount, privacyHTML } from './account.js';
 import { coverHTML, flat, backdrop, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, remember, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
@@ -9,8 +9,8 @@ import { searchBooks, fillInfo, coverChoices } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
-import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer, setHooks, clearNow } from './reading.js';
-import { shareRecap } from './takip.js';
+import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer, setHooks, clearNow, viewTimer, viewMusic } from './reading.js';
+import { shareRecap, logForm, sessionsList } from './takip.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
 import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook, shareCard } from './clubview.js';
@@ -87,12 +87,23 @@ const activeClub = () => {
 const nav = () => {
   const a = activeClub(), club = ['k', 'kb', 'kulup', 'davet'].includes(S.view);
   const link = (href, on, text, ic) => `<a href="${href}" class="${on ? 'on' : ''}"><i class="ni ni-${ic}" aria-hidden="true"></i><span>${text}</span></a>`;
-  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf', TN.lib, 'k')}${link('#okuma', S.view === 'okuma', TN.read, 'o')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}${link('#profil', S.view === 'profil', TN.profile, 'p')}<a class="ara ${S.view === 'ara' ? 'on' : ''}" href="#ara">${T.navSearch}</a></nav>`;
-};const clubTabs = () => {
+  // Dört sekme; profil sağ üstte baş harfli simge, telefonda beşinci simge
+  const ini = esc(((S.profile && (S.profile.name || S.profile.username)) || '?').trim().charAt(0).toLocaleUpperCase('tr'));
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${link('#ara', S.view === 'ara', TN.explore, 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}<a class="me ${S.view === 'profil' ? 'on' : ''}" href="#profil" aria-label="${TN.profile}"><i class="ni ni-p" aria-hidden="true"></i><b class="av" aria-hidden="true">${ini}</b><span>${TN.profile}</span></a></nav>`;
+};
+// Kitap sayfası: sağdaki bölümler, soldaki oda; müzik çalar odada kullanılmak üzere sayfada gizli durur
+function bookPage() {
+  const b = shelfBook(S.bookId);
+  if (!b) return viewBook(S, null);
+  const parts = { timer: viewTimer(S, b.id), music: viewMusic(S), log: logForm(S, b.id), sess: sessionsList(S, S.sessions.filter(s => s.bookId === b.id)), edit: S.editing ? editHTML(S, b) : '' };
+  return viewBook(S, b, parts);
+}
+const clubTabs = () => {
   if (!S.club) return '';
   const k = '#k/' + encodeURIComponent(S.club.id), on = t => (S.view === 'k' && S.clubTab === t) || (t === 'kitaplar' && S.view === 'kb');
   const link = (t, text) => `<a href="${k}/${t}" class="${on(t) ? 'on' : ''}">${text}</a>`;
-  return `<nav class="subnav">${link('ay', TK.navHome)}${link('kitaplar', TK.navLibrary)}${link('oneriler', TK.navSugg)}${link('uyeler', TK.navMembers)}${(S.myClubs || []).length > 1 ? `<a href="#kulup">${TK.navClubs}</a>` : ''}</nav>`;
+  // Üç alt sekme; üyeler ve kulüp değiştirme sağda, ikincil
+  return `<nav class="subnav">${link('ay', TK.navHome)}${link('kitaplar', TK.navLibrary)}${link('oneriler', TK.navSugg)}<span class="sn-end">${link('uyeler', TN.clubMembers)}${(S.myClubs || []).length > 1 ? `<a href="#kulup">${TN.clubSwitch}</a>` : ''}</span></nav>`;
 };
 function resultsHTML() {
   if (S.searching) return `<p class="muted">${T.searching}</p>`;
@@ -166,8 +177,8 @@ function render() {
     const views = {
       bugun: () => viewToday(S, clubNow()),
       raf: () => viewLibrary(S, enter, clubMissing()),
-      ara: () => ({ left: searchLeft(S), right: viewSearch(), ribbon: 'ARA' }),
-      okuma: () => viewOkuma(S),
+      ara: () => ({ left: searchLeft(S), right: exploreRight(S, viewSearch()), ribbon: TN.explore.toLocaleUpperCase('tr') }),
+      kitap: () => bookPage(),
       profil: () => viewProfile(S),
       gizlilik: () => ({ right: privacyHTML(), ribbon: TN.privacy.toLocaleUpperCase('tr') }),
       kulup: () => ({ right: viewClubs() }),
@@ -186,9 +197,12 @@ function render() {
 }function route() {
   const [raw, id, sub, bid] = location.hash.slice(1).split('/');
   // Eski bağlantılar yeni yerlerine gider
-  const view = { oda: 'okuma', takip: 'okuma', kitap: 'raf' }[raw] || raw;
-  if (view !== 'okuma') setRoom(false);
-  S.view = ['raf', 'ara', 'okuma', 'kulup', 'davet', 'k', 'profil', 'gizlilik'].includes(view) ? view : 'bugun';
+  // Oku sayfası kitap sayfasına taşındı: eski adresler okunan kitaba, eski kart adresi kitap sayfasına gider
+  if (['okuma', 'oda', 'takip'].includes(raw)) { const rb = S.user && readingBook(S); location.replace(rb ? '#kitap/' + encodeURIComponent(rb.id) : '#raf'); return; }
+  if (raw === 'raf' && id) { location.replace('#kitap/' + id); return; }
+  const view = { kesfet: 'ara' }[raw] || raw;
+  if (view !== 'kitap') setRoom(false);
+  S.view = ['raf', 'ara', 'kitap', 'kulup', 'davet', 'k', 'profil', 'gizlilik'].includes(view) ? view : 'bugun';
   S.bookId = id ? decodeURIComponent(id) : null;
   S.quick = false;
   S.fresh = true;
@@ -203,7 +217,8 @@ function render() {
   if (view === 'davet' && id && S.user && S.profile) { loadInvite(decodeURIComponent(id)); return; }
   S.armed = false;
   // Kitap kartı açılıp kapanırken sayfa olduğu yerde kalır
-  if (raw === 'kitap' || (S.view === 'raf' && S.cardOpen)) { render(); return; }
+  if (S.view === 'kitap' && S.bookId !== S.lastBook) S.editing = false;
+  S.lastBook = S.bookId;
   S.enter = S.view === 'raf';
   pageChange(() => { render(); scrollTo(0, 0); });
 }
@@ -272,6 +287,7 @@ document.addEventListener('click', e => {
     location.hash = '#kitap/' + encodeURIComponent(el.dataset.id);
   }
   if (a === 'bookclose') location.hash = '#raf';
+  if (a === 'bpjump') { const t = document.getElementById(el.dataset.v); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   if (a === 'bmenu') { S.menuFor = S.menuFor === el.dataset.id ? null : el.dataset.id; S.armed = false; render(); }
   if (a === 'bedit') { S.editing = true; S.covers = null; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
   if (a === 'bnoedit') { S.editing = false; S.covers = null; render(); }
@@ -289,7 +305,7 @@ document.addEventListener('click', e => {
   }
   if (a === 'rowscroll') { const tr = el.closest('.srow').querySelector('.sr-track'); tr.scrollBy({ left: Number(el.dataset.v) * tr.clientWidth * 0.8, behavior: 'smooth' }); }
   if (a === 'libtab') { S.libTab = el.dataset.v; S.rafSec = 'hepsi'; render(); playPanel(); }
-  if (a === 'rafsec') { S.rafSec = el.dataset.v; render(); playPanel(); }
+  if (a === 'rafsec') { const v = el.dataset.v; if (v === 'odunc' || v === 'istek') S.libTab = v; else { S.libTab = 'evde'; S.rafSec = v; } render(); playPanel(); }
   if (a === 'fav') { const b = shelfBook(S.bookId); updateShelf(uid, b.id, { fav: !b.fav }).catch(fail); }
   if (a === 'wish') { const b = shelfBook(S.bookId); updateShelf(uid, b.id, { wish: !b.wish }).catch(fail); }
   if (a === 'lendback') updateShelf(uid, S.bookId, { lentTo: '', lentAt: '' }).catch(fail);
@@ -551,7 +567,8 @@ if (configured) {
     render();
     if (user) {
       // Okuma köşesinde sayfa yeniden çizilmez; müzik kesilmesin diye yalnızca zamanlayıcı yenilenir
-      const redraw = () => { setCurrent(S); if (S.view === 'okuma' && $('#timer-card') && timerOn()) refreshTimer(); else render(); };
+      // Odadayken sayfa yeniden çizilmez, müzik kesilmesin diye yalnızca zamanlayıcı yenilenir
+      const redraw = () => { setCurrent(S); if (S.view === 'kitap' && $('#timer-card') && timerOn() && document.body.classList.contains('in-room')) refreshTimer(); else render(); };
       stops.push(watchCol(`users/${user.uid}/quotes`, l => { S.quotes = l.sort((a, b) => (b.at || '').localeCompare(a.at || '')); redraw(); }, () => {}));
       stops.push(watchCol(`users/${user.uid}/notes`, l => { S.notes = l; redraw(); }, () => {}));
       stops.push(watchCol('users/' + user.uid + '/clubs', l => { const first = !S.myClubs; S.myClubs = l; shareCard(); if (first) route(); else if (S.view === 'kulup' || S.view === 'davet') render(); }));
