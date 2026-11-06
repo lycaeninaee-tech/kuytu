@@ -1584,3 +1584,14 @@ body.in-room .room-book { animation: book-float 9s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { body.in-room .room[data-light]::before, body.in-room .room-book { animation: none; } }
 /* Odadayken kitap sayfasının yapışkan atlama çubuğu odanın üstüne çıkmasın */
 body.in-room .bp-jump { display: none; }
+/* Kitaplık düzeni ve Keşfet önerileri (2026-11) */
+.lib-group { display: flex; align-items: center; gap: 10px; margin: -6px 0 16px; }
+.rec-blk { margin-bottom: 18px; }
+.rec-head { display: flex; align-items: baseline; justify-content: space-between; }
+.recs { display: grid; grid-auto-flow: column; grid-auto-columns: 132px; gap: 16px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: thin; }
+.rec { display: grid; align-content: start; gap: 4px; }
+.rec img, .rec .cover { width: 120px; height: 180px; object-fit: cover; border-radius: 2px 5px 5px 2px; box-shadow: 0 10px 18px rgba(0, 0, 0, .16); }
+.rec b { font: 500 14px/1.25 var(--font-display); color: var(--ink2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rec small { font: 400 12px var(--font-body); color: var(--soft); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rec-why { justify-self: start; padding: 2px 8px; border-radius: 999px; background: var(--sand); font: 500 11px var(--font-body); color: var(--mute2); }
+.rec .pl { justify-self: start; margin-top: 4px; }
