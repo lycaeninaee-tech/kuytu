@@ -75,6 +75,8 @@ export function viewToday(S, club) {
     <div class="lp-mid">${mine ? `<a href="#kitap/${encodeURIComponent(mine.id)}" aria-label="${esc(mine.title)}">${flat(mine, 250, 'big')}</a>` : `<a class="fc-empty" href="#ara"><span aria-hidden="true">+</span>${N.findFirst}</a>`}</div>
     <div class="lp-foot"><span>${mine ? esc(mine.author || '') : ''}</span>${mine && mine.pages ? `<span>${mine.page || 0} / ${mine.pages}</span>` : ''}</div>`;
   const right = `${needsVerify ? `<p class="notice">${T.verify} <button class="linkbtn" type="button" data-act="resend">${T.resend}</button></p>` : ''}
+    <section class="hero-sheet">${mine && mine.pages ? `<span class="folio">${mine.page || 0} / ${mine.pages}</span>` : ''}
+    <p class="cap date">${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })}</p>
     <p class="lbl">${greet()} ${name}. ${mine ? N.leftOff2 : ''}</p>
     ${mine ? `<h1 class="kt">${emLast(mine.title)}</h1>
       ${pct !== null ? `${edge(mine, pct)}<p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}${fin ? ' · ' + fin : ''}</p>` : ''}
@@ -82,7 +84,7 @@ export function viewToday(S, club) {
       ${S.quick ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}`
     : `<h1 class="kt">${N.emptyHero}</h1><p class="lbl">${N.emptySub}</p>
       <div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a><button type="button" class="pl" data-act="scan">${N.scan}</button></div>
-      ${waiting.length ? `<div class="blk rule"><p class="cap">${N.startOne}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="startbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}" title="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div><p class="lbl small">${N.startHint}</p></div>` : ''}`}
+      ${waiting.length ? `<div class="blk rule"><p class="cap">${N.startOne}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="startbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}" title="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div><p class="lbl small">${N.startHint}</p></div>` : ''}`}</section>
     ${S.socialHTML || ''}
     ${S.sessions.length ? week(S, wk, wPages, wMin, now, mon, mine) : ''}
     ${doneList.length || (goal && mine) ? yearShelf(S, doneList, goal, year) : ''}
