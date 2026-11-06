@@ -1494,3 +1494,39 @@ body.in-room .spanel .sp-tog { position: relative; display: inline-flex; align-i
   /* Sayfa açıkken çalar gizlenir; gizli çerçeve çalmayı sürdürür */
   body.in-room:has(.room.sp-open) #music-card { display: none; }
 }
+
+/* Yeni yapı (2026-11): dört sekme ve profil simgesi, kitap sayfası (#kitap/{id}), tek sıra kitaplık filtresi */
+.pnav .me { margin-left: auto; display: inline-flex; align-items: center; border: 0; padding: 0; }
+.pnav .me span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.pnav .me .av { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--book); color: #fbf6ec; font: 600 13px var(--font-body); }
+.pnav .me.on .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--red); }
+.subnav .sn-end { margin-left: auto; display: flex; gap: 20px; }
+.ex-seg { align-self: flex-start; margin-bottom: 4px; }
+.ex-seg button:disabled { opacity: .45; cursor: default; }
+/* Kitap sayfası */
+.v-kitap .lp { display: flex; flex-direction: column; gap: 18px; }
+.bp-cv { display: grid; justify-items: center; gap: 14px; margin-top: 8px; }
+.bp-cv .pl { color: #fbf6ec; border-color: rgba(251, 246, 236, .55); }
+.bp-cv .pl.on { background: #fbf6ec; color: var(--book); border-color: #fbf6ec; }
+.bp-timer #timer-card { margin: 0; }
+.bp-jump { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 4px 22px; margin: 4px 0 0; padding: 10px 0; background: var(--paper); border-bottom: 1px solid var(--line2); }
+.bp-jump button { padding: 0; border: 0; background: none; font: 500 14px var(--font-body); color: var(--mute2); cursor: pointer; }
+.bp-jump button:hover { color: var(--ink2); }
+.bp-jump em { margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: var(--sand); font: 600 11px var(--font-body); font-style: normal; }
+.bp-sec { display: grid; gap: 14px; padding: 22px 0 6px; scroll-margin-top: 56px; }
+.bp-sec + .bp-sec { border-top: 1px solid var(--line2); }
+.bp-sec > .margin { padding-top: 0; border-top: 0; }
+.bp-sec .seg { justify-self: start; }
+.bp-sec .story ol { margin-top: 0; }
+.log-grid.fixed { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+body:not(.in-room) .bp-music { display: none; }
+@media (max-width: 860px) {
+  .pnav .me .av { display: none; }
+  .pnav .me { display: grid; justify-items: center; gap: 3px; margin: 0; }
+  .pnav .me span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .subnav .sn-end { margin-left: 0; }
+  .bp-jump { top: max(0px, env(safe-area-inset-top, 0px)); overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .bp-jump button { flex: none; }
+  .log-grid.fixed { grid-template-columns: 1fr 1fr; }
+  .ni-e { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M15.5 8.5l-2 5-5 2 2-5z'/%3E%3C/svg%3E"); }
+}
