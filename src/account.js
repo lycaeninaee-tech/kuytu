@@ -1,8 +1,9 @@
 // Hesap: verini indirme, takvime okuma hatırlatıcısı, gizlilik sayfası ve hesabı silme
 import { collection, doc, getDoc, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { fs, deleteMe } from './auth.js';
+import { forgetMe } from './people.js';
 
-const SUBS = ['shelf', 'sessions', 'quotes', 'notes', 'clubs', 'demoMeta'];
+const SUBS = ['shelf', 'sessions', 'quotes', 'notes', 'clubs', 'demoMeta', 'friends'];
 const save = (name, text, type) => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type }));
@@ -34,6 +35,7 @@ export const freshLogin = user => Date.now() - new Date(user.metadata.lastSignIn
 export async function deleteAccount(user, profile) {
   const uid = user.uid;
   for (const c of (await getDocs(collection(fs, 'users', uid, 'clubs'))).docs) await deleteDoc(doc(fs, 'clubs', c.id, 'members', uid)).catch(() => {});
+  await forgetMe(uid).catch(() => {});
   for (const s of SUBS) for (const d of (await getDocs(collection(fs, 'users', uid, s))).docs) await deleteDoc(d.ref);
   if (profile && profile.username) await deleteDoc(doc(fs, 'usernames', profile.username)).catch(() => {});
   await deleteDoc(doc(fs, 'users', uid));
@@ -42,11 +44,12 @@ export async function deleteAccount(user, profile) {
 
 // Gizlilik: neyin saklandığı ve kimin neyi gördüğü, sade bir dille
 export const privacyHTML = () => `<article class="privacy">
-  <p class="cap">KUYTU · GİZLİLİK</p><h1 class="kt sm">Verin <i>senin</i></h1><p class="lbl small">Son güncelleme: 4 Kasım 2026</p>
+  <p class="cap">KUYTU · GİZLİLİK</p><h1 class="kt sm">Verin <i>senin</i></h1><p class="lbl small">Son güncelleme: 6 Kasım 2026</p>
   <h3>Ne saklıyoruz</h3>
   <p>Giriş için e-posta adresin ya da Google hesabın Google Firebase Authentication'da durur; profilinde saklanmaz, kimseye gösterilmez. Kuytu'da ayrıca adın, kullanıcı adın ve kendini anlattığın tek cümle; kitaplığın (kitaplar, durumları, kaldığın sayfa, puanların, ödünç bilgileri), okuma oturumların, alıntıların, kenar notların ve hedeflerin saklanır. Bunlar Google'ın Firebase (Cloud Firestore) hizmetinde tutulur.</p>
   <h3>Kim neyi görür</h3>
   <p>Kitaplığın, okuma kayıtların, alıntıların, kenar notların ve hedeflerin yalnızca sana açıktır. Bir kulübe katılırsan o kulübün üyeleri adını, kullanıcı adını ve kartını görür: tek cümlen, kalbindeki dört kitap ve şu an okuduğun kitap. Kulübe yazdığın notlar, verdiğin puanlar ve ilerlemen o kulübün üyelerine açıktır. Sayfa sayıların, okuma sürelerin, serilerin ve hedeflerin kimseye gösterilmez.</p>
+  <p>Kuytu'ya giriş yapmış okurlar seni kullanıcı adınla ya da adınla arayıp bulabilir ve okur sayfanı görebilir: adın, kullanıcı adın, tek cümlen, kalbindeki dört kitap ve şu an okuduğun kitap. Arkadaşlık isteği gönderebilirler; kabul edersen birbirinizin arkadaş listesinde görünürsünüz. Profilim'deki "Okurlar beni bulabilsin" seçeneğini kapatırsan aramada çıkmazsın ve okur sayfan kaldırılır.</p>
   <h3>Başka nereye gidiyor</h3>
   <p>Kitap ararken yazdığın kelimeler kitap bilgisi ve kapak bulmak için Google Books ve Open Library'ye gönderilir. Yazı tipleri Google Fonts'tan yüklenir. Reklam yok, izleme ya da analiz aracı yok, verin satılmaz.</p>
   <h3>Cihazında</h3>

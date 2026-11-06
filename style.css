@@ -1530,3 +1530,24 @@ body:not(.in-room) .bp-music { display: none; }
   .log-grid.fixed { grid-template-columns: 1fr 1fr; }
   .ni-e { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M15.5 8.5l-2 5-5 2 2-5z'/%3E%3C/svg%3E"); }
 }
+/* Okurlar ve arkadaşlık (2026-11) */
+.badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: var(--red); color: #fbf6ec; font: 700 10.5px/1 var(--font-body); font-style: normal; vertical-align: 1px; }
+.pnav a .badge { margin-left: 6px; }
+.rd-list { list-style: none; display: grid; margin: 0; padding: 0; }
+.rd-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line2); }
+.rd-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.rd-who span { display: grid; min-width: 0; }
+.rd-who b { overflow: hidden; font: 600 14.5px var(--font-body); white-space: nowrap; text-overflow: ellipsis; color: var(--ink2); }
+.rd-who small { overflow: hidden; font: 400 12.5px var(--font-body); white-space: nowrap; text-overflow: ellipsis; color: var(--soft); }
+.rd-acts { display: flex; gap: 6px; flex: none; }
+.rd-av { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--book); color: #fbf6ec; font: 600 15px var(--font-body); }
+.rd-av.big { width: 76px; height: 76px; margin-bottom: 8px; background: rgba(251, 246, 236, .16); border: 1.5px solid rgba(251, 246, 236, .55); font: 500 30px var(--font-display); }
+.rd-four, .rd-now { display: flex; flex-wrap: wrap; gap: 18px; margin: 4px 0 18px; }
+.rd-book { display: grid; gap: 4px; width: 110px; }
+.rd-book b { font: 500 14px/1.25 var(--font-display); color: var(--ink2); }
+.rd-book small { font: 400 12px var(--font-body); color: var(--soft); }
+.v-okur .lp-foot .pl { color: #fbf6ec; border-color: rgba(251, 246, 236, .55); }
+.v-okur .lp-foot .pl.on { background: #fbf6ec; color: var(--book); border-color: #fbf6ec; }
+.findme input { width: 18px; height: 18px; accent-color: var(--book); }
+#people-form { margin-bottom: 6px; }
+@media (max-width: 860px) { .rd-row { flex-wrap: wrap; } .rd-acts { width: 100%; padding-left: 52px; } .pnav a .badge { position: absolute; margin: -6px 0 0 14px; } .pnav a { position: relative; } }

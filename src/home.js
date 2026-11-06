@@ -101,8 +101,10 @@ export function searchLeft(S) {
   return `${brand()}<h1 class="kt light lp-title">${N.exTitle}</h1><p class="lbl">${N.searchSmall}</p>
     <div class="lp-foot"><button type="button" class="pl on" data-act="scan">${N.scan}</button></div>`;
 }
-// Keşfet: şimdilik kitap arama. Okur ve kulüp araması sonraki adımda; o zamana kadar dürüstçe söylenir
-export function exploreRight(S, search) {
-  return `<div class="seg ex-seg" role="group" aria-label="${N.exTitle}"><button type="button" class="on" aria-pressed="true">${N.exBooks}</button><button type="button" disabled>${N.exReaders}</button><button type="button" disabled>${N.exClubs}</button></div>
-    <p class="lbl small">${N.exSoon}</p>${search}`;
+// Keşfet: kitap ve okur arama. Kulüp araması sonraki adımda; o zamana kadar düğmesi kapalı
+export function exploreRight(S, books, readers) {
+  const tab = S.exTab === 'okur' ? 'okur' : 'kitap', n = (S.reqIn || []).length;
+  const b = (k, l) => `<button type="button" class="${tab === k ? 'on' : ''}" aria-pressed="${tab === k}" data-act="extab" data-v="${k}">${l}</button>`;
+  return `<div class="seg ex-seg" role="group" aria-label="${N.exTitle}">${b('kitap', N.exBooks)}${b('okur', N.exReaders + (n ? ` <em class="badge">${n}</em>` : ''))}<button type="button" disabled title="${N.exSoonClubs}">${N.exClubs}</button></div>
+    ${tab === 'okur' ? readers : books}`;
 }

@@ -1,6 +1,6 @@
 // Profil: ex libris okuyucu kartı, dört kitap, damgalar ve yılın künyesi
 import { esc, sessDay } from './util.js';
-import { TP as T, TN as N } from './strings.js';
+import { TP as T, TN as N, TF } from './strings.js';
 import { saveProfile } from './sessions.js';
 import { streaks, viewHistory } from './takip.js';
 import { flat } from './parts.js';
@@ -30,7 +30,10 @@ function account(S) {
     : `<div class="delbox"><p><b>${N.delTitle}</b></p><p class="lbl small">${N.delFresh}</p><button class="pl" type="button" data-act="logout">${T.logout}</button><button class="linkbtn small" type="button" data-act="delask">${N.cancel}</button></div>`) : '';
   let theme = 'sistem';
   try { theme = localStorage.getItem('kuytu-tema') || 'sistem'; } catch (e) {}
+  const find = S.profile.findable !== false;
   return `<div class="acct"><p class="cap">${N.account}</p>
+    <div class="acct-row"><label class="check-row findme"><input type="checkbox" data-act="findme"${find ? ' checked' : ''}>${TF.findMe}</label></div>
+    <p class="lbl small">${find ? TF.findOn : TF.findOff}</p>
     <div class="acct-row" role="group" aria-label="${N.look}"><span class="lbl small">${N.look}</span>${[['acik', N.lookLight], ['koyu', N.lookDark], ['sistem', N.lookAuto]].map(([k, l]) => `<button type="button" class="pl sm ${theme === k ? 'ink' : ''}" data-act="theme" data-v="${k}" aria-pressed="${theme === k}">${l}</button>`).join('')}</div>
     <div class="acct-row"><button class="pl" type="button" data-act="export">${N.export}</button><a class="pl" href="#gizlilik">${N.privacy}</a></div>
     <form id="ics-form" class="pagebar"><label>${N.remindAt}<input name="t" type="time" value="21:30" required></label><button class="pl" type="submit">${N.remind}</button></form>
@@ -49,7 +52,7 @@ export function viewProfile(S) {
   // Sol taraf kişinin kimliği: ad, kullanıcı adı, tek cümle. Başkalarının ileride göreceği kart da yalnızca bunlar ve dört kitaptır
   const left = `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a>${colorBook ? `<span class="cap">${esc(colorBook.title.toLocaleUpperCase('tr'))}</span>` : ''}</div>
     <div class="exl"><p class="cap">${N.exlibris}</p><span class="exl-av">${esc((p.name || '?').charAt(0).toLocaleUpperCase('tr'))}</span><h1 class="kt light sm">${esc(p.name)}</h1><p class="small">@${esc(p.username)}${joined ? ' · ' + esc(joined) + ' ' + N.since : ''}</p>${p.bio ? `<p class="lbl">${esc(p.bio)}</p>` : ''}</div>
-    <div class="lp-foot col"><button class="pl" type="button" data-act="pedit">${T.edit}</button>${installBox(S)}<button class="pl" type="button" data-act="logout">${T.logout}</button></div>`;
+    <div class="lp-foot col"><a class="pl" href="#okurlar">${TF.myFriendsLink}${(S.friends || []).length ? ' · ' + S.friends.length : ''}</a><button class="pl" type="button" data-act="pedit">${T.edit}</button>${installBox(S)}<button class="pl" type="button" data-act="logout">${T.logout}</button></div>`;
   const right = `${editing ? `<form class="pagebar" id="profile-form"><label>${N.bioHint}<input name="bio" maxlength="160" value="${esc(p.bio || '')}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}
     <p class="cap">${N.four.toLocaleUpperCase('tr')}</p>
     <div class="four-row">${[0, 1, 2, 3].map(i => four[i] ? `<button type="button" data-act="openbook" data-id="${esc(four[i].id)}" aria-label="${esc(four[i].title)}">${flat(four[i], 132)}</button>` : `<a class="fc-add" href="#raf" aria-label="${N.addHeart}">+</a>`).join('')}</div>
