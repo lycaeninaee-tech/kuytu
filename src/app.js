@@ -12,7 +12,8 @@ import { watchSessions, addSession, patchSession, removeSession, saveProfile } f
 import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer, setHooks, clearNow, viewTimer, viewMusic, timerBookId } from './reading.js';
 import { shareRecap, logForm, sessionsList } from './takip.js';
 import { sharePublic, searchPeople, getPublic, watchPeople, sendRequest, accept, dropRequest, unfriend, viewReaders, viewReader } from './people.js';
-import { TF } from './strings.js';
+import { TF, TR as TRV } from './strings.js';
+import { bookKey, bookReviews, latestReviews, saveReview, removeReview, friendCards, reviewsSection, socialBlock } from './social.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
 import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook, shareCard } from './clubview.js';
@@ -100,8 +101,24 @@ const nav = () => {
 function bookPage() {
   const b = shelfBook(S.bookId);
   if (!b) return viewBook(S, null);
-  const parts = { timer: viewTimer(S, b.id), music: viewMusic(S), log: logForm(S, b.id), sess: sessionsList(S, S.sessions.filter(s => s.bookId === b.id)), edit: S.editing ? editHTML(S, b) : '' };
+  loadReviews(b);
+  const parts = { timer: viewTimer(S, b.id), music: viewMusic(S), log: logForm(S, b.id), sess: sessionsList(S, S.sessions.filter(s => s.bookId === b.id)), edit: S.editing ? editHTML(S, b) : '', reviews: reviewsSection(S, b) };
   return viewBook(S, b, parts);
+}
+// Kitabın yorumları bir kez okunur; odadayken sayfa yeniden çizilmez (müzik kesilmesin)
+const quietRender = () => { if (!document.body.classList.contains('in-room')) render(); };
+function loadReviews(b, force) {
+  const key = bookKey(b);
+  if (!force && S.bookRevs && S.bookRevs.key === key) return;
+  S.bookRevs = { key, list: null }; S.bookRevsErr = false; S.rvRating = undefined;
+  bookReviews(b).then(list => { if (S.bookRevs.key === key) { S.bookRevs = { key, list }; if (S.view === 'kitap') quietRender(); } })
+    .catch(() => { S.bookRevsErr = true; if (S.view === 'kitap') quietRender(); });
+}
+// Bugün'ün sosyal bölümü: son yorumlar ve arkadaşların vitrinleri, oturumda bir kez (arkadaş listesi değişince yeniden)
+function loadSocial() {
+  if (S.feed === undefined) { S.feed = null; latestReviews().then(l => { S.feed = l; if (S.view === 'bugun') render(); }).catch(() => { S.feedErr = true; S.feed = []; if (S.view === 'bugun') render(); }); }
+  const sig = (S.friends || []).map(f => f.id).sort().join(',');
+  if (S.friendSig !== sig) { S.friendSig = sig; friendCards(S).then(l => { S.friendCards = l; if (S.view === 'bugun') render(); }).catch(() => {}); }
 }
 const clubTabs = () => {
   if (!S.club) return '';
@@ -192,7 +209,7 @@ function render() {
     S.enter = false;
     const club = S.view === 'k' || S.view === 'kb';
     const views = {
-      bugun: () => viewToday(S, clubNow()),
+      bugun: () => { loadSocial(); S.socialHTML = socialBlock(S); return viewToday(S, clubNow()); },
       raf: () => viewLibrary(S, enter, clubMissing()),
       ara: () => ({ left: searchLeft(S), right: exploreRight(S, recsHTML() + viewSearch(), viewReaders(S)), ribbon: TN.explore.toLocaleUpperCase('tr') }),
       okur: () => viewReader(S),
@@ -331,6 +348,10 @@ document.addEventListener('click', e => {
     S.kuytu = live ? 'enter' : 'start';
     if (location.hash === target) afterBook(); else location.hash = target;
   }
+  // Yorumlar: yıldızlar sayfa yeniden çizilmeden değişir, yazılan metin kaybolmasın
+  if (a === 'rvrate') { S.rvRating = Number(el.dataset.v); el.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', Number(x.dataset.v) <= S.rvRating)); }
+  if (a === 'rvreveal') { S.reveal.add(el.dataset.id); render(); }
+  if (a === 'rvdel') { const b = shelfBook(S.bookId); if (b) removeReview(S, b).then(() => { toast(TRV.removed); loadReviews(b, true); S.feed = undefined; }).catch(fail); }
   if (a === 'libgroup') { S.libGroup = el.dataset.v; try { localStorage.setItem('kuytu-duzen', S.libGroup); } catch (err) {} render(); playPanel(); }
   if (a === 'recadd') { const b = Array.isArray(S.recs) && S.recs[Number(el.dataset.i)]; if (b) addToShelf(uid, b, 'istiyorum').then(() => toast(T.added)).catch(fail); }
   if (a === 'recmore') { S.recs = undefined; render(); }
@@ -501,6 +522,20 @@ document.addEventListener('submit', async e => {
       await claimUsername(S.user, username).catch(err => { S.onb = 0; throw err; }).finally(() => { S.claiming = false; });
     }
     if (id === 'search-form') await runSearch(f.q.value.trim());
+    if (id === 'review-form') {
+      const b = shelfBook(S.bookId); if (!b) return;
+      const mine = S.bookRevs && Array.isArray(S.bookRevs.list) && S.bookRevs.list.find(r => r.uid === S.user.uid);
+      const rating = S.rvRating !== undefined ? S.rvRating : (mine ? mine.rating : b.rating || 0), text = f.text.value.trim();
+      if (!rating && !text) return toast(TRV.needText);
+      await saveReview(S, b, { rating, text, spoiler: f.spoiler.checked });
+      if (rating && rating !== b.rating) updateShelf(S.user.uid, b.id, { rating }).catch(() => {});
+      toast(TRV.saved); S.feed = undefined; loadReviews(b, true);
+    }
+    if (id === 'about-form') {
+      const by = Math.round(Number(f.birthYear.value)) || 0;
+      await saveProfile(S.user.uid, { city: f.city.value.trim().slice(0, 60), birthYear: by >= 1900 && by <= new Date().getFullYear() ? by : '', showCity: f.showCity.checked, showAge: f.showAge.checked });
+      toast(TK.saved);
+    }
     if (id === 'people-form') {
       S.peopleQ = f.q.value.trim(); S.people = 'loading'; render();
       try { S.people = await searchPeople(S.peopleQ, S.user.uid); } catch (err) { S.people = null; render(); throw err; }
@@ -648,6 +683,7 @@ if (configured) {
     S.finish = null;
     S.delAsk = false;
     S.reqIn = []; S.reqOut = []; S.friends = []; S.people = null; S.peopleQ = ''; S.reader = null;
+    S.feed = undefined; S.feedErr = false; S.friendCards = null; S.friendSig = undefined; S.bookRevs = null;
     render();
     if (user) {
       // Okuma köşesinde sayfa yeniden çizilmez; müzik kesilmesin diye yalnızca zamanlayıcı yenilenir

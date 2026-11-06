@@ -162,7 +162,7 @@ export function viewBook(S, b, p = {}) {
   const stars = [1, 2, 3, 4, 5].map(n => `<button type="button" class="${(b.rating || 0) >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n}">★</button>`).join('');
   const pct = b.pages ? Math.min(100, Math.round((b.page || 0) / b.pages * 100)) : null;
   const notesN = (S.notes || []).filter(n => n.bookId === b.id).length + quotesN;
-  const jump = [['bp-okuma', N.bpRead], ['bp-ekle', N.bpLog], ['bp-not', N.bpNotes + (notesN ? ` <em>${notesN}</em>` : '')], ['bp-oturum', N.bpSess + (sess.length ? ` <em>${sess.length}</em>` : '')], ['bp-kunye', N.bpInfo]]
+  const jump = [['bp-okuma', N.bpRead], ['bp-yorum', N.bpReviews], ['bp-ekle', N.bpLog], ['bp-not', N.bpNotes + (notesN ? ` <em>${notesN}</em>` : '')], ['bp-oturum', N.bpSess + (sess.length ? ` <em>${sess.length}</em>` : '')], ['bp-kunye', N.bpInfo]]
     .map(([id, l]) => `<button type="button" data-act="bpjump" data-v="${id}">${l}</button>`).join('');
   const left = `${brand(statusOf(b.status).toLocaleUpperCase('tr'))}
     <div class="bp-cv">${flat(b, 220, 'big')}<button type="button" class="pl sm ${b.fav ? 'on' : ''}" data-act="fav" aria-pressed="${!!b.fav}">♥ ${b.fav ? N.unheart : N.heart}</button></div>
@@ -178,6 +178,7 @@ export function viewBook(S, b, p = {}) {
         <div class="rate" role="group" aria-label="${T.rating}">${stars}</div></div>
       ${story.length ? `<div class="story"><ol>${story.map(([k, d]) => `<li><b>${esc(k)}</b><span>${fmt(d)}</span></li>`).join('')}</ol>${storyLine ? `<p class="lbl small">${storyLine}</p>` : ''}</div>` : ''}
     </section>
+    <section class="bp-sec" id="bp-yorum">${p.reviews || ''}</section>
     <section class="bp-sec" id="bp-ekle"><p class="cap">${N.bpLog.toLocaleUpperCase('tr')}</p><p class="lbl small">${N.bpLogHint}</p>${p.log || ''}</section>
     <section class="bp-sec" id="bp-not">${margin(S, b)}</section>
     <section class="bp-sec" id="bp-oturum"><p class="cap">${N.bpSess.toLocaleUpperCase('tr')}</p>${p.sess || ''}</section>

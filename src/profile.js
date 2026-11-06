@@ -1,6 +1,6 @@
 // Profil: ex libris okuyucu kartı, dört kitap, damgalar ve yılın künyesi
 import { esc, sessDay } from './util.js';
-import { TP as T, TN as N, TF } from './strings.js';
+import { TP as T, TN as N, TF, TI } from './strings.js';
 import { saveProfile } from './sessions.js';
 import { streaks, viewHistory } from './takip.js';
 import { flat } from './parts.js';
@@ -54,6 +54,12 @@ export function viewProfile(S) {
     <div class="exl"><p class="cap">${N.exlibris}</p><span class="exl-av">${esc((p.name || '?').charAt(0).toLocaleUpperCase('tr'))}</span><h1 class="kt light sm">${esc(p.name)}</h1><p class="small">@${esc(p.username)}${joined ? ' · ' + esc(joined) + ' ' + N.since : ''}</p>${p.bio ? `<p class="lbl">${esc(p.bio)}</p>` : ''}</div>
     <div class="lp-foot col"><a class="pl" href="#okurlar">${TF.myFriendsLink}${(S.friends || []).length ? ' · ' + S.friends.length : ''}</a><button class="pl" type="button" data-act="pedit">${T.edit}</button>${installBox(S)}<button class="pl" type="button" data-act="logout">${T.logout}</button></div>`;
   const right = `${editing ? `<form class="pagebar" id="profile-form"><label>${N.bioHint}<input name="bio" maxlength="160" value="${esc(p.bio || '')}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}
+    <form id="about-form" class="about">
+      <p class="cap">${TI.more}</p>
+      <div class="about-row"><label>${TI.city}<input name="city" maxlength="60" value="${esc(p.city || '')}" autocomplete="address-level2"></label><label class="check-row"><input type="checkbox" name="showCity"${p.showCity ? ' checked' : ''}>${TI.show}</label></div>
+      <div class="about-row"><label>${TI.birth}<input name="birthYear" type="number" min="1900" max="${new Date().getFullYear()}" inputmode="numeric" value="${esc(p.birthYear || '')}"></label><label class="check-row"><input type="checkbox" name="showAge"${p.showAge ? ' checked' : ''}>${TI.show}</label></div>
+      <p class="lbl small">${TI.hint}</p><button class="pl" type="submit">${TI.save}</button>
+    </form>
     <p class="cap">${N.four.toLocaleUpperCase('tr')}</p>
     <div class="four-row">${[0, 1, 2, 3].map(i => four[i] ? `<button type="button" data-act="openbook" data-id="${esc(four[i].id)}" aria-label="${esc(four[i].title)}">${flat(four[i], 132)}</button>` : `<a class="fc-add" href="#raf" aria-label="${N.addHeart}">+</a>`).join('')}</div>
     ${four.length < 4 ? `<p class="lbl small">${N.heartHint}</p>` : ''}

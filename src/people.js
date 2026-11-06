@@ -27,6 +27,10 @@ export function sharePublic(S) {
       return;
     }
     const p = S.profile, card = { uid, name: p.name || p.username, username: p.username, nameLower: low(p.name || p.username), bio: p.bio || '', four: S.shelf.filter(b => b.fav).slice(0, 4).map(slim), reading: slim(S.shelf.find(b => b.status === 'okuyorum')) || null };
+    // Şehir ve yaş yalnızca kişi "görünsün" dediyse vitrine yazılır
+    if (p.showCity && p.city) card.city = String(p.city).slice(0, 60);
+    const by = Number(p.birthYear);
+    if (p.showAge && by > 1900) card.age = new Date().getFullYear() - by;
     const key = JSON.stringify(card);
     if (last === key) return;
     setDoc(doc(fs, 'profiles', uid), { ...card, updatedAt: now() }).then(() => { try { localStorage.setItem(k, key); } catch (e) {} }).catch(() => {});
@@ -81,6 +85,7 @@ export async function forgetMe(uid) {
   const reqs = collection(fs, 'friendRequests');
   for (const f of ['from', 'to']) for (const d of (await getDocs(query(reqs, where(f, '==', uid))).catch(() => ({ docs: [] }))).docs) await deleteDoc(d.ref).catch(() => {});
   for (const d of (await getDocs(collection(fs, 'users', uid, 'friends'))).docs) await deleteDoc(doc(fs, 'users', d.id, 'friends', uid)).catch(() => {});
+  for (const d of (await getDocs(query(collection(fs, 'reviews'), where('uid', '==', uid))).catch(() => ({ docs: [] }))).docs) await deleteDoc(d.ref).catch(() => {});
 }
 
 // Bir okurla aramızdaki durum ve ona göre düğme
@@ -123,7 +128,7 @@ export function viewReader(S) {
   if (p === 'loading') return { right: `<p class="lbl">${T.searching}</p>` };
   if (!p) return { right: `<h1 class="kt sm">${T.hidden}</h1><p class="lbl">${T.hiddenSub}</p><a class="pl" href="#ara">${T.back}</a>` };
   const left = `<div class="lp-top"><a class="brand" href="#bugun">Kuytu</a><span class="cap">${T.reader}</span></div>
-    <div class="exl">${av(p.name, true)}<h1 class="kt light sm">${esc(p.name || p.username)}</h1><p class="small">@${esc(p.username || '')}</p>${p.bio ? `<p class="lbl">${esc(p.bio)}</p>` : ''}</div>
+    <div class="exl">${av(p.name, true)}<h1 class="kt light sm">${esc(p.name || p.username)}</h1><p class="small">@${esc(p.username || '')}${p.city ? ' · ' + esc(p.city) : ''}${p.age ? ' · ' + esc(p.age) + ' ' + T.age : ''}</p>${p.bio ? `<p class="lbl">${esc(p.bio)}</p>` : ''}</div>
     <div class="lp-foot col">${relButton(S, p.uid, false)}</div>`;
   const book = b => `<div class="rd-book">${flat({ ...b, id: '' }, 110)}<b>${esc(b.title)}</b><small>${esc(b.author || '')}</small></div>`;
   const right = `${p.reading ? `<p class="cap">${T.nowReads}</p><div class="rd-now">${book(p.reading)}</div>` : ''}

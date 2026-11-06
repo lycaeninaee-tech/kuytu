@@ -111,7 +111,7 @@ export const TC = {
 export const TN = {
   today: 'Bugün', lib: 'Kitaplarım', club: 'Kulüpler', read: 'Oku', profile: 'Profilim', explore: 'Keşfet',
   // Kitap sayfası (2026-11): her kitabın kendi adresi var, Oku sayfası buraya taşındı
-  bpRead: 'Okuman', bpLog: 'Okuduğunu ekle', bpNotes: 'Notların', bpSess: 'Oturumlar', bpInfo: 'Künye', bpLogHint: 'Odanın dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', bpGone: 'Bu kitap rafında yok.', bpBack: 'Kitaplarıma dön', bpStatus: 'Durumu',
+  bpRead: 'Okuman', bpReviews: 'Yorumlar', bpLog: 'Okuduğunu ekle', bpNotes: 'Notların', bpSess: 'Oturumlar', bpInfo: 'Künye', bpLogHint: 'Odanın dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', bpGone: 'Bu kitap rafında yok.', bpBack: 'Kitaplarıma dön', bpStatus: 'Durumu',
   goRoom: 'Kuytuna gir', bookPage: 'Kitabın sayfası',
   noGenre: 'Türü bilinmiyor', groupBy: 'Düzen', byStatus: 'Duruma göre', byGenre: 'Türe göre', genreLbl: 'Tür',
   recTitle: 'SANA ÖNERİLER', recWhy: 'okuduğun için', recWhyG: 'sevdiğin için', recLoading: 'Rafına bakıp öneri hazırlıyorum…', recEmpty: 'Öneri için önce birkaç kitabı "okudum" yap ya da kalbine al.', recMore: 'Yenile',
@@ -163,7 +163,19 @@ export const TF = {
   hidden: 'Bu okur görünmüyor', hiddenSub: 'Bulunmamayı seçmiş ya da hesabını kapatmış olabilir.', back: 'Keşfet\'e dön',
   privacyLine: 'Seni de aynı şekilde yalnızca adın, tek cümlen, kalbindeki dört kitap ve okuduğun kitapla görürler. Profilim\'den bulunmamayı seçebilirsin.',
   findMe: 'Okurlar beni bulabilsin', findOn: 'Açık: okurlar seni kullanıcı adınla bulup arkadaşlık isteği gönderebilir.', findOff: 'Kapalı: aramada çıkmazsın, okur sayfan görünmez. Arkadaşlıkların silinmez.', myFriendsLink: 'Arkadaşlarım',
-  reqSent: 'İstek gönderildi', nowFriends: 'Artık arkadaşsınız', removed: 'Arkadaşlıktan çıkıldı',
+  reqSent: 'İstek gönderildi', nowFriends: 'Artık arkadaşsınız', removed: 'Arkadaşlıktan çıkıldı', age: 'yaşında',
+};
+
+// Kitap yorumları ve sosyal akış
+export const TR = {
+  title: 'OKURLARIN YORUMLARI', yourRating: 'Puanın', reviewPh: 'Bu kitap hakkında ne düşünüyorsun?', spoiler: 'Sürprizbozan içeriyor', share: 'Paylaş', update: 'Güncelle', delete: 'Yorumumu sil',
+  ratings: 'puan', none: 'Henüz başka okurun yorumu yok. İlk yorumu sen yaz.', loading: 'Yorumlar geliyor…', offline: 'Yorumlar şu an açılamadı.', spoilerShow: 'Sürprizbozan · görmek için dokun',
+  you: 'sen', friend: 'arkadaşın', today: 'bugün', yesterday: 'dün', daysAgo: 'gün önce', saved: 'Yorumun paylaşıldı', removed: 'Yorumun silindi', needText: 'Bir puan ver ya da birkaç cümle yaz.',
+  friendsNow: 'ARKADAŞLARIN ŞU AN OKUYOR', latest: 'SON YORUMLAR', readers: 'Okurlar', noFriends: 'Henüz arkadaşın yok.', friendsQuiet: 'Arkadaşların şu an bir kitap okumuyor.', findReaders: 'Okur bul →', feedEmpty: 'Henüz yorum yok. Bitirdiğin bir kitabın sayfasından ilk yorumu sen yaz.',
+};
+// Profilde kişisel bilgiler
+export const TI = {
+  more: 'HAKKINDA', city: 'Şehir', birth: 'Doğum yılı', show: 'Okur sayfamda görünsün', hidden: 'Gizli', visible: 'Görünür', age: 'yaşında', save: 'Kaydet', hint: 'Şehir ve yaş yalnızca "görünsün" dediğinde okur sayfanda çıkar; yoksa yalnızca sende kalır.',
 };
 
 // Profil
