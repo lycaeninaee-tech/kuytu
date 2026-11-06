@@ -16,6 +16,27 @@ service cloud.firestore {
         allow read, write: if signedIn() && request.auth.uid == uid;
       }
     }
+    // --- Okurlar ve arkadaşlık (2026-11) ---
+    // Arkadaşlık: istek kabul edilince karşı taraf, isteğe dayanarak kendini senin listene yazar; iki taraf da arkadaşlıktan çıkabilir
+    match /users/{uid}/friends/{fid} {
+      allow create: if signedIn() && request.auth.uid == fid && exists(/databases/$(database)/documents/friendRequests/$(uid + '_' + fid));
+      allow delete: if signedIn() && request.auth.uid == fid;
+    }
+    // Okur vitrini: giriş yapmış herkes okur, yalnızca sahibi yazar. Sayfa, süre ve hedef alanı kabul edilmez
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'username', 'nameLower', 'bio', 'four', 'reading', 'updatedAt'])
+        && request.resource.data.uid == uid && request.resource.data.bio.size() <= 200 && request.resource.data.four.size() <= 4;
+    }
+    // Arkadaşlık isteği: belge adı gönderen_alan; yalnızca iki taraf görür ve siler
+    match /friendRequests/{id} {
+      allow read, delete: if signedIn() && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid && request.resource.data.to != request.auth.uid
+        && id == request.auth.uid + '_' + request.resource.data.to;
+    }
+    // --- bitiş ---
     match /usernames/{name} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid && name.matches('^[a-z0-9_]{3,20}$');
