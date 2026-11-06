@@ -113,7 +113,7 @@ export const TN = {
   // Kitap sayfası (2026-11): her kitabın kendi adresi var, Oku sayfası buraya taşındı
   bpRead: 'Okuman', bpLog: 'Okuduğunu ekle', bpNotes: 'Notların', bpSess: 'Oturumlar', bpInfo: 'Künye', bpLogHint: 'Odanın dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', bpGone: 'Bu kitap rafında yok.', bpBack: 'Kitaplarıma dön', bpStatus: 'Durumu',
   lentShelf: 'Ödünçte', wishShelf: 'İstek listem', clubMembers: 'Üyeler', clubSwitch: 'Kulüp değiştir',
-  exBooks: 'Kitap', exReaders: 'Okurlar', exClubs: 'Kulüpler', exSoon: 'Okurları ve kulüpleri aramak, arkadaş eklemek bir sonraki adımda geliyor. Şimdilik buradan kitap arayıp rafına ekleyebilirsin.', exTitle: 'Keşfet',
+  exBooks: 'Kitap', exReaders: 'Okurlar', exClubs: 'Kulüpler', exSoon: 'Okurları ve kulüpleri aramak, arkadaş eklemek bir sonraki adımda geliyor. Şimdilik buradan kitap arayıp rafına ekleyebilirsin.', exSoonClubs: 'Kulüp araması bir sonraki adımda geliyor', exTitle: 'Keşfet',
   logbook: 'Okuma defterin', elsewhere: 'BAŞKA YERDE OKUDUM', lastSessions: 'SON OTURUMLAR', history: 'OKUMA GEÇMİŞİN · YALNIZCA SEN', tabRead: 'Okuma', tabNotes: 'Kenar notları', tabInfo: 'Künye', emptySub: 'Rafına bir kitap koy, kaldığın sayfayı yaz; gerisini Kuytu tutar.', startOne: 'SIRADAKİLERDEN BİRİNE BAŞLA', startHint: 'Birine dokununca "okuyorum" olur ve Bugün onunla açılır.', loading: 'Kitap açılıyor', begin: 'BAŞLARKEN', bookColor: 'KİTABIN RENGİ', fromCover: 'Kapaktan', willEnd: 'Bitecek',
   pagesLeft: 'bitmesine {n} sayfa', wPages: 'bu hafta sayfa', wMin: 'bu hafta dakika', yearBooks: '{y} içinde biten', alsoReading: 'BUNLARI DA OKUYORSUN',
   finishBy: 'bu tempoyla {d} civarı biter',
@@ -149,6 +149,18 @@ export const TN = {
   // Hesap, verin ve gizlilik
   account: 'HESABIN VE VERİN', look: 'Görünüm', lookLight: 'Açık', lookDark: 'Koyu', lookAuto: 'Cihaza göre', export: 'Verilerimi indir', exported: 'Dosya indirildi', remind: 'Takvimime okuma hatırlatıcısı ekle', remindAt: 'Her gün saat', remindHint: 'Telefonunun takvimine her gün tekrarlayan bir etkinlik eklenir; istediğin zaman takviminden silebilirsin.', privacy: 'Gizlilik', delAcc: 'Hesabımı sil',
   delTitle: 'Hesabını silmek üzeresin', delWhat: 'Kitaplığın, okuma kayıtların, alıntıların, kenar notların, profilin ve kullanıcı adın kalıcı olarak silinir. Kulüplerden çıkarsın. Kulüplere yazdığın notlar ve verdiğin puanlar kulübün ortak defterinde kalır; istersen önce onları silebilirsin.', delType: 'Onaylamak için kullanıcı adını yaz', delGo: 'Her şeyi kalıcı olarak sil', delWrong: 'Kullanıcı adı tutmadı.', delFresh: 'Güvenlik için son birkaç dakika içinde giriş yapmış olman gerekiyor. Çıkış yapıp yeniden gir, sonra buradan sil.', delBusy: 'Siliniyor…', delDone: 'Hesabın silindi.',
+};
+
+// Okurlar ve arkadaşlık
+export const TF = {
+  searchPh: 'Kullanıcı adı ya da adın başı', search: 'Ara', searching: 'Bakılıyor…', noOne: 'Bu adla bulunabilen bir okur yok. Bazı okurlar bulunmamayı seçmiş olabilir.',
+  incoming: 'ARKADAŞLIK İSTEKLERİ', myFriends: 'ARKADAŞLARIN', noFriends: 'Henüz arkadaşın yok. Yukarıdan bir okuru kullanıcı adıyla arayabilirsin.', waiting: 'CEVAP BEKLEYEN İSTEKLERİN',
+  add: 'Arkadaş ekle', sent: 'İstek gönderildi', undo: 'geri al', accept: 'Kabul et', decline: 'Sil', friends: 'Arkadaşsınız', sureUnfriend: 'Arkadaşlıktan çık?', thatsYou: 'Bu sensin',
+  reader: 'Okur', nowReads: 'ŞU AN OKUDUĞU', four: 'KALBİNDEKİ DÖRT KİTAP', noFour: 'Henüz kalbine kitap almamış.', onlyThis: 'Okurların yalnızca adı, tek cümlesi, kalbindeki dört kitap ve şu an okuduğu kitap görünür. Sayfa, süre ve hedefler hiçbir zaman görünmez.',
+  hidden: 'Bu okur görünmüyor', hiddenSub: 'Bulunmamayı seçmiş ya da hesabını kapatmış olabilir.', back: 'Keşfet\'e dön',
+  privacyLine: 'Seni de aynı şekilde yalnızca adın, tek cümlen, kalbindeki dört kitap ve okuduğun kitapla görürler. Profilim\'den bulunmamayı seçebilirsin.',
+  findMe: 'Okurlar beni bulabilsin', findOn: 'Açık: okurlar seni kullanıcı adınla bulup arkadaşlık isteği gönderebilir.', findOff: 'Kapalı: aramada çıkmazsın, okur sayfan görünmez. Arkadaşlıkların silinmez.', myFriendsLink: 'Arkadaşlarım',
+  reqSent: 'İstek gönderildi', nowFriends: 'Artık arkadaşsınız', removed: 'Arkadaşlıktan çıkıldı',
 };
 
 // Profil

@@ -11,6 +11,8 @@ import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
 import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer, setHooks, clearNow, viewTimer, viewMusic } from './reading.js';
 import { shareRecap, logForm, sessionsList } from './takip.js';
+import { sharePublic, searchPeople, getPublic, watchPeople, sendRequest, accept, dropRequest, unfriend, viewReaders, viewReader } from './people.js';
+import { TF } from './strings.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
 import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook, shareCard } from './clubview.js';
@@ -89,7 +91,7 @@ const nav = () => {
   const link = (href, on, text, ic) => `<a href="${href}" class="${on ? 'on' : ''}"><i class="ni ni-${ic}" aria-hidden="true"></i><span>${text}</span></a>`;
   // Dört sekme; profil sağ üstte baş harfli simge, telefonda beşinci simge
   const ini = esc(((S.profile && (S.profile.name || S.profile.username)) || '?').trim().charAt(0).toLocaleUpperCase('tr'));
-  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${link('#ara', S.view === 'ara', TN.explore, 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}<a class="me ${S.view === 'profil' ? 'on' : ''}" href="#profil" aria-label="${TN.profile}"><i class="ni ni-p" aria-hidden="true"></i><b class="av" aria-hidden="true">${ini}</b><span>${TN.profile}</span></a></nav>`;
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${link('#ara', S.view === 'ara' || S.view === 'okur', TN.explore + ((S.reqIn || []).length ? ` <em class="badge" aria-label="${(S.reqIn || []).length} ${TF.incoming.toLocaleLowerCase('tr')}">${(S.reqIn || []).length}</em>` : ''), 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}<a class="me ${S.view === 'profil' ? 'on' : ''}" href="#profil" aria-label="${TN.profile}"><i class="ni ni-p" aria-hidden="true"></i><b class="av" aria-hidden="true">${ini}</b><span>${TN.profile}</span></a></nav>`;
 };
 // Kitap sayfası: sağdaki bölümler, soldaki oda; müzik çalar odada kullanılmak üzere sayfada gizli durur
 function bookPage() {
@@ -177,7 +179,8 @@ function render() {
     const views = {
       bugun: () => viewToday(S, clubNow()),
       raf: () => viewLibrary(S, enter, clubMissing()),
-      ara: () => ({ left: searchLeft(S), right: exploreRight(S, viewSearch()), ribbon: TN.explore.toLocaleUpperCase('tr') }),
+      ara: () => ({ left: searchLeft(S), right: exploreRight(S, viewSearch(), viewReaders(S)), ribbon: TN.explore.toLocaleUpperCase('tr') }),
+      okur: () => viewReader(S),
       kitap: () => bookPage(),
       profil: () => viewProfile(S),
       gizlilik: () => ({ right: privacyHTML(), ribbon: TN.privacy.toLocaleUpperCase('tr') }),
@@ -204,9 +207,15 @@ function render() {
     const rb = readingBook(S); location.replace(rb ? '#kitap/' + encodeURIComponent(rb.id) : '#raf'); return;
   }
   if (raw === 'raf' && id) { location.replace('#kitap/' + id); return; }
-  const view = { kesfet: 'ara' }[raw] || raw;
+  if (raw === 'okurlar') S.exTab = 'okur';
+  const view = { kesfet: 'ara', okurlar: 'ara' }[raw] || raw;
   if (view !== 'kitap') setRoom(false);
-  S.view = ['raf', 'ara', 'kitap', 'kulup', 'davet', 'k', 'profil', 'gizlilik'].includes(view) ? view : 'bugun';
+  S.view = ['raf', 'ara', 'kitap', 'kulup', 'davet', 'k', 'profil', 'gizlilik', 'okur'].includes(view) ? view : 'bugun';
+  // Okur sayfası: vitrin belgesi okunur
+  if (S.view === 'okur' && id) {
+    const uid = decodeURIComponent(id);
+    if (!S.reader || S.reader === 'loading' || S.reader.uid !== uid) { S.reader = 'loading'; if (S.user) getPublic(uid).then(p => { S.reader = p; if (S.view === 'okur') render(); }).catch(() => { S.reader = null; render(); }); }
+  }
   S.bookId = id ? decodeURIComponent(id) : null;
   S.quick = false;
   S.fresh = true;
@@ -291,6 +300,21 @@ document.addEventListener('click', e => {
     location.hash = '#kitap/' + encodeURIComponent(el.dataset.id);
   }
   if (a === 'bookclose') location.hash = '#raf';
+  // Okurlar ve arkadaşlık
+  if (a === 'extab') { S.exTab = el.dataset.v; render(); }
+  if (a === 'fadd') {
+    const id = el.dataset.id, p = (Array.isArray(S.people) && S.people.find(x => x.uid === id)) || (S.reader && S.reader.uid === id ? S.reader : { uid: id });
+    sendRequest(S, p).then(() => toast(TF.reqSent)).catch(fail);
+  }
+  if (a === 'fcancel') { const r = (S.reqOut || []).find(x => x.to === el.dataset.id); if (r) dropRequest(r).catch(fail); }
+  if (a === 'faccept') { const r = (S.reqIn || []).find(x => x.from === el.dataset.id); if (r) accept(S, r).then(() => toast(TF.nowFriends)).catch(fail); }
+  if (a === 'fdecline') { const r = (S.reqIn || []).find(x => x.from === el.dataset.id); if (r) dropRequest(r).catch(fail); }
+  if (a === 'funfriend') {
+    if (S.armed !== 'uf_' + el.dataset.id) { S.armed = 'uf_' + el.dataset.id; render(); return; }
+    S.armed = false;
+    unfriend(S, el.dataset.id).then(() => toast(TF.removed)).catch(fail);
+  }
+  if (a === 'findme') saveProfile(uid, { findable: S.profile.findable === false }).catch(fail);
   if (a === 'bpjump') { const t = document.getElementById(el.dataset.v); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   if (a === 'bmenu') { S.menuFor = S.menuFor === el.dataset.id ? null : el.dataset.id; S.armed = false; render(); }
   if (a === 'bedit') { S.editing = true; S.covers = null; S.menuFor = null; if (S.cardOpen === el.dataset.id) render(); else location.hash = '#kitap/' + encodeURIComponent(el.dataset.id); }
@@ -443,6 +467,11 @@ document.addEventListener('submit', async e => {
       await claimUsername(S.user, username).catch(err => { S.onb = 0; throw err; }).finally(() => { S.claiming = false; });
     }
     if (id === 'search-form') await runSearch(f.q.value.trim());
+    if (id === 'people-form') {
+      S.peopleQ = f.q.value.trim(); S.people = 'loading'; render();
+      try { S.people = await searchPeople(S.peopleQ, S.user.uid); } catch (err) { S.people = null; render(); throw err; }
+      render();
+    }
     if (id === 'onb-invite') { S.onb = 0; location.hash = '#davet/' + encodeURIComponent(f.code.value.trim().split('/').pop()); }
     if (id === 'edit-form') {
       const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim() };
@@ -568,6 +597,7 @@ if (configured) {
     S.notes = [];
     S.finish = null;
     S.delAsk = false;
+    S.reqIn = []; S.reqOut = []; S.friends = []; S.people = null; S.peopleQ = ''; S.reader = null;
     render();
     if (user) {
       // Okuma köşesinde sayfa yeniden çizilmez; müzik kesilmesin diye yalnızca zamanlayıcı yenilenir
@@ -577,12 +607,15 @@ if (configured) {
       stops.push(watchCol(`users/${user.uid}/notes`, l => { S.notes = l; redraw(); }, () => {}));
       stops.push(watchCol('users/' + user.uid + '/clubs', l => { const first = !S.myClubs; S.myClubs = l; shareCard(); if (first) route(); else if (S.view === 'kulup' || S.view === 'davet') render(); }));
       stops.push(watchSessions(user.uid, list => { S.sessions = list; redraw(); }));
-      stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; shareCard(); if (first) { route(); } else redraw(); }));
+      stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; shareCard(); sharePublic(S); if (first) { route(); } else redraw(); }));
+      // Arkadaşlık istekleri ve arkadaşlar canlı izlenir; Keşfet'te sayı rozeti olarak görünür
+      stops.push(watchPeople(user.uid, (k, v) => { S[k] = v; if (S.profile && !(S.view === 'ara' && document.activeElement && document.activeElement.closest('#people-form'))) redraw(); }));
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;
         S.shelfReady = true;
         if (S.pendingRead) { S.pendingRead = false; const rb = readingBook(S); location.replace(rb ? '#kitap/' + encodeURIComponent(rb.id) : '#raf'); }
         shareCard();
+        sharePublic(S);
         fillMissing(user.uid, list);
         // Aramada yazılan metin kaybolmasın: arama sayfasında yalnızca sonuçlar yenilenir
         if ((S.view === 'ara' || S.onb) && $('#results')) $('#results').innerHTML = resultsHTML();
