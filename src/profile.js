@@ -28,8 +28,8 @@ function account(S) {
   const del = S.delAsk ? (freshLogin(S.user)
     ? `<form id="del-form" class="delbox"><p><b>${N.delTitle}</b></p><p class="lbl small">${N.delWhat}</p><label>${N.delType}<input name="u" autocomplete="off" autocapitalize="none" spellcheck="false" required></label><button class="pl red" type="submit">${S.deleting ? N.delBusy : N.delGo}</button><button class="linkbtn small" type="button" data-act="delask">${N.cancel}</button></form>`
     : `<div class="delbox"><p><b>${N.delTitle}</b></p><p class="lbl small">${N.delFresh}</p><button class="pl" type="button" data-act="logout">${T.logout}</button><button class="linkbtn small" type="button" data-act="delask">${N.cancel}</button></div>`) : '';
-  let theme = 'sistem';
-  try { theme = localStorage.getItem('kuytu-tema') || 'sistem'; } catch (e) {}
+  let theme = 'acik';
+  try { theme = localStorage.getItem('kuytu-tema') || 'acik'; } catch (e) {}
   const find = S.profile.findable !== false;
   return `<div class="acct"><p class="cap">${N.account}</p>
     <div class="acct-row"><label class="check-row findme"><input type="checkbox" data-act="findme"${find ? ' checked' : ''}>${TF.findMe}</label></div>

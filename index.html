@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="style.css">
 <script>
 // Görünüm: açık, koyu ya da cihaza göre. Sayfa çizilmeden uygulanır ki gece açınca beyaz parlamasın
-(function () { var t = 'sistem'; try { t = localStorage.getItem('kuytu-tema') || 'sistem'; } catch (e) {} if (t === 'koyu' || (t === 'sistem' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.setAttribute('data-dark', ''); })();
+(function () { var t = 'acik'; try { t = localStorage.getItem('kuytu-tema') || 'acik'; } catch (e) {} if (t === 'koyu' || (t === 'sistem' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.setAttribute('data-dark', ''); })();
 </script>
 </head>
 <body>
