@@ -78,7 +78,7 @@ export function viewToday(S, club) {
     <p class="lbl">${greet()} ${name}. ${mine ? N.leftOff2 : ''}</p>
     ${mine ? `<h1 class="kt">${emLast(mine.title)}</h1>
       ${pct !== null ? `${edge(mine, pct)}<p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}${fin ? ' · ' + fin : ''}</p>` : ''}
-      <div class="acts"><a class="pl on" href="#kitap/${encodeURIComponent(mine.id)}">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
+      <div class="acts"><button type="button" class="pl on kgo-big" data-act="kuytugo">${N.goRoom}</button><a class="pl" href="#kitap/${encodeURIComponent(mine.id)}">${N.bookPage}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
       ${S.quick ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}`
     : `<h1 class="kt">${N.emptyHero}</h1><p class="lbl">${N.emptySub}</p>
       <div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a><button type="button" class="pl" data-act="scan">${N.scan}</button></div>

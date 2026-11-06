@@ -9,7 +9,7 @@ import { searchBooks, fillInfo, coverChoices } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
-import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer, setHooks, clearNow, viewTimer, viewMusic } from './reading.js';
+import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, setOption, setOnFinish, timerOn, togglePause, holdTimer, releaseTimer, setHooks, clearNow, viewTimer, viewMusic, timerBookId } from './reading.js';
 import { shareRecap, logForm, sessionsList } from './takip.js';
 import { sharePublic, searchPeople, getPublic, watchPeople, sendRequest, accept, dropRequest, unfriend, viewReaders, viewReader } from './people.js';
 import { TF } from './strings.js';
@@ -91,7 +91,9 @@ const nav = () => {
   const link = (href, on, text, ic) => `<a href="${href}" class="${on ? 'on' : ''}"><i class="ni ni-${ic}" aria-hidden="true"></i><span>${text}</span></a>`;
   // Dört sekme; profil sağ üstte baş harfli simge, telefonda beşinci simge
   const ini = esc(((S.profile && (S.profile.name || S.profile.username)) || '?').trim().charAt(0).toLocaleUpperCase('tr'));
-  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${link('#ara', S.view === 'ara' || S.view === 'okur', TN.explore + ((S.reqIn || []).length ? ` <em class="badge" aria-label="${(S.reqIn || []).length} ${TF.incoming.toLocaleLowerCase('tr')}">${(S.reqIn || []).length}</em>` : ''), 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}<a class="me ${S.view === 'profil' ? 'on' : ''}" href="#profil" aria-label="${TN.profile}"><i class="ni ni-p" aria-hidden="true"></i><b class="av" aria-hidden="true">${ini}</b><span>${TN.profile}</span></a></nav>`;
+  // Kuytuna gir: uygulamanın asıl işi; telefonda alt çubuğun ortasında büyük düğme, bilgisayarda menünün sonunda
+  const go = `<button type="button" class="kgo${timerOn() ? ' live' : ''}" data-act="kuytugo"><i class="kgo-lamp" aria-hidden="true"></i><span>${timerOn() ? TK.kuytuBack : TK.kuytuGo}</span></button>`;
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${go}${link('#ara', S.view === 'ara' || S.view === 'okur', TN.explore + ((S.reqIn || []).length ? ` <em class="badge" aria-label="${(S.reqIn || []).length} ${TF.incoming.toLocaleLowerCase('tr')}">${(S.reqIn || []).length}</em>` : ''), 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}<a class="me ${S.view === 'profil' ? 'on' : ''}" href="#profil" aria-label="${TN.profile}"><i class="ni ni-p" aria-hidden="true"></i><b class="av" aria-hidden="true">${ini}</b><span>${TN.profile}</span></a></nav>`;
 };
 // Kitap sayfası: sağdaki bölümler, soldaki oda; müzik çalar odada kullanılmak üzere sayfada gizli durur
 function bookPage() {
@@ -197,6 +199,14 @@ function render() {
   }
   updateCard();
   enhance(v);
+  if (S.view === 'kitap' && S.kuytu) afterBook();
+}
+// Kuytuna gir düğmesinden gelindiyse kitap sayfası çizilince oda açılır
+function afterBook() {
+  const k = S.kuytu;
+  S.kuytu = null;
+  if (k === 'enter' && timerOn()) setRoom(true);
+  else if (k === 'start' && !timerOn() && $('#timer-book')) startTimer(S.shelf);
 }function route() {
   const [raw, id, sub, bid] = location.hash.slice(1).split('/');
   // Eski bağlantılar yeni yerlerine gider
@@ -300,6 +310,14 @@ document.addEventListener('click', e => {
     location.hash = '#kitap/' + encodeURIComponent(el.dataset.id);
   }
   if (a === 'bookclose') location.hash = '#raf';
+  // Kuytuna gir: oturum sürüyorsa odaya döner; yoksa okunan kitapla, son seçilen düzende hemen başlar
+  if (a === 'kuytugo') {
+    const live = timerBookId(), b = live ? null : readingBook(S) || S.shelf.find(x => x.status === 'istiyorum');
+    if (!live && !b) { location.hash = '#ara'; return; }
+    const id = live || b.id, target = '#kitap/' + encodeURIComponent(id);
+    S.kuytu = live ? 'enter' : 'start';
+    if (location.hash === target) afterBook(); else location.hash = target;
+  }
   // Okurlar ve arkadaşlık
   if (a === 'extab') { S.exTab = el.dataset.v; render(); }
   if (a === 'fadd') {
@@ -551,7 +569,16 @@ document.addEventListener('submit', async e => {
 });
 
 setOnFinish(() => finishSession());
-setHooks({ toast, saveBook: (id, data) => updateShelf(S.user.uid, id, data).then(() => true, e => { fail(e); return false; }) });
+setHooks({
+  toast,
+  saveBook: (id, data) => updateShelf(S.user.uid, id, data).then(() => true, e => { fail(e); return false; }),
+  // Odada yazılan not ya da alıntı kitabın kenar notlarına / alıntılarına düşer
+  saveNote: ({ bookId, title, text, page, quote }) => {
+    const at = new Date().toISOString(), uid = S.user.uid;
+    const p = quote ? add(`users/${uid}/quotes`, { text, book: title || '', bookId, ...(page ? { page } : {}), at }) : add(`users/${uid}/notes`, { bookId, text, ...(page ? { page } : {}), at });
+    return p.then(() => { toast(quote ? TK.quoteSaved : TK.noteSaved); return true; }, e => { fail(e); return false; });
+  },
+});
 // Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu2)
 const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu2')) || []; } catch (e) { return []; } })());
 let filling = false;

@@ -7,7 +7,8 @@ import { LAYERS, PRESETS, getLevels, presetOf, anyOn, setLevel, applyMix, playMi
 export const MODES = [['serbest', '∞', 'Serbest okuma', 0, 0], ['k15', '15', 'Kısa tur · 15 / 3', 15, 3], ['p25', '25', 'Pomodoro · 25 / 5', 25, 5], ['p50', '50', 'Derin odak · 50 / 10', 50, 10], ['ozel', '+', 'Özel döngü', 0, 0], ['sayac', '↓', 'Geri sayım', 0, 0]];
 let timer = null, pref = 'p25', roomLight = 'alaca', onFinish = () => {}, custom = { f: 30, b: 5, c: 30 };
 let panelOpen = false, panelTab = 'ortam', saving = false, nowUrl = '', nowName = '', musicOff = false;
-const hooks = { saveBook: () => Promise.resolve(), toast: () => {} };
+const hooks = { saveBook: () => Promise.resolve(), saveNote: () => Promise.resolve(false), toast: () => {} };
+export const timerBookId = () => (timer ? timer.bookId : '');
 export const setHooks = h => Object.assign(hooks, h);
 export const setOnFinish = fn => { onFinish = fn; };
 export const timerOn = () => !!timer;
@@ -186,6 +187,20 @@ document.addEventListener('click', e => {
   else if (a === 'mixsaveopen') { saving = true; refreshTimer(); const i = $('.sp-saveform input'); if (i) i.focus(); }
   else if (a === 'musplay') { if (playMusic(el.dataset.url, el.dataset.name)) refreshTimer(); }
   else if (a === 'musstop') { stopMusic(); refreshTimer(); }
+  // Odada not ya da alıntı: her biri hemen kitabın notlarına kaydedilir, kutu boşalır, bir sonrakine hazır
+  else if (a === 'rnadd') {
+    const box = $('#room-note'), text = box ? box.value.trim() : '';
+    if (!text) { if (box) box.focus(); return; }
+    const q = !!($('#room-quote') || {}).checked, page = Math.max(0, Math.round(Number(($('#room-page') || {}).value)) || 0);
+    hooks.saveNote({ bookId: timer.bookId, title: timer.title, text, page, quote: q }).then(ok => {
+      if (!ok || !timer) return;
+      timer.saved = [...(timer.saved || []), { text: text.slice(0, 140), page, q }];
+      timer.note = '';
+      save();
+      refreshTimer();
+      const b = $('#room-note'); if (b) b.focus();
+    });
+  }
   else if (a === 'musbind') {
     const id = timer.bookId, music = v === '1' ? { url: playerUrl(), name: playerName() } : null;
     hooks.saveBook(id, { music }).then(ok => { if (ok) hooks.toast(music ? T.bound : T.removedMusic); });
@@ -244,7 +259,9 @@ function timerBody() {
       <span class="lamp" aria-hidden="true"></span>
       <div class="rtop"><b class="rbrand room-only">Kuytu</b><span>${esc(sub())}</span><span>${T.today} ${today} dk</span><button type="button" class="rshrink room-only" data-act="roomtoggle">${T.shrink} ⌄</button></div>
       <div class="rmid"><div class="room-book room-only">${book3d({ title: b.title || timer.title || '', cover: b.cover }, 132)}</div><div class="digits" id="digits">${label()}</div><span class="rstate room-only">${esc(stateLbl())}</span><p class="rtitle">${esc(b.title || timer.title || '')}</p><p class="rauthor">${esc(b.author || '')}<span class="room-only">${esc(from)}</span></p><div class="rline"><i id="tline" style="--pct:${pct().toFixed(4)}"></i></div></div>
-      <aside class="rnote room-only"><label for="room-note">${T.noteTitle}</label><textarea id="room-note" rows="3" maxlength="600" placeholder="${T.notePh}">${esc(timer.note || '')}</textarea><span>${T.noteHint}</span></aside>
+      <aside class="rnote room-only"><label for="room-note">${T.noteTitle}</label><textarea id="room-note" rows="3" maxlength="1000" placeholder="${T.notePh2}">${esc(timer.note || '')}</textarea>
+        <div class="rn-row"><label class="rn-q"><input type="checkbox" id="room-quote">${T.isQuote}</label><input id="room-page" type="number" min="0" max="20000" inputmode="numeric" placeholder="${T.pageShort}" aria-label="${T.pageAt}"><button type="button" class="rn-add" data-act="rnadd">${T.noteAdd}</button></div>
+        ${(timer.saved || []).length ? `<ul class="rn-list">${timer.saved.slice(-4).reverse().map(n => `<li class="${n.q ? 'q' : ''}">${n.page ? `<span>s. ${esc(n.page)}</span>` : ''}${n.q ? '“' + esc(n.text) + '”' : esc(n.text)}</li>`).join('')}</ul><span>${T.noteCount.replace('{n}', timer.saved.length)}</span>` : `<span>${T.noteHint2}</span>`}</aside>
       <div class="rbot">
         <div class="chips room-only" role="group" aria-label="${T.light}"><span>${T.light}</span><div class="rseg">${chip('light', roomLight, 'gun', T.day)}${chip('light', roomLight, 'alaca', T.dusk)}${chip('light', roomLight, 'gece', T.night)}</div></div>
         <button type="button" class="btn rsound room-only${panelOpen ? ' on' : ''}" data-act="sptoggle" aria-expanded="${panelOpen}">${T.soundMusic}</button><span class="rnow room-only" id="rnow">${nowLabel()}</span>
