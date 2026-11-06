@@ -78,7 +78,7 @@ export const TK = {
   free: 'Serbest okuma', countdown: 'Geri sayım', focusMin: 'Odak (dk)', breakMin: 'Mola (dk)', countMin: 'Süre (dk)', shareRecap: 'Aylık özetimi paylaş', focus: 'Odak', rest: 'Mola', rounds: 'tur bitti', today: 'Bugün', todayLow: 'bugün',
   light: 'Işık', day: 'Gün', dusk: 'Alaca', night: 'Gece', sound: 'Ses', quiet: 'Sessiz', rain: 'Yağmur', fire: 'Şömine', myList: 'Listem',
   shrink: 'Küçült', enter2: 'Odaya dön', finish: 'Bitir', reset: 'Sıfırla', pause: 'Duraklat', resume: 'Devam et', paused: 'Duraklatıldı',
-  leftLbl: 'kalan', goneLbl: 'geçen', startPage: 'başlangıç s.', noteTitle: 'Kenar notu', notePh: 'Aklına geleni yaz, oda kapanınca kitabın notlarına düşer', noteHint: 'Sayfa sonra sorulur.', noteBtn: 'Not',
+  leftLbl: 'kalan', goneLbl: 'geçen', startPage: 'başlangıç s.', noteTitle: 'Kenar notu', notePh: 'Aklına geleni yaz, oda kapanınca kitabın notlarına düşer', noteHint: 'Sayfa sonra sorulur.', noteBtn: 'Not', notePh2: 'Aklına gelen ya da altını çizdiğin bir cümle', noteAdd: 'Kaydet', isQuote: 'Alıntı', pageShort: 's.', pageAt: 'Sayfa', noteHint2: 'Her kayıt kitabın notlarına düşer; istediğin kadar ekle.', noteCount: 'Bu oturumda {n} kayıt', noteSaved: 'Kaydedildi', quoteSaved: 'Alıntı kaydedildi', kuytuGo: 'Kuytuna gir', kuytuBack: 'Odaya dön',
   whichPage: 'Kaçıncı <i>sayfadasın?</i>', dur: 'Süre', startedAt: 'Başladığın', ofPages: 'sayfa', finishedIt: 'Bitirdim', saveNoPage: 'Sayfa girmeden kaydet', pageLow: 'Başladığın sayfadan geride bir sayfa yazdın.', ask: 'Bugün ne kadar <em>okuyoruz?</em>',
   needBook: 'Önce rafına bir kitap ekle.', findBook: 'Kitap ara', book: 'Kitap', enter: 'Odaya gir', music: 'Müzik', moveMusic: 'Müzik çaları taşı',
   musicHint: 'Spotify bağlantını ekle, okurken burada çalsın.', link: 'Bağlantı', save: 'Kaydet',
@@ -112,6 +112,7 @@ export const TN = {
   today: 'Bugün', lib: 'Kitaplarım', club: 'Kulüpler', read: 'Oku', profile: 'Profilim', explore: 'Keşfet',
   // Kitap sayfası (2026-11): her kitabın kendi adresi var, Oku sayfası buraya taşındı
   bpRead: 'Okuman', bpLog: 'Okuduğunu ekle', bpNotes: 'Notların', bpSess: 'Oturumlar', bpInfo: 'Künye', bpLogHint: 'Odanın dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', bpGone: 'Bu kitap rafında yok.', bpBack: 'Kitaplarıma dön', bpStatus: 'Durumu',
+  goRoom: 'Kuytuna gir', bookPage: 'Kitabın sayfası',
   lentShelf: 'Ödünçte', wishShelf: 'İstek listem', clubMembers: 'Üyeler', clubSwitch: 'Kulüp değiştir',
   exBooks: 'Kitap', exReaders: 'Okurlar', exClubs: 'Kulüpler', exSoon: 'Okurları ve kulüpleri aramak, arkadaş eklemek bir sonraki adımda geliyor. Şimdilik buradan kitap arayıp rafına ekleyebilirsin.', exSoonClubs: 'Kulüp araması bir sonraki adımda geliyor', exTitle: 'Keşfet',
   logbook: 'Okuma defterin', elsewhere: 'BAŞKA YERDE OKUDUM', lastSessions: 'SON OTURUMLAR', history: 'OKUMA GEÇMİŞİN · YALNIZCA SEN', tabRead: 'Okuma', tabNotes: 'Kenar notları', tabInfo: 'Künye', emptySub: 'Rafına bir kitap koy, kaldığın sayfayı yaz; gerisini Kuytu tutar.', startOne: 'SIRADAKİLERDEN BİRİNE BAŞLA', startHint: 'Birine dokununca "okuyorum" olur ve Bugün onunla açılır.', loading: 'Kitap açılıyor', begin: 'BAŞLARKEN', bookColor: 'KİTABIN RENGİ', fromCover: 'Kapaktan', willEnd: 'Bitecek',

@@ -1551,3 +1551,36 @@ body:not(.in-room) .bp-music { display: none; }
 .findme input { width: 18px; height: 18px; accent-color: var(--book); }
 #people-form { margin-bottom: 6px; }
 @media (max-width: 860px) { .rd-row { flex-wrap: wrap; } .rd-acts { width: 100%; padding-left: 52px; } .pnav a .badge { position: absolute; margin: -6px 0 0 14px; } .pnav a { position: relative; } }
+/* Kuytuna gir düğmesi ve odada çoklu not (2026-11) */
+.pnav .kgo { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px 0 10px; border: 0; border-radius: 999px; background: linear-gradient(135deg, #3a2a1c, #6b4a2e); color: #fbf6ec; font: 600 13.5px var(--font-body); cursor: pointer; box-shadow: 0 6px 14px rgba(60, 40, 20, .25); }
+.pnav .kgo:hover { filter: brightness(1.08); }
+.kgo-lamp { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #fff3d6, #f1c27a 45%, #c98a3c 75%, transparent 76%); box-shadow: 0 0 14px rgba(255, 210, 140, .8); }
+.pnav .kgo.live .kgo-lamp { animation: kgo-pulse 2.4s ease-in-out infinite; }
+@keyframes kgo-pulse { 50% { box-shadow: 0 0 22px rgba(255, 210, 140, 1); transform: scale(1.08); } }
+.kgo-big { background: linear-gradient(135deg, #3a2a1c, #6b4a2e) !important; border-color: #3a2a1c !important; color: #fbf6ec !important; }
+@media (max-width: 860px) {
+  .pnav .kgo { flex-direction: column; justify-content: flex-end; gap: 3px; min-height: 0; padding: 0; background: none; box-shadow: none; color: var(--ink2); font: 600 10.5px var(--font-body); }
+  .pnav .kgo .kgo-lamp { width: 56px; height: 56px; margin-top: -30px; border: 4px solid var(--paper); background: radial-gradient(circle at 50% 38%, #fff3d6, #f1c27a 30%, #c98a3c 60%, #6b4a2e); box-shadow: 0 8px 18px rgba(0, 0, 0, .25), 0 0 18px rgba(255, 200, 120, .45); box-sizing: border-box; }
+  .pnav .me { position: fixed; top: max(10px, env(safe-area-inset-top, 0px)); right: 12px; z-index: 31; }
+  .pnav .me .av { display: grid; width: 32px; height: 32px; font-size: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
+  .pnav .me .ni, .pnav .me span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .pnav .kgo.live .kgo-lamp { animation: none; } }
+body.in-room .rn-row { display: flex; align-items: center; gap: 8px; }
+body.in-room .rn-q { display: inline-flex; align-items: center; gap: 6px; font: 500 12.5px var(--font-body); color: var(--rink); cursor: pointer; text-transform: none; letter-spacing: 0; }
+body.in-room .rn-q input { width: 16px; height: 16px; accent-color: #fbf6ec; }
+body.in-room #room-page { width: 64px; height: 34px; padding: 0 8px; box-sizing: border-box; border: 1px solid rgba(251, 246, 236, .25); border-radius: 6px; background: transparent; color: var(--rink); font: 500 13px var(--font-body); }
+body.in-room #room-page::placeholder { color: rgba(251, 246, 236, .5); }
+body.in-room .rn-add { margin-left: auto; min-height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: #fbf6ec; color: var(--rc); font: 600 13px var(--font-body); cursor: pointer; }
+body.in-room .rn-list { list-style: none; display: grid; gap: 6px; max-height: 150px; margin: 0; padding: 8px 0 0; overflow-y: auto; border-top: 1px solid rgba(251, 246, 236, .14); }
+body.in-room .rn-list li { font: 400 13px/1.4 var(--font-body); color: var(--rink); }
+body.in-room .rn-list li.q { font: italic 400 14px/1.4 var(--font-display); }
+body.in-room .rn-list li span { margin-right: 6px; font: 600 10.5px var(--font-body); font-style: normal; color: var(--rmute); }
+/* Oda: lambanın ışığı yavaşça nefes alır */
+body.in-room .room[data-light]::before { content: ""; position: absolute; left: 50%; top: 38%; z-index: -1; width: min(900px, 120vw); height: min(700px, 90vh); transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgba(255, 214, 150, .16), transparent 70%); pointer-events: none; animation: lamp-breathe 7s ease-in-out infinite; }
+@keyframes lamp-breathe { 50% { opacity: .55; transform: translate(-50%, -50%) scale(1.06); } }
+body.in-room .room-book { animation: book-float 9s ease-in-out infinite; }
+@keyframes book-float { 50% { transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { body.in-room .room[data-light]::before, body.in-room .room-book { animation: none; } }
+/* Odadayken kitap sayfasının yapışkan atlama çubuğu odanın üstüne çıkmasın */
+body.in-room .bp-jump { display: none; }
