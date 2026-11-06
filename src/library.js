@@ -171,7 +171,7 @@ export function viewBook(S, b, p = {}) {
     .map(([id, l]) => `<button type="button" data-act="bpjump" data-v="${id}">${l}</button>`).join('');
   const left = `${brand(statusOf(b.status).toLocaleUpperCase('tr'))}
     <div class="bp-cv">${flat(b, 220, 'big')}<button type="button" class="pl sm ${b.fav ? 'on' : ''}" data-act="fav" aria-pressed="${!!b.fav}">♥ ${b.fav ? N.unheart : N.heart}</button></div>
-    <div class="bp-timer">${p.timer || ''}</div>`;
+    <div class="bp-timer${S.bpMode ? ' open' : ''}"><button type="button" class="bp-mode-t" data-act="bpmode" aria-expanded="${!!S.bpMode}">${N.readMode}</button>${p.timer || ''}</div>`;
   const right = `<h1 class="kt sm">${emLast(b.title)}</h1>
     <p class="lbl">${esc([b.author || T.unknownAuthor, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p>
     ${b.thought ? `<p class="pq thought">“${esc(b.thought)}”</p>` : ''}
