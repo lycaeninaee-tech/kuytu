@@ -3,6 +3,7 @@ import { esc } from './util.js';
 import { TN as N, T } from './strings.js';
 import { STATUS } from './shelf.js';
 import { flat, emLast, backdrop, colorOf, JEWELS, edge } from './parts.js';
+import { GENRE_NAMES } from './books.js';
 
 const homeBooks = S => S.shelf.filter(b => !b.wish && !b.lentTo);
 const statusOf = k => (STATUS.find(s => s[0] === k) || ['', ''])[1];
@@ -31,16 +32,24 @@ export function viewLibrary(S, enter, clubMissing = 0) {
     ${clubMissing ? `<button type="button" class="pl" data-act="importclub">${N.importClub} (${clubMissing})</button>` : ''}
     <div class="lp-foot col"><button type="button" class="pl on" data-act="scan">${N.scan}</button><a class="pl" href="#ara">${N.addManual}</a></div>`;
   // Raflar örnek uygulamadaki gibi: her bölüm bir sıra, kapakların önünden renkli cam raf geçer
-  const ROWS = tab === 'evde'
+  // Türe göre: her tür bir sıra, en kalabalık tür üstte; türü bulunamayanlar en altta
+  const TINTS = ['#4f8fd6', '#e9a64a', '#d9655b', '#7aa38e', '#9b7fd1', '#c98a3c', '#5aa9a3', '#b8432d'];
+  const byGenre = () => {
+    const m = {};
+    home.forEach(b => { const g = b.genre || N.noGenre; (m[g] = m[g] || []).push(b); });
+    return Object.entries(m).sort((a, b) => (a[0] === N.noGenre) - (b[0] === N.noGenre) || b[1].length - a[1].length).map(([g, l], i) => ['g' + i, g, l, TINTS[i % TINTS.length]]);
+  };
+  const ROWS = tab === 'evde' && S.libGroup === 'tur' ? byGenre() : tab === 'evde'
     ? [['okuyorum', N.nowReading, home.filter(b => b.status === 'okuyorum'), 'var(--book)'], ['sirada', N.secNext, home.filter(b => b.status === 'istiyorum' || b.status === 'biraktim'), '#e9a64a'], ['okudum', N.secRead, home.filter(b => b.status === 'okudum'), '#4f8fd6'], ['kalp', N.secHeart, home.filter(b => b.fav), '#d9655b']]
     : [[tab, tab === 'odunc' ? N.tabLent : N.tabWish, list, tab === 'odunc' ? '#d9655b' : '#e9a64a']];
-  const sec = S.rafSec || 'hepsi', shown = ROWS.filter(r => r[2].length && (tab !== 'evde' || sec === 'hepsi' || r[0] === sec));
+  const sec = S.rafSec || 'hepsi', shown = ROWS.filter(r => r[2].length && (tab !== 'evde' || S.libGroup === 'tur' || sec === 'hepsi' || r[0] === sec));
+  const group = tab === 'evde' ? `<div class="lib-group" role="group" aria-label="${N.groupBy}"><span class="lbl small">${N.groupBy}</span><div class="seg">${[['durum', N.byStatus], ['tur', N.byGenre]].map(([k, l]) => `<button type="button" class="${(S.libGroup || 'durum') === k ? 'on' : ''}" aria-pressed="${(S.libGroup || 'durum') === k}" data-act="libgroup" data-v="${k}">${l}</button>`).join('')}</div></div>` : '';
   // Tek sıra filtre: ödünç ve istek listesi de burada, ayrı sekme yok
   const chips = `<div class="chips-row">${[['hepsi', N.all, 'evde'], ['okuyorum', N.nowReading, 'evde'], ['sirada', N.secNext, 'evde'], ['okudum', N.secRead, 'evde'], ['kalp', N.secHeart, 'evde'], ['odunc', `${N.lentShelf}${lent.length ? ' ' + lent.length : ''}`, 'odunc'], ['istek', `${N.wishShelf}${wish.length ? ' ' + wish.length : ''}`, 'istek']]
     .map(([k, l, t]) => { const on = t === 'evde' ? tab === 'evde' && sec === k : tab === t; return `<button type="button" class="pl sm ${on ? 'ink' : ''}" aria-pressed="${on}" data-act="rafsec" data-v="${k}">${l}</button>`; }).join('')}</div>`;
   const row = ([k, title, books, tint]) => `<section class="srow" style="--tint:${tint}"><div class="sr-head"><h3>${title}</h3><span class="cap">${books.length} ${N.booksN}</span><button type="button" class="arw" data-act="rowscroll" data-v="-1" aria-label="Geri">‹</button><button type="button" class="arw" data-act="rowscroll" data-v="1" aria-label="İleri">›</button></div>
     <div class="sr-track">${books.map(b => item(S, b)).join('')}${k === 'sirada' || tab !== 'evde' ? `<a class="bk bk-add" href="#ara"><span>${N.placeBook}</span></a>` : ''}</div><div class="acryl"><i></i><i></i></div></section>`;
-  const right = `${chips}
+  const right = `${S.libGroup === 'tur' && tab === 'evde' ? '' : chips}${group}
     <div class="shelves${enter ? ' enter' : ''}" id="raf-panel">${shown.map(row).join('') || `<a class="bk bk-add solo" href="#ara"><span>${N.placeBook}</span></a>`}</div>
     <div class="strip">
       <div><p class="cap red">${N.lentRemind}</p>${lent.length ? lent.slice(0, 2).map(b => `<p class="sf">${esc(b.title)}, ${esc(b.lentTo)}'da ${b.lentAt ? daysSince(b.lentAt) + ' ' + N.daysAgo : ''}</p>`).join('') : `<p class="sf muted">${N.noLent}</p>`}</div>
@@ -100,6 +109,7 @@ export function cardHTML(S, b, first) {
       <label>${T.author}<input name="author" maxlength="200" value="${esc(b.author || '')}"></label>
       <label>${T.pages}<input name="pages" type="number" min="0" max="20000" value="${b.pages || ''}"></label>
       <label>${N.source}<input name="source" maxlength="120" value="${esc(b.source || '')}"></label>
+      <label>${N.genreLbl}<select name="genre"><option value="">${N.noGenre}</option>${GENRE_NAMES.map(g => `<option${b.genre === g ? ' selected' : ''}>${g}</option>`).join('')}</select></label>
       <div class="wide covpick"><p class="cap">${N.otherCover}</p>${S.covers === 'loading' ? `<p class="lbl small">${T.searching}</p>` : Array.isArray(S.covers)
         ? (S.covers.length ? `<div class="covs">${S.covers.map(u => `<button type="button" data-act="pickcover" data-u="${esc(u)}" class="${u === b.cover ? 'on' : ''}"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join('')}</div>` : `<p class="lbl small">${N.noCovers}</p>`)
         : `<button type="button" class="pl sm" data-act="findcovers">${N.findCovers}</button>`}
