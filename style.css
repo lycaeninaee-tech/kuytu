@@ -1759,7 +1759,7 @@ html:not([data-dark]) .lp .mode:has(input:checked) b, html:not([data-dark]) .lp 
 html:not([data-dark]) .lp select, html:not([data-dark]) .lp input { background: rgba(255, 255, 255, .7); border-color: var(--line2); color: var(--ink2); }
 html:not([data-dark]) .lp .btn { background: var(--ink2); border-color: var(--ink2); color: var(--paper); }
 .lp-mid > a { position: relative; display: block; }
-.lp-mid > a::after { content: ""; position: absolute; left: -22px; right: -22px; bottom: -4px; height: 30%; z-index: 2; border-radius: 10px; background: linear-gradient(180deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, 0) 45%), color-mix(in srgb, var(--book) 45%, transparent); border: 1px solid rgba(255, 255, 255, .6); -webkit-backdrop-filter: blur(2px) saturate(1.2); backdrop-filter: blur(2px) saturate(1.2); box-shadow: 0 14px 24px -10px rgba(40, 50, 80, .35), inset 0 1px 0 rgba(255, 255, 255, .8); pointer-events: none; }
+.lp-mid > a::after { display: none; content: ""; position: absolute; left: -22px; right: -22px; bottom: -4px; height: 30%; z-index: 2; border-radius: 10px; background: linear-gradient(180deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, 0) 45%), color-mix(in srgb, var(--book) 45%, transparent); border: 1px solid rgba(255, 255, 255, .6); -webkit-backdrop-filter: blur(2px) saturate(1.2); backdrop-filter: blur(2px) saturate(1.2); box-shadow: 0 14px 24px -10px rgba(40, 50, 80, .35), inset 0 1px 0 rgba(255, 255, 255, .8); pointer-events: none; }
 
 /* Sağ taraf: kâğıt kenarı yerine duvar; içerik cam kartlarda */
 html:not([data-dark]) .pp { background: transparent; background-image: none; }
