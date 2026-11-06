@@ -113,6 +113,8 @@ export const TN = {
   // Kitap sayfası (2026-11): her kitabın kendi adresi var, Oku sayfası buraya taşındı
   bpRead: 'Okuman', bpLog: 'Okuduğunu ekle', bpNotes: 'Notların', bpSess: 'Oturumlar', bpInfo: 'Künye', bpLogHint: 'Odanın dışında okuduysan buraya yaz. Sayfa ya da süreden biri yeterli.', bpGone: 'Bu kitap rafında yok.', bpBack: 'Kitaplarıma dön', bpStatus: 'Durumu',
   goRoom: 'Kuytuna gir', bookPage: 'Kitabın sayfası',
+  noGenre: 'Türü bilinmiyor', groupBy: 'Düzen', byStatus: 'Duruma göre', byGenre: 'Türe göre', genreLbl: 'Tür',
+  recTitle: 'SANA ÖNERİLER', recWhy: 'okuduğun için', recWhyG: 'sevdiğin için', recLoading: 'Rafına bakıp öneri hazırlıyorum…', recEmpty: 'Öneri için önce birkaç kitabı "okudum" yap ya da kalbine al.', recMore: 'Yenile',
   lentShelf: 'Ödünçte', wishShelf: 'İstek listem', clubMembers: 'Üyeler', clubSwitch: 'Kulüp değiştir',
   exBooks: 'Kitap', exReaders: 'Okurlar', exClubs: 'Kulüpler', exSoon: 'Okurları ve kulüpleri aramak, arkadaş eklemek bir sonraki adımda geliyor. Şimdilik buradan kitap arayıp rafına ekleyebilirsin.', exSoonClubs: 'Kulüp araması bir sonraki adımda geliyor', exTitle: 'Keşfet',
   logbook: 'Okuma defterin', elsewhere: 'BAŞKA YERDE OKUDUM', lastSessions: 'SON OTURUMLAR', history: 'OKUMA GEÇMİŞİN · YALNIZCA SEN', tabRead: 'Okuma', tabNotes: 'Kenar notları', tabInfo: 'Künye', emptySub: 'Rafına bir kitap koy, kaldığın sayfayı yaz; gerisini Kuytu tutar.', startOne: 'SIRADAKİLERDEN BİRİNE BAŞLA', startHint: 'Birine dokununca "okuyorum" olur ve Bugün onunla açılır.', loading: 'Kitap açılıyor', begin: 'BAŞLARKEN', bookColor: 'KİTABIN RENGİ', fromCover: 'Kapaktan', willEnd: 'Bitecek',

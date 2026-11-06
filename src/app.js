@@ -5,7 +5,7 @@ import { viewLibrary, cardHTML, finishHTML, playPanel, scanBarcode, viewBook, ed
 import { exportData, reminderICS, freshLogin, deleteAccount, privacyHTML } from './account.js';
 import { coverHTML, flat, backdrop, colorOf, learnColor } from './parts.js';
 import { configured, USERNAME_RE, onUser, logout, remember, loginGoogle, loginEmail, signupEmail, resetPassword, resendVerify, watchProfile, claimUsername } from './auth.js';
-import { searchBooks, fillInfo, coverChoices } from './books.js';
+import { searchBooks, fillInfo, coverChoices, fetchGenre, recommend, GENRE_NAMES } from './books.js';
 import { STATUS, watchShelf, addToShelf, updateShelf, removeShelf } from './shelf.js';
 import { $, esc, dayKey } from './util.js';
 import { watchSessions, addSession, patchSession, removeSession, saveProfile } from './sessions.js';
@@ -19,6 +19,7 @@ import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewI
 
 
 const S = { user: null, profile: undefined, shelf: [], sessions: [], quotes: [], reveal: new Set(), mode: 'login', view: 'bugun', bookId: null, results: null, searching: false, armed: false, moods: new Set() };
+try { S.libGroup = localStorage.getItem('kuytu-duzen') || 'durum'; } catch (e) {}
 
 // Görünüm tercihi yalnızca bu cihazda tutulur; "cihaza göre" seçiliyken telefonun gece ayarını izler
 const themeOf = () => { try { return localStorage.getItem('kuytu-tema') || 'sistem'; } catch (e) { return 'sistem'; } };
@@ -117,6 +118,18 @@ function resultsHTML() {
   return `<ul class="results">${S.results.map((b, i) => `<li>${coverHTML(b)}<div><b>${esc(b.title)}</b><p class="muted small">${esc([b.author, b.year, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p></div>
     ${shelfBook(b.id) ? `<span class="lbl small">${T.inShelf}</span>` : `<button class="pl sm" type="button" data-act="add" data-i="${i}">${T.add}</button>`}</li>`).join('')}</ul>`;
 }
+// Keşfet'te öneriler: okuduğun ve sevdiğin kitapların yazarları ve türlerinden. Oturumda bir kez hazırlanır
+function recsHTML() {
+  if (S.recs === undefined && S.shelfReady) {
+    S.recs = 'loading';
+    recommend(S.shelf).then(l => { S.recs = l; if (S.view === 'ara') render(); }).catch(() => { S.recs = []; });
+  }
+  const r = S.recs;
+  const body = r === 'loading' || r === undefined ? `<p class="lbl small">${TN.recLoading}</p>`
+    : !r.length ? `<p class="lbl small">${TN.recEmpty}</p>`
+    : `<div class="recs">${r.map((b, i) => `<div class="rec">${coverHTML(b)}<b>${esc(b.title)}</b><small>${esc(b.author || '')}</small><span class="rec-why">${esc(b.why)} ${GENRE_NAMES.includes(b.why) ? TN.recWhyG : TN.recWhy}</span>${shelfBook(b.id) ? `<span class="lbl small">${T.inShelf}</span>` : `<button class="pl sm" type="button" data-act="recadd" data-i="${i}">${T.add}</button>`}</div>`).join('')}</div>`;
+  return `<div class="blk rec-blk"><div class="rec-head"><p class="cap">${TN.recTitle}</p>${Array.isArray(r) && r.length ? `<button type="button" class="linkbtn small" data-act="recmore">${TN.recMore}</button>` : ''}</div>${body}</div>`;
+}
 function viewSearch() {
   return `<div class="search-page">
     <form class="searchbar" id="search-form"><input name="q" type="search" required placeholder="${T.searchHint}" aria-label="${T.searchHint}"><button class="pl ink" type="submit">${T.search}</button></form>
@@ -181,7 +194,7 @@ function render() {
     const views = {
       bugun: () => viewToday(S, clubNow()),
       raf: () => viewLibrary(S, enter, clubMissing()),
-      ara: () => ({ left: searchLeft(S), right: exploreRight(S, viewSearch(), viewReaders(S)), ribbon: TN.explore.toLocaleUpperCase('tr') }),
+      ara: () => ({ left: searchLeft(S), right: exploreRight(S, recsHTML() + viewSearch(), viewReaders(S)), ribbon: TN.explore.toLocaleUpperCase('tr') }),
       okur: () => viewReader(S),
       kitap: () => bookPage(),
       profil: () => viewProfile(S),
@@ -318,6 +331,9 @@ document.addEventListener('click', e => {
     S.kuytu = live ? 'enter' : 'start';
     if (location.hash === target) afterBook(); else location.hash = target;
   }
+  if (a === 'libgroup') { S.libGroup = el.dataset.v; try { localStorage.setItem('kuytu-duzen', S.libGroup); } catch (err) {} render(); playPanel(); }
+  if (a === 'recadd') { const b = Array.isArray(S.recs) && S.recs[Number(el.dataset.i)]; if (b) addToShelf(uid, b, 'istiyorum').then(() => toast(T.added)).catch(fail); }
+  if (a === 'recmore') { S.recs = undefined; render(); }
   // Okurlar ve arkadaşlık
   if (a === 'extab') { S.exTab = el.dataset.v; render(); }
   if (a === 'fadd') {
@@ -492,7 +508,7 @@ document.addEventListener('submit', async e => {
     }
     if (id === 'onb-invite') { S.onb = 0; location.hash = '#davet/' + encodeURIComponent(f.code.value.trim().split('/').pop()); }
     if (id === 'edit-form') {
-      const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim() };
+      const cover = f.cover.value.trim(), b = shelfBook(S.bookId), data = { title: f.title.value.trim() || b.title, author: f.author.value.trim(), pages: Number(f.pages.value) || 0, source: f.source.value.trim(), ...(f.genre ? { genre: f.genre.value } : {}) };
       if (cover || !(b.cover || '').startsWith('data:')) data.cover = cover;
       await updateShelf(S.user.uid, S.bookId, data);
       S.editing = false; S.covers = null;
@@ -581,6 +597,7 @@ setHooks({
 });
 // Kapağı ya da sayfa sayısı eksik kitaplar arka planda sırayla tamamlanır; her kitap bir kez denenir (kuytu-doldu2)
 const tried = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-doldu2')) || []; } catch (e) { return []; } })());
+const triedGenre = new Set((() => { try { return JSON.parse(localStorage.getItem('kuytu-tur1')) || []; } catch (e) { return []; } })());
 let filling = false;
 async function fillMissing(uid, list) {
   if (filling) return;
@@ -589,6 +606,12 @@ async function fillMissing(uid, list) {
     tried.add(b.id);
     try { localStorage.setItem('kuytu-doldu2', JSON.stringify([...tried])); } catch (e) {}
     try { const data = await fillInfo(b); if (Object.keys(data).length) await updateShelf(uid, b.id, data); } catch (e) {}
+  }
+  // Türü olmayan kitapların türü kitap kaynaklarından bulunur; her kitap bir kez denenir (kuytu-tur1)
+  for (const b of list.filter(x => !x.genre && x.title && !triedGenre.has(x.id)).slice(0, 8)) {
+    triedGenre.add(b.id);
+    try { localStorage.setItem('kuytu-tur1', JSON.stringify([...triedGenre])); } catch (e) {}
+    try { const g = await fetchGenre(b); if (g.genre) await updateShelf(uid, b.id, g); } catch (e) {}
   }
   filling = false;
 }

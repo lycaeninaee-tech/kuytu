@@ -8,7 +8,8 @@ export async function addToShelf(uid, b, status) {
   const { id, title, author, cover, pages, year, publisher } = b;
   const info = { title, author, cover, pages, year, publisher };
   setDoc(doc(fs, 'catalog', id), info).catch(() => {});
-  await setDoc(doc(fs, 'users', uid, 'shelf', id), { ...info, status, addedAt: new Date().toISOString() });
+  // Tür kataloğa yazılmaz (kural yalnızca temel alanları bekler), yalnızca kişinin rafına
+  await setDoc(doc(fs, 'users', uid, 'shelf', id), { ...info, ...(b.genre ? { genre: b.genre, cats: b.cats || '' } : {}), status, addedAt: new Date().toISOString() });
 }
 export const updateShelf = (uid, id, data) => setDoc(doc(fs, 'users', uid, 'shelf', id), data, { merge: true });
 export const removeShelf = (uid, id) => deleteDoc(doc(fs, 'users', uid, 'shelf', id));
