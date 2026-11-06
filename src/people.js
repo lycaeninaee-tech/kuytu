@@ -85,7 +85,7 @@ export async function forgetMe(uid) {
   const reqs = collection(fs, 'friendRequests');
   for (const f of ['from', 'to']) for (const d of (await getDocs(query(reqs, where(f, '==', uid))).catch(() => ({ docs: [] }))).docs) await deleteDoc(d.ref).catch(() => {});
   for (const d of (await getDocs(collection(fs, 'users', uid, 'friends'))).docs) await deleteDoc(doc(fs, 'users', d.id, 'friends', uid)).catch(() => {});
-  for (const d of (await getDocs(query(collection(fs, 'reviews'), where('uid', '==', uid))).catch(() => ({ docs: [] }))).docs) await deleteDoc(d.ref).catch(() => {});
+  for (const c of ['reviews', 'activity', 'clubRequests']) for (const d of (await getDocs(query(collection(fs, c), where('uid', '==', uid))).catch(() => ({ docs: [] }))).docs) await deleteDoc(d.ref).catch(() => {});
 }
 
 // Bir okurla aramızdaki durum ve ona göre düğme

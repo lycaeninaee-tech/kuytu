@@ -174,6 +174,15 @@ export const TR = {
   you: 'sen', friend: 'arkadaşın', today: 'bugün', yesterday: 'dün', daysAgo: 'gün önce', saved: 'Yorumun paylaşıldı', removed: 'Yorumun silindi', needText: 'Bir puan ver ya da birkaç cümle yaz.',
   friendsNow: 'ARKADAŞLARIN ŞU AN OKUYOR', latest: 'SON YORUMLAR', readers: 'Okurlar', noFriends: 'Henüz arkadaşın yok.', friendsQuiet: 'Arkadaşların şu an bir kitap okumuyor.', findReaders: 'Okur bul →', feedEmpty: 'Henüz yorum yok. Bitirdiğin bir kitabın sayfasından ilk yorumu sen yaz.',
 };
+TR.moves = 'ARKADAŞLARININ SON HAREKETLERİ'; TR.started = 'başladı'; TR.finished = 'bitirdi';
+// Herkese açık kulüpler ve katılma istekleri
+export const TJ = {
+  searchPh: 'Kulüp adı', search: 'Ara', searching: 'Bakılıyor…', results: 'SONUÇLAR', latest: 'YENİ AÇILAN KULÜPLER', noneFound: 'Bu adla herkese açık bir kulüp yok.', noneYet: 'Henüz herkese açık kulüp yok. Kendi kulübünü kurup Üyeler sayfasından herkese açabilirsin.', offline: 'Kulüpler şu an açılamadı.',
+  members: 'üye', reading: 'okuyor:', open: 'Kulübe git', ask: 'Katılma isteği', sent: 'İstek gönderildi', undo: 'geri al', hint: 'Yalnızca kurucusunun "herkese açık" yaptığı kulüpler görünür. İsteğin kabul edilince kulübe kendiliğinden katılırsın.',
+  publicTitle: 'Herkese açık kulüp', publicLbl: 'Kulübüm Keşfet\'te görünsün, okurlar katılma isteği gönderebilsin', descLbl: 'Kısa tanıtım', descPh: 'Ne okuyorsunuz, ne sıklıkla buluşuyorsunuz?', save: 'Kaydet',
+  publicOn: 'Kulübün Keşfet > Kulüpler\'de adı, tanıtımı, üye sayısı ve okunan kitapla görünüyor. Notlar, puanlar ve üyeler yalnızca üyelere açık.', publicOff: 'Kulübün yalnızca davet bağlantısıyla katılınabilir.',
+  requests: 'KATILMA İSTEKLERİ', approve: 'Kabul et', decline: 'Reddet', reqSent: 'Katılma isteğin gönderildi', joined: 'Kulübe katıldın: ', approved: 'İstek kabul edildi', saved: 'Kaydedildi',
+};
 // Profilde kişisel bilgiler
 export const TI = {
   more: 'HAKKINDA', city: 'Şehir', birth: 'Doğum yılı', show: 'Okur sayfamda görünsün', hidden: 'Gizli', visible: 'Görünür', age: 'yaşında', save: 'Kaydet', hint: 'Şehir ve yaş yalnızca "görünsün" dediğinde okur sayfanda çıkar; yoksa yalnızca sende kalır.',

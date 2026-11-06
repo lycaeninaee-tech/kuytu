@@ -103,9 +103,9 @@ export function searchLeft(S) {
     <div class="lp-foot"><button type="button" class="pl on" data-act="scan">${N.scan}</button></div>`;
 }
 // Keşfet: kitap ve okur arama. Kulüp araması sonraki adımda; o zamana kadar düğmesi kapalı
-export function exploreRight(S, books, readers) {
-  const tab = S.exTab === 'okur' ? 'okur' : 'kitap', n = (S.reqIn || []).length;
+export function exploreRight(S, books, readers, clubs) {
+  const tab = ['okur', 'kulup'].includes(S.exTab) ? S.exTab : 'kitap', n = (S.reqIn || []).length;
   const b = (k, l) => `<button type="button" class="${tab === k ? 'on' : ''}" aria-pressed="${tab === k}" data-act="extab" data-v="${k}">${l}</button>`;
-  return `<div class="seg ex-seg" role="group" aria-label="${N.exTitle}">${b('kitap', N.exBooks)}${b('okur', N.exReaders + (n ? ` <em class="badge">${n}</em>` : ''))}<button type="button" disabled title="${N.exSoonClubs}">${N.exClubs}</button></div>
-    ${tab === 'okur' ? readers : books}`;
+  return `<div class="seg ex-seg" role="group" aria-label="${N.exTitle}">${b('kitap', N.exBooks)}${b('okur', N.exReaders + (n ? ` <em class="badge">${n}</em>` : ''))}${b('kulup', N.exClubs)}</div>
+    ${tab === 'okur' ? readers : tab === 'kulup' ? clubs : books}`;
 }

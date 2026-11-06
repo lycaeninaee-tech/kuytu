@@ -1,7 +1,7 @@
 // Kitap yorumları ve sosyal akış (K6).
 // reviews/{kitapAnahtarı__uid}: bir okurun bir kitap için tek yorumu ve puanı. Giriş yapmış herkes okur, yalnızca sahibi yazar.
 // Kitap anahtarı ad ve yazarın soyadından üretilir; böylece farklı baskılardaki aynı kitabın yorumları bir arada durur.
-import { collection, doc, getDocs, setDoc, deleteDoc, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { fs } from './auth.js';
 import { esc } from './util.js';
 import { TR as T } from './strings.js';
@@ -27,7 +27,16 @@ export async function saveReview(S, b, { rating, text, spoiler }) {
   const key = bookKey(b), p = S.profile;
   await setDoc(doc(fs, 'reviews', key + '__' + S.user.uid), { uid: S.user.uid, name: p.name || p.username, username: p.username, bookKey: key, title: b.title, author: b.author || '', cover: b.cover && !b.cover.startsWith('data:') && b.cover.length < 600 ? b.cover : '', rating: Math.max(0, Math.min(5, Math.round(rating) || 0)), text: (text || '').slice(0, 2000), spoiler: !!spoiler, at: new Date().toISOString() });
 }
-export const removeReview = (S, b) => deleteDoc(doc(fs, 'reviews', bookKey(b) + '__' + S.user.uid));
+// Arkadaş hareketleri: bir kitaba başlamak ve bitirmek. Bulunmamayı seçen okur için yazılmaz
+export async function logActivity(S, type, b) {
+  if (!S.profile || S.profile.findable === false || !b) return;
+  await addDoc(collection(fs, 'activity'), { uid: S.user.uid, name: S.profile.name || S.profile.username, username: S.profile.username || '', type, bookKey: bookKey(b), title: b.title || '', author: b.author || '', cover: b.cover && !b.cover.startsWith('data:') && b.cover.length < 600 ? b.cover : '', at: new Date().toISOString() });
+}
+export async function latestActivity(n = 60) {
+  const s = await getDocs(query(collection(fs, 'activity'), orderBy('at', 'desc'), limit(n)));
+  return s.docs.map(d => ({ ...d.data(), id: d.id, kind: 'act' }));
+}
+export const removeReview =(S, b) => deleteDoc(doc(fs, 'reviews', bookKey(b) + '__' + S.user.uid));
 // Arkadaşların vitrinleri: şu an ne okuduklarını göstermek için
 export async function friendCards(S) {
   const list = await Promise.all((S.friends || []).slice(0, 24).map(f => getPublic(f.id).catch(() => null)));
@@ -67,11 +76,15 @@ export function reviewsSection(S, b) {
 export function socialBlock(S) {
   const fr = Array.isArray(S.friendCards) ? S.friendCards.filter(p => p.reading) : [];
   const feed = Array.isArray(S.feed) ? S.feed.slice().sort((x, y) => (isFriend(S, y.uid) - isFriend(S, x.uid)) || (y.at || '').localeCompare(x.at || '')).slice(0, 6) : null;
+  // Arkadaşlarının son hareketleri: başladı, bitirdi
+  const acts = Array.isArray(S.acts) ? S.acts.filter(a => isFriend(S, a.uid)).slice(0, 6) : [];
+  const actRow = a => `<li class="act"><a class="rv-who" href="#okur/${encodeURIComponent(a.uid)}">${av(a.name)}<b>${esc((a.name || '').split(' ')[0])}</b></a><span>${a.type === 'finished' ? T.finished : T.started}</span><i>${esc(a.title)}</i><span class="rv-at">${when(a.at)}</span></li>`;
   const friendsRow = fr.length ? `<div class="soc-friends">${fr.map(p => `<a class="soc-fr" href="#okur/${encodeURIComponent(p.uid)}">${flat({ ...p.reading, id: '' }, 64)}<b>${esc((p.name || p.username).split(' ')[0])}</b><small>${esc(p.reading.title)}</small></a>`).join('')}</div>`
     : `<p class="lbl small">${(S.friends || []).length ? T.friendsQuiet : T.noFriends} <a href="#okurlar">${T.findReaders}</a></p>`;
   return `<section class="soc">
     <div class="soc-head"><p class="cap">${T.friendsNow}</p><a class="linkbtn small" href="#okurlar">${T.readers}</a></div>
     ${friendsRow}
+    ${acts.length ? `<div class="soc-head"><p class="cap">${T.moves}</p></div><ul class="act-list">${acts.map(actRow).join('')}</ul>` : ''}
     <div class="soc-head"><p class="cap">${T.latest}</p></div>
     ${feed === null || S.feedErr ? `<p class="lbl small">${S.feedErr ? T.offline : T.loading}</p>` : feed.length ? `<ul class="rv-list">${feed.map(r => reviewRow(S, r, true)).join('')}</ul>` : `<p class="lbl small">${T.feedEmpty}</p>`}
   </section>`;

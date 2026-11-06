@@ -13,7 +13,9 @@ import { refreshTimer, setCurrent, startTimer, stopTimer, resetTimer, setRoom, s
 import { shareRecap, logForm, sessionsList } from './takip.js';
 import { sharePublic, searchPeople, getPublic, watchPeople, sendRequest, accept, dropRequest, unfriend, viewReaders, viewReader } from './people.js';
 import { TF, TR as TRV } from './strings.js';
-import { bookKey, bookReviews, latestReviews, saveReview, removeReview, friendCards, reviewsSection, socialBlock } from './social.js';
+import { bookKey, bookReviews, latestReviews, saveReview, removeReview, friendCards, reviewsSection, socialBlock, logActivity, latestActivity } from './social.js';
+import { publishClub, unpublishClub, refreshDirectory, searchClubs, watchRequests, requestJoin, dropRequest as dropClubReq, approveRequest, joinApproved, viewClubsExplore } from './clubpublic.js';
+import { TJ } from './strings.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
 import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook, shareCard } from './clubview.js';
@@ -97,7 +99,7 @@ const nav = () => {
   const go = `<button type="button" class="kgo${timerOn() ? ' live' : ''}" data-act="kuytugo" aria-label="${TK.kuytuGo}${timerOn() ? ' · ' + TK.liveNow : ''}"><i class="kgo-ic" aria-hidden="true"></i><span>${TK.kuytuGo}</span></button>`;
   // Arama ve profil menüsü: her sayfanın üstünde
   const search = `<form class="topsearch" id="top-search" role="search"><input name="q" type="search" placeholder="${TN.topSearch}" aria-label="${TN.topSearch}" autocomplete="off"></form><a class="srch-ic" href="#ara" aria-label="${TN.topSearch}"></a>`;
-  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${go}${link('#ara', S.view === 'ara' || S.view === 'okur', TN.explore + ((S.reqIn || []).length ? ` <em class="badge" aria-label="${(S.reqIn || []).length} ${TF.incoming.toLocaleLowerCase('tr')}">${(S.reqIn || []).length}</em>` : ''), 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club, 'u')}${search}<span class="mewrap"><button type="button" class="me ${S.view === 'profil' ? 'on' : ''}" data-act="memenu" aria-haspopup="menu" aria-expanded="${!!S.meMenu}" aria-label="${TN.profile}"><b class="av" aria-hidden="true">${ini}</b></button>
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${go}${link('#ara', S.view === 'ara' || S.view === 'okur', TN.explore + ((S.reqIn || []).length ? ` <em class="badge" aria-label="${(S.reqIn || []).length} ${TF.incoming.toLocaleLowerCase('tr')}">${(S.reqIn || []).length}</em>` : ''), 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club + ((S.clubReqs || []).filter(r => !r.approved).length ? ` <em class="badge">${S.clubReqs.filter(r => !r.approved).length}</em>` : ''), 'u')}${search}<span class="mewrap"><button type="button" class="me ${S.view === 'profil' ? 'on' : ''}" data-act="memenu" aria-haspopup="menu" aria-expanded="${!!S.meMenu}" aria-label="${TN.profile}"><b class="av" aria-hidden="true">${ini}</b></button>
     ${S.meMenu ? `<span class="memenu" role="menu"><a role="menuitem" href="#profil">${TN.profile}</a><a role="menuitem" href="#okurlar">${TF.myFriendsLink}${(S.reqIn || []).length ? ` <em class="badge">${S.reqIn.length}</em>` : ''}</a><a role="menuitem" href="#profil/gecmis">${TN.menuHistory}</a><a role="menuitem" href="#profil/ayarlar">${TN.menuSettings}</a><button type="button" role="menuitem" data-act="logout">${TP.logout}</button></span>` : ''}</span></nav>`;
 };
 // Kitap sayfası: sağdaki bölümler, soldaki oda; müzik çalar odada kullanılmak üzere sayfada gizli durur
@@ -119,6 +121,7 @@ function loadReviews(b, force) {
 }
 // Bugün'ün sosyal bölümü: son yorumlar ve arkadaşların vitrinleri, oturumda bir kez (arkadaş listesi değişince yeniden)
 function loadSocial() {
+  if (S.acts === undefined) { S.acts = null; latestActivity().then(l => { S.acts = l; if (S.view === 'bugun') render(); }).catch(() => { S.acts = []; }); }
   if (S.feed === undefined) { S.feed = null; latestReviews().then(l => { S.feed = l; if (S.view === 'bugun') render(); }).catch(() => { S.feedErr = true; S.feed = []; if (S.view === 'bugun') render(); }); }
   loadFriendCards();
 }
@@ -150,6 +153,12 @@ function resultsHTML() {
   if (!S.results.length) return `<p class="muted">${T.noResults}</p>`;
   return `<ul class="results">${S.results.map((b, i) => `<li>${coverHTML(b)}<div><b>${esc(b.title)}</b><p class="muted small">${esc([b.author, b.year, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p></div>
     ${shelfBook(b.id) ? `<span class="lbl small">${T.inShelf}</span>` : `<button class="pl sm" type="button" data-act="add" data-i="${i}">${T.add}</button>`}</li>`).join('')}</ul>`;
+}
+// Keşfet > Kulüpler: herkese açık kulüpler bir kez yüklenir, aramayla yenilenir
+function loadClubs(force) {
+  if (!force && S.clubsFound !== undefined) return;
+  S.clubsFound = 'loading'; S.clubsErr = false;
+  searchClubs(S.clubsQ || '').then(l => { S.clubsFound = l; if (S.view === 'ara') render(); }).catch(() => { S.clubsFound = null; S.clubsErr = true; if (S.view === 'ara') render(); });
 }
 // Keşfet'te öneriler: okuduğun ve sevdiğin kitapların yazarları ve türlerinden. Oturumda bir kez hazırlanır
 function recsHTML() {
@@ -227,7 +236,7 @@ function render() {
     const views = {
       bugun: () => { loadSocial(); S.socialHTML = socialBlock(S); return viewToday(S, clubNow()); },
       raf: () => viewLibrary(S, enter, clubMissing()),
-      ara: () => ({ left: searchLeft(S), right: exploreRight(S, recsHTML() + viewSearch(), viewReaders(S)), ribbon: TN.explore.toLocaleUpperCase('tr') }),
+      ara: () => { if (S.exTab === 'kulup') loadClubs(); return { left: searchLeft(S), right: exploreRight(S, recsHTML() + viewSearch(), viewReaders(S), viewClubsExplore(S)), ribbon: TN.explore.toLocaleUpperCase('tr') }; },
       okur: () => viewReader(S),
       kitap: () => bookPage(),
       profil: () => viewProfile(S),
@@ -238,6 +247,7 @@ function render() {
       kb: () => ({ right: viewClubBook(S.bookId) }),
     };
     const o = views[S.view]();
+    if (club) refreshDirectory(S, S.club);
     if (club) Object.assign(o, { left: clubLeft(), book: clubShownBook(), ribbon: S.view === 'kb' && S.chapter ? TN.chapter.toLocaleUpperCase('tr') + ' ' + S.chapter : TN.club.toLocaleUpperCase('tr'), folio: 3 });
     v.innerHTML = shell(o);
     const fb = S.finish && shelfBook(S.finish);
@@ -343,14 +353,18 @@ document.addEventListener('click', e => {
   if (a === 'add') addToShelf(uid, S.results[Number(el.dataset.i)], 'istiyorum').then(() => toast(T.added)).catch(fail);
   if (a === 'status') {
     if (el.dataset.v === 'okudum' && (shelfBook(S.bookId) || {}).status !== 'okudum') finishBook(shelfBook(S.bookId));
-    else updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okuyorum' && !(shelfBook(S.bookId) || {}).startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
+    else {
+      const was = shelfBook(S.bookId) || {};
+      updateShelf(uid, S.bookId, { status: el.dataset.v, ...(el.dataset.v === 'okuyorum' && !was.startedAt ? { startedAt: new Date().toISOString() } : {}) }).catch(fail);
+      if (el.dataset.v === 'okuyorum' && was.status !== 'okuyorum') logActivity(S, 'started', was).catch(() => {});
+    }
   }
   if (a === 'btab') { S.cardTab = el.dataset.v; render(); }
-  if (a === 'startbook') updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).catch(fail);
+  if (a === 'startbook') { updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).catch(fail); logActivity(S, 'started', shelfBook(el.dataset.id)).catch(() => {}); }
   if (a === 'bcolor') updateShelf(uid, S.bookId, { color: el.dataset.v }).catch(fail);
   if (a === 'frate')updateShelf(uid, S.finish, { rating: Number(el.dataset.v) }).catch(fail);
   if (a === 'fclose') { S.finish = null; render(); }
-  if (a === 'fnext') { S.finish = null; updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).then(() => { location.hash = '#bugun'; }).catch(fail); }
+  if (a === 'fnext') { S.finish = null; logActivity(S, 'started', shelfBook(el.dataset.id)).catch(() => {}); updateShelf(uid, el.dataset.id, { status: 'okuyorum', startedAt: new Date().toISOString() }).then(() => { location.hash = '#bugun'; }).catch(fail); }
   if (a === 'mndel') remove(`users/${uid}/${el.dataset.coll === 'quotes' ? 'quotes' : 'notes'}/${el.dataset.id}`).catch(fail);
   if (a === 'export') exportData(uid).then(() => toast(TN.exported)).catch(fail);
   if (a === 'delask') { S.delAsk = !S.delAsk; render(); }
@@ -377,6 +391,11 @@ document.addEventListener('click', e => {
   if (a === 'libgroup') { S.libGroup = el.dataset.v; try { localStorage.setItem('kuytu-duzen', S.libGroup); } catch (err) {} render(); playPanel(); }
   if (a === 'recadd') { const b = Array.isArray(S.recs) && S.recs[Number(el.dataset.i)]; if (b) addToShelf(uid, b, 'istiyorum').then(() => toast(T.added)).catch(fail); }
   if (a === 'recmore') { S.recs = undefined; render(); }
+  // Kulübe katılma istekleri
+  if (a === 'jask') { const c = Array.isArray(S.clubsFound) && S.clubsFound.find(x => x.id === el.dataset.id); if (c) requestJoin(S, c).then(() => toast(TJ.reqSent)).catch(fail); }
+  if (a === 'jcancel') { const r = (S.myReqs || []).find(x => x.clubId === el.dataset.id); if (r) dropClubReq(r).catch(fail); }
+  if (a === 'japprove') { const r = (S.clubReqs || []).find(x => x.id === el.dataset.id); if (r) approveRequest(r).then(() => toast(TJ.approved)).catch(fail); }
+  if (a === 'jdecline') { const r = (S.clubReqs || []).find(x => x.id === el.dataset.id); if (r) dropClubReq(r).catch(fail); }
   // Okurlar ve arkadaşlık
   if (a === 'extab') { S.exTab = el.dataset.v; render(); }
   if (a === 'fadd') {
@@ -469,6 +488,7 @@ function finishBook(b) {
   if (!b) return;
   S.finish = b.id;
   updateShelf(S.user.uid, b.id, { status: 'okudum', finishedAt: new Date().toISOString(), ...(b.pages ? { page: b.pages } : {}) }).catch(fail);
+  logActivity(S, 'finished', b).catch(() => {});
   render();
 }
 const reachedEnd = (b, page) => b && b.pages && page >= b.pages && b.status !== 'okudum';
@@ -558,6 +578,11 @@ document.addEventListener('submit', async e => {
       searchPeople(S.peopleQ, S.user.uid).then(l => { S.people = l; if (S.exTab === 'kitap' && Array.isArray(S.results) && !S.results.length && l.length) S.exTab = 'okur'; if (S.view === 'ara') render(); }).catch(() => { S.people = null; });
       if (S.exTab === 'kitap') await runSearch(q); else location.hash = '#ara';
       const box = $('#search-form'); if (box) box.q.value = q;
+    }
+    if (id === 'club-search') { S.clubsQ = f.q.value.trim(); loadClubs(true); render(); }
+    if (id === 'club-public' && S.club && S.club.doc) {
+      if (f.pub.checked) await publishClub(S, S.club, f.desc.value.trim()); else await unpublishClub(S.club);
+      toast(TJ.saved);
     }
     if (id === 'review-form') {
       const b = shelfBook(S.bookId); if (!b) return;
@@ -728,6 +753,7 @@ if (configured) {
     S.finish = null;
     S.delAsk = false;
     S.reqIn = []; S.reqOut = []; S.friends = []; S.people = null; S.peopleQ = ''; S.reader = null;
+    S.acts = undefined; S.myReqs = []; S.clubReqs = []; S.clubsFound = undefined; S.clubsQ = '';
     S.feed = undefined; S.feedErr = false; S.friendCards = null; S.friendSig = undefined; S.bookRevs = null;
     render();
     if (user) {
@@ -740,6 +766,12 @@ if (configured) {
       stops.push(watchSessions(user.uid, list => { S.sessions = list; redraw(); }));
       stops.push(watchProfile(user.uid, p => { const first = S.profile === undefined; S.profile = p; shareCard(); sharePublic(S); if (first) { route(); } else redraw(); }));
       // Arkadaşlık istekleri ve arkadaşlar canlı izlenir; Keşfet'te sayı rozeti olarak görünür
+      // Kulüp istekleri: onaylanan isteğimle kulübe kendim katılırım; kurucusu olduğum kulüplere gelenler Üyeler sayfasında
+      stops.push(watchRequests(user.uid, (k, v) => {
+        S[k] = v;
+        if (k === 'myReqs') v.filter(r => r.approved && !S.joining).forEach(r => { S.joining = true; joinApproved(S, r).then(() => toast(TJ.joined + r.clubName)).catch(fail).finally(() => { S.joining = false; }); });
+        if (S.profile && (S.view === 'ara' || S.view === 'k')) redraw();
+      }));
       stops.push(watchPeople(user.uid, (k, v) => { S[k] = v; if (S.profile && !(S.view === 'ara' && document.activeElement && document.activeElement.closest('#people-form'))) redraw(); }));
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;

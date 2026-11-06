@@ -5,6 +5,7 @@ import { searchBooks } from './books.js';
 import { addToShelf } from './shelf.js';
 import { book3d, flat, hiRes } from './parts.js';
 import { watchCol, watchDoc, add, patch, remove, createClub, makeInvite, getInvite, joinClub, leaveClub } from './clubs.js';
+import { ownerPanel } from './clubpublic.js';
 
 const GENERIC_Q = ['Kitabın sonu sana tatmin edici geldi mi? Seni şaşırttı mı?', 'En çok hangi karakterle bağ kurdun, neden?', 'Karakterlerin kararları sana inandırıcı geldi mi?', 'Ana karakter kitabın başından sonuna nasıl değişti?', 'Olayların altında bu kitap sence aslında ne anlatıyor?', 'Hikâye bittikten sonra karakterlere ne olduğunu düşünüyorsun?', 'Sesli okumak istediğin bir bölüm var mı? Neden o bölüm?', 'Bu kitabı kime önerirdin?'];
 const CLUB_STATUS = [['okunuyor', 'Okunuyor'], ['sirada', 'Sırada'], ['tamamlandi', 'Bitti'], ['birakildi', 'Bırakıldı']];
@@ -216,6 +217,7 @@ function tabMembers() {
   const link = C().doc.inviteCode ? `${location.origin}${location.pathname}#davet/${C().doc.inviteCode}` : '';
   return `<div class="pagehead"><div><p class="label">${esc(C().doc.name)}</p><h1>${T.tabMembers}</h1></div></div>
     ${isOwner() ? `<section class="surface"><h3>${T.inviteTitle}</h3><p class="muted small">${T.inviteHint}</p>${link ? `<input id="inv-link" readonly value="${esc(link)}" aria-label="${T.inviteTitle}"><div class="ractions left"><button class="btn" type="button" data-act="ccopy">${T.copy}</button><button class="btn ghost" type="button" data-act="cinvite">${T.newLink}</button></div>` : `<button class="btn" type="button" data-act="cinvite">${T.makeLink}</button>`}</section>` : ''}
+    ${isOwner() ? ownerPanel(S, C()) : ''}
     <ul class="memberlist">${C().members.map(m => `<li><button type="button" class="mname" data-act="cmcard" data-id="${esc(m.uid)}" aria-expanded="${S.cardFor === m.uid}"><b>${esc(m.name)}</b></button><span class="muted">@${esc(m.username)}</span><span class="pill">${esc({ kurucu: T.owner, uye: T.member, izleyici: T.viewer }[m.role] || '')}</span>
       ${isOwner() && m.role !== 'kurucu' ? `<button class="linkbtn small" type="button" data-act="crole" data-id="${esc(m.uid)}" data-v="${m.role === 'izleyici' ? 'uye' : 'izleyici'}">${m.role === 'izleyici' ? T.makeMember : T.makeViewer}</button><button class="linkbtn small" type="button" data-act="ckick" data-id="${esc(m.uid)}">${T.kick}</button>` : ''}
       ${S.cardFor === m.uid ? memberCard(m) : ''}</li>`).join('')}</ul>
