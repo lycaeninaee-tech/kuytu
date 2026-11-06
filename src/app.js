@@ -198,7 +198,11 @@ function render() {
   const [raw, id, sub, bid] = location.hash.slice(1).split('/');
   // Eski bağlantılar yeni yerlerine gider
   // Oku sayfası kitap sayfasına taşındı: eski adresler okunan kitaba, eski kart adresi kitap sayfasına gider
-  if (['okuma', 'oda', 'takip'].includes(raw)) { const rb = S.user && readingBook(S); location.replace(rb ? '#kitap/' + encodeURIComponent(rb.id) : '#raf'); return; }
+  // Raf henüz gelmediyse okunan kitap bilinmez; raf gelince yönlendirilir
+  if (['okuma', 'oda', 'takip'].includes(raw)) {
+    if (!S.shelfReady) { S.pendingRead = true; S.view = 'bugun'; render(); return; }
+    const rb = readingBook(S); location.replace(rb ? '#kitap/' + encodeURIComponent(rb.id) : '#raf'); return;
+  }
   if (raw === 'raf' && id) { location.replace('#kitap/' + id); return; }
   const view = { kesfet: 'ara' }[raw] || raw;
   if (view !== 'kitap') setRoom(false);
@@ -577,6 +581,7 @@ if (configured) {
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;
         S.shelfReady = true;
+        if (S.pendingRead) { S.pendingRead = false; const rb = readingBook(S); location.replace(rb ? '#kitap/' + encodeURIComponent(rb.id) : '#raf'); }
         shareCard();
         fillMissing(user.uid, list);
         // Aramada yazılan metin kaybolmasın: arama sayfasında yalnızca sonuçlar yenilenir
