@@ -16,6 +16,7 @@ import { TF, TR as TRV } from './strings.js';
 import { bookKey, bookReviews, latestReviews, saveReview, removeReview, friendCards, reviewsSection, socialBlock, logActivity, latestActivity } from './social.js';
 import { publishClub, unpublishClub, refreshDirectory, searchClubs, watchRequests, requestJoin, dropRequest as dropClubReq, approveRequest, joinApproved, viewClubsExplore } from './clubpublic.js';
 import { TJ } from './strings.js';
+import { bell, markSeen, announce, primeFriends } from './notify.js';
 import { watchCol, add, remove } from './clubs.js';
 import { pageChange, enhance } from './motion.js';
 import { initClubs, openClub, closeClub, openNotes, loadInvite, viewClubs, viewInvite, viewClub, viewClubBook, clubClick, clubSubmit, clubNow, clubMissing, importClubBooks, clubLeft, clubShownBook, shareCard } from './clubview.js';
@@ -99,7 +100,7 @@ const nav = () => {
   const go = `<button type="button" class="kgo${timerOn() ? ' live' : ''}" data-act="kuytugo" aria-label="${TK.kuytuGo}${timerOn() ? ' · ' + TK.liveNow : ''}"><i class="kgo-ic" aria-hidden="true"></i><span>${TK.kuytuGo}</span></button>`;
   // Arama ve profil menüsü: her sayfanın üstünde
   const search = `<form class="topsearch" id="top-search" role="search"><input name="q" type="search" placeholder="${TN.topSearch}" aria-label="${TN.topSearch}" autocomplete="off"></form><a class="srch-ic" href="#ara" aria-label="${TN.topSearch}"></a>`;
-  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${go}${link('#ara', S.view === 'ara' || S.view === 'okur', TN.explore + ((S.reqIn || []).length ? ` <em class="badge" aria-label="${(S.reqIn || []).length} ${TF.incoming.toLocaleLowerCase('tr')}">${(S.reqIn || []).length}</em>` : ''), 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club + ((S.clubReqs || []).filter(r => !r.approved).length ? ` <em class="badge">${S.clubReqs.filter(r => !r.approved).length}</em>` : ''), 'u')}${search}<span class="mewrap"><button type="button" class="me ${S.view === 'profil' ? 'on' : ''}" data-act="memenu" aria-haspopup="menu" aria-expanded="${!!S.meMenu}" aria-label="${TN.profile}"><b class="av" aria-hidden="true">${ini}</b></button>
+  return `<nav class="pnav">${link('#bugun', S.view === 'bugun', TN.today, 'b')}${link('#raf', S.view === 'raf' || S.view === 'kitap', TN.lib, 'k')}${go}${link('#ara', S.view === 'ara' || S.view === 'okur', TN.explore + ((S.reqIn || []).length ? ` <em class="badge" aria-label="${(S.reqIn || []).length} ${TF.incoming.toLocaleLowerCase('tr')}">${(S.reqIn || []).length}</em>` : ''), 'e')}${link(a ? '#k/' + encodeURIComponent(a) + '/ay' : '#kulup', club, TN.club + ((S.clubReqs || []).filter(r => !r.approved).length ? ` <em class="badge">${S.clubReqs.filter(r => !r.approved).length}</em>` : ''), 'u')}${search}${S.user ? bell(S) : ''}<span class="mewrap"><button type="button" class="me ${S.view === 'profil' ? 'on' : ''}" data-act="memenu" aria-haspopup="menu" aria-expanded="${!!S.meMenu}" aria-label="${TN.profile}"><b class="av" aria-hidden="true">${ini}</b></button>
     ${S.meMenu ? `<span class="memenu" role="menu"><a role="menuitem" href="#profil">${TN.profile}</a><a role="menuitem" href="#okurlar">${TF.myFriendsLink}${(S.reqIn || []).length ? ` <em class="badge">${S.reqIn.length}</em>` : ''}</a><a role="menuitem" href="#profil/gecmis">${TN.menuHistory}</a><a role="menuitem" href="#profil/ayarlar">${TN.menuSettings}</a><button type="button" role="menuitem" data-act="logout">${TP.logout}</button></span>` : ''}</span></nav>`;
 };
 // Kitap sayfası: sağdaki bölümler, soldaki oda; müzik çalar odada kullanılmak üzere sayfada gizli durur
@@ -275,7 +276,7 @@ function afterBook() {
   }
   if (raw === 'raf' && id) { location.replace('#kitap/' + id); return; }
   if (raw === 'okurlar') S.exTab = 'okur';
-  S.meMenu = false;
+  S.meMenu = false; S.bellOpen = false;
   // Profil menüsünden: geçmiş ya da ayarlar bölümüne iner
   S.profileJump = raw === 'profil' && id ? id : '';
   const view = { kesfet: 'ara', okurlar: 'ara' }[raw] || raw;
@@ -325,7 +326,10 @@ async function runSearch(q) {
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (S.meMenu && !e.target.closest('.mewrap')) { S.meMenu = false; render(); }
-  if (el && el.dataset.act === 'memenu') { S.meMenu = !S.meMenu; render(); return; }
+  if (el && el.dataset.act === 'memenu') { S.meMenu = !S.meMenu; S.bellOpen = false; render(); return; }
+  // Bildirim zili: açınca yeniler vurgulu görünür, sonra görüldü sayılır
+  if (S.bellOpen && !e.target.closest('.bellwrap')) { S.bellOpen = false; render(); }
+  if (el && el.dataset.act === 'bell') { S.bellOpen = !S.bellOpen; S.meMenu = false; render(); if (S.bellOpen) markSeen(S); return; }
   if (S.menuFor &&(!el || !['bmenu', 'bdel', 'bedit', 'openbook'].includes(el.dataset.act))) { S.menuFor = null; S.armed = false; render(); }
   if (!el) return;
   const a = el.dataset.act, uid = S.user && S.user.uid;
@@ -753,6 +757,7 @@ if (configured) {
     S.finish = null;
     S.delAsk = false;
     S.reqIn = []; S.reqOut = []; S.friends = []; S.people = null; S.peopleQ = ''; S.reader = null;
+    S.friendsPrimed = false; S.bellOpen = false;
     S.acts = undefined; S.myReqs = []; S.clubReqs = []; S.clubsFound = undefined; S.clubsQ = '';
     S.feed = undefined; S.feedErr = false; S.friendCards = null; S.friendSig = undefined; S.bookRevs = null;
     render();
@@ -769,10 +774,14 @@ if (configured) {
       // Kulüp istekleri: onaylanan isteğimle kulübe kendim katılırım; kurucusu olduğum kulüplere gelenler Üyeler sayfasında
       stops.push(watchRequests(user.uid, (k, v) => {
         S[k] = v;
+        if (k === 'clubReqs' && S.friendsPrimed) announce(S, toast);
         if (k === 'myReqs') v.filter(r => r.approved && !S.joining).forEach(r => { S.joining = true; joinApproved(S, r).then(() => toast(TJ.joined + r.clubName)).catch(fail).finally(() => { S.joining = false; }); });
         if (S.profile && (S.view === 'ara' || S.view === 'k')) redraw();
       }));
-      stops.push(watchPeople(user.uid, (k, v) => { S[k] = v; if (S.profile && !(S.view === 'ara' && document.activeElement && document.activeElement.closest('#people-form'))) redraw(); }));
+      stops.push(watchPeople(user.uid, (k, v) => { S[k] = v;
+        // Var olan arkadaşlar ilk açılışta "yeni" sayılmaz; sonra gelen istek ve kabuller kısa uyarıyla duyurulur
+        if (k === 'friends' && !S.friendsPrimed) { S.friendsPrimed = true; primeFriends(S); }
+        if (S.friendsPrimed) announce(S, toast); if (S.profile && !(S.view === 'ara' && document.activeElement && document.activeElement.closest('#people-form'))) redraw(); }));
       stops.push(watchShelf(user.uid, list => {
         S.shelf = list;
         S.shelfReady = true;

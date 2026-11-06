@@ -175,6 +175,11 @@ export const TR = {
   friendsNow: 'ARKADAŞLARIN ŞU AN OKUYOR', latest: 'SON YORUMLAR', readers: 'Okurlar', noFriends: 'Henüz arkadaşın yok.', friendsQuiet: 'Arkadaşların şu an bir kitap okumuyor.', findReaders: 'Okur bul →', feedEmpty: 'Henüz yorum yok. Bitirdiğin bir kitabın sayfasından ilk yorumu sen yaz.',
 };
 TR.moves = 'ARKADAŞLARININ SON HAREKETLERİ'; TR.started = 'başladı'; TR.finished = 'bitirdi';
+// Bildirimler
+export const TNo = {
+  title: 'Bildirimler', newWord: 'yeni', none: 'Şimdilik yeni bir şey yok.', friendReq: 'sana arkadaşlık isteği gönderdi', friendNew: 'ile artık arkadaşsınız', clubReq: '{c} kulübüne katılmak istiyor',
+  accept: 'Kabul et', decline: 'Sil', see: 'Gör',
+};
 // Herkese açık kulüpler ve katılma istekleri
 export const TJ = {
   searchPh: 'Kulüp adı', search: 'Ara', searching: 'Bakılıyor…', results: 'SONUÇLAR', latest: 'YENİ AÇILAN KULÜPLER', noneFound: 'Bu adla herkese açık bir kulüp yok.', noneYet: 'Henüz herkese açık kulüp yok. Kendi kulübünü kurup Üyeler sayfasından herkese açabilirsin.', offline: 'Kulüpler şu an açılamadı.',

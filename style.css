@@ -1709,3 +1709,22 @@ body.in-room .bp-jump { display: none; }
 .act { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 9px 0; border-bottom: 1px solid rgba(0, 0, 0, .06); font: 400 13.5px var(--font-body); color: var(--mute2); }
 .act i { font: italic 500 14.5px var(--font-display); color: var(--ink2); }
 @media (max-width: 860px) { .cl-row { grid-template-columns: 46px 1fr; } .cl-row > :last-child { grid-column: 2; justify-self: start; } }
+/* Bildirim zili (2026-11) */
+.bellwrap { position: relative; display: inline-flex; }
+.bell { position: relative; width: 36px; height: 36px; border: 1px solid var(--line2); border-radius: 50%; background: none; cursor: pointer; }
+.bell::before { content: ""; position: absolute; inset: 9px; background: var(--ink2); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z'/%3E%3Cpath d='M10 20.5a2 2 0 0 0 4 0'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z'/%3E%3Cpath d='M10 20.5a2 2 0 0 0 4 0'/%3E%3C/svg%3E") center / contain no-repeat; }
+.bell .badge { position: absolute; top: -4px; right: -4px; margin: 0; }
+.ntpanel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; display: grid; gap: 8px; width: min(340px, calc(100vw - 24px)); padding: 12px; border: 1px solid var(--line2); border-radius: 10px; background: var(--paper); box-shadow: 0 16px 40px rgba(0, 0, 0, .16); }
+.nt-h { font: 600 13px var(--font-body); color: var(--ink2); }
+.nt-list { list-style: none; display: grid; max-height: 60vh; margin: 0; padding: 0; overflow-y: auto; }
+.nt-list li { display: grid; gap: 6px; padding: 10px 8px; border-radius: 6px; font: 400 13.5px/1.4 var(--font-body); color: var(--mute2); }
+.nt-list li.new { background: var(--sand); }
+.nt-list a { color: inherit; text-decoration: none; }
+.nt-list b { color: var(--ink2); }
+.nt-acts { display: flex; gap: 6px; }
+@media (max-width: 860px) {
+  .bellwrap { position: fixed; top: max(10px, env(safe-area-inset-top, 0px)); right: 96px; z-index: 31; }
+  .bell { width: 32px; height: 32px; background: var(--paper); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); border: 0; }
+  .bell::before { inset: 8px; }
+  .lp-top { padding-right: 136px; }
+}
