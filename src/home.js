@@ -83,6 +83,7 @@ export function viewToday(S, club) {
     : `<h1 class="kt">${N.emptyHero}</h1><p class="lbl">${N.emptySub}</p>
       <div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a><button type="button" class="pl" data-act="scan">${N.scan}</button></div>
       ${waiting.length ? `<div class="blk rule"><p class="cap">${N.startOne}</p><div class="mini">${waiting.map(x => `<button type="button" data-act="startbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}" title="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div><p class="lbl small">${N.startHint}</p></div>` : ''}`}
+    ${S.socialHTML || ''}
     ${S.sessions.length ? week(S, wk, wPages, wMin, now, mon, mine) : ''}
     ${doneList.length || (goal && mine) ? yearShelf(S, doneList, goal, year) : ''}
     ${others.length ? `<div class="blk"><p class="cap">${N.alsoReading}</p><div class="mini">${others.map(x => `<button type="button" data-act="openbook" data-id="${esc(x.id)}" aria-label="${esc(x.title)}">${flat(x, 88)}</button>`).join('')}</div></div>` : ''}
