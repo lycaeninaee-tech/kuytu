@@ -28,7 +28,10 @@ export function viewLibrary(S, enter, clubMissing = 0) {
   const authors = {};
   S.shelf.forEach(b => { if (b.author) authors[b.author] = (authors[b.author] || 0) + 1; });
   const topAuthor = Object.entries(authors).sort((a, b) => b[1] - a[1])[0];
+  // Sol taraf boş kalmasın: okunan kitap kendi cam rafında
+  const now = S.shelf.find(b => b.status === 'okuyorum');
   const left = `${brand()}<h1 class="kt light lp-title">Kitap<i>larım</i></h1><p class="lbl">${home.length} ${N.evdeN}, ${lent.length} ${N.lentN}</p>
+    ${now ? `<div class="lp-mid"><a href="#kitap/${encodeURIComponent(now.id)}" aria-label="${esc(now.title)}">${flat(now, 190, 'big')}</a></div>` : ''}
     ${clubMissing ? `<button type="button" class="pl" data-act="importclub">${N.importClub} (${clubMissing})</button>` : ''}
     <div class="lp-foot col"><button type="button" class="pl on" data-act="scan">${N.scan}</button><a class="pl" href="#ara">${N.addManual}</a></div>`;
   // Raflar örnek uygulamadaki gibi: her bölüm bir sıra, kapakların önünden renkli cam raf geçer

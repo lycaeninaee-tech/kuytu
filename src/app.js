@@ -215,7 +215,7 @@ function shell(o) {
   const fresh = S.fresh;
   S.fresh = false;
   const book = o.book || readingBook(S);
-  const html = `<div class="shell v-${S.view}" style="--book:${colorOf(book)}"><aside class="lp">${backdrop(book)}${o.left || defaultLeft()}</aside>
+  const html = `<div class="shell v-${S.view}${fresh ? ' in' : ''}" style="--book:${colorOf(book)}"><aside class="lp">${backdrop(book)}${o.left || defaultLeft()}</aside>
     <section class="pp">${o.ribbon && S.view === 'bugun' ? `<div class="rbn${fresh ? ' drop' : ''}">${esc(o.ribbon)}</div>` : ''}${nav()}${S.view === 'k' || S.view === 'kb' ? clubTabs() : ''}<div class="pp-in">${o.right}</div></section></div>`;
   if (book) setTimeout(() => learnColor(book, hex => { const s = $('.shell'); if (s) s.style.setProperty('--book', hex); }));
   return html;
