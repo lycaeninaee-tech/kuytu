@@ -251,11 +251,13 @@ function timerBody() {
         <div class="ractions"><button type="button" class="btn ghost room-only rdesk" data-act="roomtoggle">${T.shrink}</button><button type="button" class="btn room-only rphone" data-act="rnote" aria-expanded="false">${T.noteBtn}</button><button type="button" class="btn room-off" data-act="roomtoggle">${T.enter2}</button><button type="button" class="btn" data-act="tpause">${timer.pausedAt ? T.resume : T.pause}</button><button type="button" class="btn rfin" data-act="tstop">${T.finish}</button><button type="button" class="btn ghost room-off" data-act="treset">${T.reset}</button></div>
       </div>${panel()}</div>`;
   }
+  // Kitap sayfasında kitap sabittir; seçim kutusu yerine gizli alan
+  const fixed = current.fixedBook && shelf.find(b => b.id === current.fixedBook);
   const opts = shelf.filter(b => b.status !== 'biraktim').sort((a, b) => (a.status === 'okuyorum' ? -1 : 0) - (b.status === 'okuyorum' ? -1 : 0)).map(b => `<option value="${esc(b.id)}">${esc(b.title)}</option>`).join('');
-  if (!opts) return `<h2>${T.ask}</h2><p class="muted">${T.needBook} <a href="#ara">${T.findBook}</a></p>`;
+  if (!opts && !fixed) return `<h2>${T.ask}</h2><p class="muted">${T.needBook} <a href="#ara">${T.findBook}</a></p>`;
   const modes = MODES.map(([v, big, d]) => `<label class="mode"><input type="radio" name="tmode" value="${v}"${pref === v ? ' checked' : ''}><b>${big}</b><span>${d}</span></label>`).join('');
   return `<h2>${T.ask}</h2>
-    <label>${T.book}<select id="timer-book">${opts}</select></label>
+    ${fixed ? `<input type="hidden" id="timer-book" value="${esc(fixed.id)}">` : `<label>${T.book}<select id="timer-book">${opts}</select></label>`}
     <div class="modes" role="radiogroup" aria-label="${T.ask}">${modes}</div>
     <div class="f-ozel"><label>${T.focusMin}<input id="t-focus" type="number" min="1" max="180" value="${custom.f}"></label><label>${T.breakMin}<input id="t-break" type="number" min="1" max="60" value="${custom.b}"></label></div>
     <label class="f-sayac">${T.countMin}<input id="t-count" type="number" min="1" max="300" value="${custom.c}"></label>
@@ -317,7 +319,7 @@ function musicEmbed(url) {
 }
 export const setCurrent = state => { current = state; };
 // Yeni düzende zamanlayıcı sol tarafta, müzik sağ sayfada durur
-export function viewTimer(state) { current = state; return `<section class="surface" id="timer-card">${timerBody()}</section>`; }
+export function viewTimer(state, bookId) { current = state; current.fixedBook = bookId || ''; return `<section class="surface" id="timer-card">${timerBody()}</section>`; }
 export function viewMusic(state) {
   current = state;
   const music = (state.profile || {}).music || '', embed = musicEmbed(playerUrl()), name = playerName();

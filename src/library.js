@@ -2,7 +2,7 @@
 import { esc } from './util.js';
 import { TN as N, T } from './strings.js';
 import { STATUS } from './shelf.js';
-import { flat, emLast, backdrop, colorOf, JEWELS } from './parts.js';
+import { flat, emLast, backdrop, colorOf, JEWELS, edge } from './parts.js';
 
 const homeBooks = S => S.shelf.filter(b => !b.wish && !b.lentTo);
 const statusOf = k => (STATUS.find(s => s[0] === k) || ['', ''])[1];
@@ -27,9 +27,7 @@ export function viewLibrary(S, enter, clubMissing = 0) {
   const authors = {};
   S.shelf.forEach(b => { if (b.author) authors[b.author] = (authors[b.author] || 0) + 1; });
   const topAuthor = Object.entries(authors).sort((a, b) => b[1] - a[1])[0];
-  const ix = [['evde', N.tabHome, home.length], ['odunc', N.tabLent, lent.length], ['istek', N.tabWish, wish.length]].map(([k, l, n]) => `<button type="button" class="${tab === k ? 'on' : ''}" data-act="libtab" data-v="${k}"><span>${l}</span><span class="cap">${n}</span></button>`).join('');
-  const left = `${brand()}<h1 class="kt light lp-title">Kitap<i>lığım</i></h1><p class="lbl">${home.length} ${N.evdeN}, ${lent.length} ${N.lentN}</p>
-    <div class="ix">${ix}</div>
+  const left = `${brand()}<h1 class="kt light lp-title">Kitap<i>larım</i></h1><p class="lbl">${home.length} ${N.evdeN}, ${lent.length} ${N.lentN}</p>
     ${clubMissing ? `<button type="button" class="pl" data-act="importclub">${N.importClub} (${clubMissing})</button>` : ''}
     <div class="lp-foot col"><button type="button" class="pl on" data-act="scan">${N.scan}</button><a class="pl" href="#ara">${N.addManual}</a></div>`;
   // Raflar örnek uygulamadaki gibi: her bölüm bir sıra, kapakların önünden renkli cam raf geçer
@@ -37,7 +35,9 @@ export function viewLibrary(S, enter, clubMissing = 0) {
     ? [['okuyorum', N.nowReading, home.filter(b => b.status === 'okuyorum'), 'var(--book)'], ['sirada', N.secNext, home.filter(b => b.status === 'istiyorum' || b.status === 'biraktim'), '#e9a64a'], ['okudum', N.secRead, home.filter(b => b.status === 'okudum'), '#4f8fd6'], ['kalp', N.secHeart, home.filter(b => b.fav), '#d9655b']]
     : [[tab, tab === 'odunc' ? N.tabLent : N.tabWish, list, tab === 'odunc' ? '#d9655b' : '#e9a64a']];
   const sec = S.rafSec || 'hepsi', shown = ROWS.filter(r => r[2].length && (tab !== 'evde' || sec === 'hepsi' || r[0] === sec));
-  const chips = tab === 'evde' ? `<div class="chips-row">${[['hepsi', N.all], ['okuyorum', N.nowReading], ['sirada', N.secNext], ['okudum', N.secRead], ['kalp', N.secHeart]].map(([k, l]) => `<button type="button" class="pl sm ${sec === k ? 'ink' : ''}" data-act="rafsec" data-v="${k}">${l}</button>`).join('')}</div>` : '';
+  // Tek sıra filtre: ödünç ve istek listesi de burada, ayrı sekme yok
+  const chips = `<div class="chips-row">${[['hepsi', N.all, 'evde'], ['okuyorum', N.nowReading, 'evde'], ['sirada', N.secNext, 'evde'], ['okudum', N.secRead, 'evde'], ['kalp', N.secHeart, 'evde'], ['odunc', `${N.lentShelf}${lent.length ? ' ' + lent.length : ''}`, 'odunc'], ['istek', `${N.wishShelf}${wish.length ? ' ' + wish.length : ''}`, 'istek']]
+    .map(([k, l, t]) => { const on = t === 'evde' ? tab === 'evde' && sec === k : tab === t; return `<button type="button" class="pl sm ${on ? 'ink' : ''}" aria-pressed="${on}" data-act="rafsec" data-v="${k}">${l}</button>`; }).join('')}</div>`;
   const row = ([k, title, books, tint]) => `<section class="srow" style="--tint:${tint}"><div class="sr-head"><h3>${title}</h3><span class="cap">${books.length} ${N.booksN}</span><button type="button" class="arw" data-act="rowscroll" data-v="-1" aria-label="Geri">‹</button><button type="button" class="arw" data-act="rowscroll" data-v="1" aria-label="İleri">›</button></div>
     <div class="sr-track">${books.map(b => item(S, b)).join('')}${k === 'sirada' || tab !== 'evde' ? `<a class="bk bk-add" href="#ara"><span>${N.placeBook}</span></a>` : ''}</div><div class="acryl"><i></i><i></i></div></section>`;
   const right = `${chips}
@@ -138,6 +138,58 @@ export function cardHTML(S, b, first) {
       <div class="acts"><button type="button" class="pl" data-act="wish">${b.wish ? N.gotIt : N.toWish}</button></div>`}`}
     </div>
   </div>`;
+}
+// Kitap sayfası (#kitap/{id}): solda kapak ve oda, sağda okuman, okuduğunu ekle, notlar, oturumlar ve künye.
+// Eski kitap kartının ve Oku sayfasının yerini alır; sekme yok, bölümler alt alta, üstte atlama bağlantıları
+export function viewBook(S, b, p = {}) {
+  if (!b) return { right: `<h1 class="kt sm">${N.bpGone}</h1><a class="pl" href="#raf">${N.bpBack}</a>` };
+  const fmt = iso => (iso ? new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+  const firstSession = startOf(S, b), sess = bookSessions(S, b), mins = minsOf(sess), quotesN = bookQuotes(S, b).length;
+  const story = [[N.shelfIn, b.addedAt], [N.started, firstSession], [N.finished, b.status === 'okudum' && b.finishedAt], [b.lentTo ? b.lentTo + "'a " + N.gave : '', b.lentAt]].filter(e => e[0] && e[1]);
+  const took = b.status === 'okudum' && b.finishedAt && firstSession ? Math.max(1, Math.round((new Date(b.finishedAt) - new Date(firstSession)) / 864e5)) : 0;
+  const storyLine = [sess.length ? N.sessLine.replace('{s}', sess.length).replace('{m}', mins) : '', took ? N.tookDays.replace('{n}', took) : ''].filter(Boolean).join(' · ');
+  const st = STATUS.map(([k, label]) => `<button type="button" class="${b.status === k ? 'on' : ''}" aria-pressed="${b.status === k}" data-act="status" data-v="${k}">${label}</button>`).join('');
+  const stars = [1, 2, 3, 4, 5].map(n => `<button type="button" class="${(b.rating || 0) >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n}">★</button>`).join('');
+  const pct = b.pages ? Math.min(100, Math.round((b.page || 0) / b.pages * 100)) : null;
+  const notesN = (S.notes || []).filter(n => n.bookId === b.id).length + quotesN;
+  const jump = [['bp-okuma', N.bpRead], ['bp-ekle', N.bpLog], ['bp-not', N.bpNotes + (notesN ? ` <em>${notesN}</em>` : '')], ['bp-oturum', N.bpSess + (sess.length ? ` <em>${sess.length}</em>` : '')], ['bp-kunye', N.bpInfo]]
+    .map(([id, l]) => `<button type="button" data-act="bpjump" data-v="${id}">${l}</button>`).join('');
+  const left = `${brand(statusOf(b.status).toLocaleUpperCase('tr'))}
+    <div class="bp-cv">${flat(b, 220, 'big')}<button type="button" class="pl sm ${b.fav ? 'on' : ''}" data-act="fav" aria-pressed="${!!b.fav}">♥ ${b.fav ? N.unheart : N.heart}</button></div>
+    <div class="bp-timer">${p.timer || ''}</div>`;
+  const right = `<h1 class="kt sm">${emLast(b.title)}</h1>
+    <p class="lbl">${esc([b.author || T.unknownAuthor, b.pages ? b.pages + ' sayfa' : ''].filter(Boolean).join(' · '))}</p>
+    ${b.thought ? `<p class="pq thought">“${esc(b.thought)}”</p>` : ''}
+    ${S.editing ? p.edit : `<nav class="bp-jump" aria-label="${esc(b.title)}">${jump}</nav>
+    <section class="bp-sec" id="bp-okuma"><p class="cap">${N.bpRead.toLocaleUpperCase('tr')}</p>
+      <div class="seg" role="group" aria-label="${N.bpStatus}">${st}</div>
+      ${pct !== null ? `${edge(b, pct)}<p class="lbl small">%${pct}${b.page ? ' · s. ' + b.page : ''}</p>` : ''}
+      <div class="cread"><form id="page-form" class="pagebar"><label>${T.currentPage}<input name="page" type="number" min="0" max="20000" value="${b.page || ''}"></label><label>${T.pages}<input name="pages" type="number" min="1" max="20000" value="${b.pages || ''}"></label><button class="pl" type="submit">${T.save}</button></form>
+        <div class="rate" role="group" aria-label="${T.rating}">${stars}</div></div>
+      ${story.length ? `<div class="story"><ol>${story.map(([k, d]) => `<li><b>${esc(k)}</b><span>${fmt(d)}</span></li>`).join('')}</ol>${storyLine ? `<p class="lbl small">${storyLine}</p>` : ''}</div>` : ''}
+    </section>
+    <section class="bp-sec" id="bp-ekle"><p class="cap">${N.bpLog.toLocaleUpperCase('tr')}</p><p class="lbl small">${N.bpLogHint}</p>${p.log || ''}</section>
+    <section class="bp-sec" id="bp-not">${margin(S, b)}</section>
+    <section class="bp-sec" id="bp-oturum"><p class="cap">${N.bpSess.toLocaleUpperCase('tr')}</p>${p.sess || ''}</section>
+    <section class="bp-sec" id="bp-kunye"><p class="cap">${N.bpInfo.toLocaleUpperCase('tr')}</p>
+      <div class="kunye">
+        <div><p class="cap">${N.who}</p><p class="sf">${b.lentTo ? esc(b.lentTo) + (b.lentAt ? ', ' + fmt(b.lentAt) : '') : N.mine}</p></div>
+        <div><p class="cap">${N.inClub}</p><p class="sf">${b.status === 'okudum' && S.club && S.club.books.some(x => x.title === b.title) ? N.readTogether : '–'}</p></div>
+        <div><p class="cap">${N.from}</p><p class="sf">${b.source ? esc(b.source) : `<span class="muted">–</span>`}</p></div>
+        <div><p class="cap">${N.quoteN}</p><p class="sf">${quotesN}</p></div>
+      </div>
+      <div class="bcolor"><p class="cap">${N.bookColor}</p><div class="swatches" role="group" aria-label="${N.bookColor}">
+        <button type="button" class="auto${b.color ? '' : ' on'}" data-act="bcolor" data-v="" aria-pressed="${!b.color}">${N.fromCover}</button>
+        ${JEWELS.map(([name, hex]) => `<button type="button" class="${b.color === hex ? 'on' : ''}" style="--c:${hex}" data-act="bcolor" data-v="${hex}" aria-pressed="${b.color === hex}" aria-label="${name}" title="${name}"></button>`).join('')}</div></div>
+      ${b.lentTo ? `<div class="acts"><button type="button" class="pl on" data-act="lendback">${N.back}</button></div>` : `<form id="lend-form" class="pagebar"><label>${N.lendTo}<input name="who" maxlength="60" required></label><button class="pl" type="submit">${N.lend}</button></form>`}
+      <div class="acts"><button type="button" class="pl" data-act="wish">${b.wish ? N.gotIt : N.toWish}</button><button type="button" class="pl" data-act="bedit" data-id="${esc(b.id)}">✎ ${N.edit}</button><button type="button" class="pl red" data-act="remove">${S.armed ? N.sure : N.del2}</button></div>
+    </section>`}
+    <div class="bp-music">${p.music || ''}</div>`;
+  return { left, right, book: b, folio: 2 };
+}
+// Düzenleme formu kitap sayfasında da kullanılır
+export function editHTML(S, b) {
+  return cardHTML({ ...S, editing: true }, b, false).match(/<form id="edit-form"[\s\S]*?<\/form>/)[0];
 }
 // Barkod okuyucu telefon kamerasını kullanır; desteklemeyen tarayıcıda ISBN elle aranır
 export async function scanBarcode() {

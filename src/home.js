@@ -1,8 +1,7 @@
 // Bugün, Okuma ve Arama sayfaları. Her sayfa iki parça döndürür: sol (kitabın rengi) ve sağ (kitap sayfası)
 import { esc, dayKey, sessDay } from './util.js';
 import { TN as N, T } from './strings.js';
-import { streaks, logForm, sessionsList } from './takip.js';
-import { viewTimer, viewMusic } from './reading.js';
+import { streaks } from './takip.js';
 import { flat, emLast, edge } from './parts.js';
 
 const greet = () => { const h = new Date().getHours(); return h < 6 ? N.night : h < 12 ? N.morning : h < 18 ? N.noon : N.evening; };
@@ -38,7 +37,7 @@ const week = (S, wk, wPages, wMin, streak, mon, mine) => {
       <span>${N.wGoal.replace('{n}', target)} · ${goal} <button type="button" class="linkbtn" data-act="wdedit">${N.change}</button></span>
       ${streak > 1 ? `<span>${N.streakOn.replace('{n}', streak)}</span>` : ''}</div></div>
     ${S.wdEdit ? `<div class="wk-pick"><span>${N.wGoalSet}</span>${[1, 2, 3, 4, 5, 6, 7].map(n => `<button type="button" class="pl${n === target ? ' on' : ''}" data-act="wdays" data-v="${n}">${n}</button>`).join('')}</div>` : ''}
-    ${mine && !saved ? `<a class="wk-q" href="#okuma">${N.keepLine}</a>` : ''}</div>`;
+    ${mine && !saved ? `<a class="wk-q" href="#kitap/${encodeURIComponent(mine.id)}">${N.keepLine}</a>` : ''}</div>`;
 };
 // Yılın rafı: bu yıl biten kitaplar kapaklarıyla, hedefe kalanlar boş sırt. Altında yılın kalanını bilen, suçlamayan bir cümle
 const yearShelf = (S, done, goal, year) => {
@@ -79,7 +78,7 @@ export function viewToday(S, club) {
     <p class="lbl">${greet()} ${name}. ${mine ? N.leftOff2 : ''}</p>
     ${mine ? `<h1 class="kt">${emLast(mine.title)}</h1>
       ${pct !== null ? `${edge(mine, pct)}<p class="lbl small prog-note">%${pct} · ${N.pagesLeft.replace('{n}', left)}${fin ? ' · ' + fin : ''}</p>` : ''}
-      <div class="acts"><a class="pl on" href="#okuma">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
+      <div class="acts"><a class="pl on" href="#kitap/${encodeURIComponent(mine.id)}">${N.cont}</a><button type="button" class="pl" data-act="quick">${N.addPage}</button></div>
       ${S.quick ? `<form id="quick-form" class="pagebar"><label>${N.whichPage}<input name="page" type="number" min="0" max="20000" value="${mine.page || ''}" autofocus></label><button class="pl ink" type="submit">${T.save}</button></form>` : ''}`
     : `<h1 class="kt">${N.emptyHero}</h1><p class="lbl">${N.emptySub}</p>
       <div class="acts"><a class="pl on" href="#ara">${N.findFirst}</a><button type="button" class="pl" data-act="scan">${N.scan}</button></div>
@@ -97,21 +96,13 @@ export function viewToday(S, club) {
   return { left: lp, right, book: mine, ribbon: mine ? `S. ${mine.page || 0}` : '', folio: 1 };
 }
 
-// Oku: solda odaya giriş, sağda okuma defteri (başka yerde okunanı yaz, son oturumlar, kendi listen).
-// Grafikler Profilim'de, alıntılar kitabın kartında
-export function viewOkuma(S) {
-  const cur = readingBook(S) || S.shelf.find(b => b.status === 'istiyorum');
-  const left = `${brand()}
-    <div class="ok-head">${cur ? flat(cur, 104) : ''}<h1 class="kt light">${N.enterTitle.split(' ')[0]} <i>${N.enterTitle.split(' ').slice(1).join(' ')}</i></h1></div>
-    <p class="lbl">${N.enterSub}</p>
-    ${viewTimer(S)}`;
-  const right = `<h1 class="kt sm">${N.logbook.split(' ')[0]} <i>${N.logbook.split(' ').slice(1).join(' ')}</i></h1>
-    <div class="blk rule"><p class="cap">${N.elsewhere}</p>${logForm(S)}</div>
-    <div class="blk rule"><p class="cap">${N.lastSessions}</p>${sessionsList(S)}</div>
-    <div class="blk rule">${viewMusic(S)}</div>`;
-  return { left, right, book: cur };
-}
+// Oku sayfası kalktı (2026-11): oda, başka yerde okudum ve oturumlar kitap sayfasında
 export function searchLeft(S) {
-  return `${brand()}<h1 class="kt light lp-title">Kitap <i>ara</i></h1><p class="lbl">${N.searchSmall}</p>
+  return `${brand()}<h1 class="kt light lp-title">${N.exTitle}</h1><p class="lbl">${N.searchSmall}</p>
     <div class="lp-foot"><button type="button" class="pl on" data-act="scan">${N.scan}</button></div>`;
+}
+// Keşfet: şimdilik kitap arama. Okur ve kulüp araması sonraki adımda; o zamana kadar dürüstçe söylenir
+export function exploreRight(S, search) {
+  return `<div class="seg ex-seg" role="group" aria-label="${N.exTitle}"><button type="button" class="on" aria-pressed="true">${N.exBooks}</button><button type="button" disabled>${N.exReaders}</button><button type="button" disabled>${N.exClubs}</button></div>
+    <p class="lbl small">${N.exSoon}</p>${search}`;
 }

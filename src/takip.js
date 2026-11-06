@@ -38,14 +38,15 @@ function chart(byDay, pg) {
   return `<svg class="c30" viewBox="0 0 ${W} ${H}" role="img" aria-label="${T.last30}">${vals.map((v, i) => { const h = v / max * (H - 2 * P); return `<rect x="${(P + i * bw + 1).toFixed(1)}" y="${(H - P - h).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="2"><title>${esc(lbl(days[i]))}: ${v} ${pg ? 'sayfa' : 'dk'}</title></rect>`; }).join('')}</svg>
     <div class="axis"><span>${esc(lbl(days[0]))}</span><span>${T.todayLow}</span></div>`;
 }
-// Başka yerde okunanı kaydetme: Oku sayfasında her zaman açık durur
-export function logForm(state) {
+// Başka yerde okunanı kaydetme. Kitap sayfasında kitap sabittir, seçim kutusu çıkmaz
+export function logForm(state, fixedId) {
   const list = state.shelf.filter(b => b.status !== 'biraktim');
-  if (!list.length) return `<p class="lbl small">${T.needBook} <a href="#ara">${T.findBook}</a></p>`;
+  if (!list.length && !fixedId) return `<p class="lbl small">${T.needBook} <a href="#ara">${T.findBook}</a></p>`;
   const cur = list.find(b => b.status === 'okuyorum');
   const now = new Date(), time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const pick = fixedId ? `<input type="hidden" name="book" value="${esc(fixedId)}">` : `<label>${T.book}<select name="book">${list.map(b => `<option value="${esc(b.id)}"${cur && b.id === cur.id ? ' selected' : ''}>${esc(b.title)}</option>`).join('')}</select></label>`;
   return `<form class="logform" id="log-form">
-    <div class="log-grid"><label>${T.book}<select name="book">${list.map(b => `<option value="${esc(b.id)}"${cur && b.id === cur.id ? ' selected' : ''}>${esc(b.title)}</option>`).join('')}</select></label>
+    <div class="log-grid${fixedId ? ' fixed' : ''}">${pick}
     <label>${T.pagesRead}<input name="pages" type="number" min="1" max="5000" inputmode="numeric" placeholder="25"></label>
     <label>${T.minutes}<input name="min" type="number" min="1" max="1440" inputmode="numeric" placeholder="45"></label>
     <label>${T.date}<input name="day" type="date" max="${dayKey(now)}" value="${dayKey(now)}" required></label>
@@ -53,8 +54,8 @@ export function logForm(state) {
     <div class="log-foot"><div class="qmins">${[10, 20, 30, 50].map(p => `<button type="button" class="pl sm" data-act="logpg" data-v="${p}">${p}</button>`).join('')}<span class="lbl small">${T.pageWord}</span></div><button class="pl" type="submit">${T.save}</button></div></form>`;
 }
 // Son oturumlar: içindekiler satırı gibi, silinebilir
-export function sessionsList(state) {
-  const mine = state.sessions, shown = state.logAll ? mine : mine.slice(0, 6);
+export function sessionsList(state, only) {
+  const mine = only || state.sessions, shown = state.logAll ? mine : mine.slice(0, 6);
   if (!mine.length) return `<p class="lbl small">${T.noRecord}</p>`;
   const amount = s => [s.pages ? s.pages + ' sayfa' : '', s.seconds ? dk(s.seconds) : ''].filter(Boolean).join(' · ');
   return `<ul class="loglist">${shown.map(s => `<li><span class="d">${esc(new Date(s.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}</span><span class="t">${esc(s.title || '')}${s.manual ? `<em>${T.manual}</em>` : ''}</span><b>${esc(amount(s))}</b><button type="button" class="linkbtn small" data-act="delsess" data-id="${esc(s.id)}">${state.armed === s.id ? T.sure : T.del}</button></li>`).join('')}</ul>${mine.length > shown.length ? `<button type="button" class="linkbtn" data-act="logall">${T.showAll} (${mine.length})</button>` : ''}`;
