@@ -1346,6 +1346,9 @@ body.in-room .room .btn.rphone { display: none; }
 body.in-room:not(.show-music) #music-card { display: none; }
 body.in-room #music-card { top: var(--py, calc(100dvh - 330px)); left: var(--px, calc(100vw - 348px)); }
 .in-room #mplayer > p { display: none; }
+/* Küçük çalar: YouTube oynatıcısı görünür kalmak zorunda, en küçük izinli boyut 200 × 200 */
+#mplayer iframe[title="YouTube"] { height: 200px; }
+body.in-room #music-card:has(iframe[title="YouTube"]) { width: 200px; top: var(--py, calc(100dvh - 350px)); left: var(--px, calc(100vw - 248px)); }
 body.in-room.show-music #music-card:not(:has(iframe)) { display: grid; gap: 8px; padding: 14px 16px; color: #fbf6ec; }
 body.in-room.show-music #music-card:not(:has(iframe)) > p { display: block; margin: 0; color: rgba(251, 246, 236, .8); }
 body.in-room.show-music #music-card:not(:has(iframe)) > label { display: grid; gap: 4px; color: rgba(251, 246, 236, .8); }
@@ -1487,7 +1490,7 @@ body.in-room .spanel .sp-tog { position: relative; display: inline-flex; align-i
   .sp-go { background: var(--rc); color: #fbf6ec; }
   .sp-svc { color: #1f6b52; }
   body.in-room #music-card { top: var(--py, 58px); left: var(--px, 16px); width: calc(100vw - 32px); }
-  body.in-room #music-card iframe[title="YouTube"] { height: 120px; }
+  body.in-room #music-card:has(iframe[title="YouTube"]) { top: var(--py, 58px); left: var(--px, calc(100vw - 216px)); width: 200px; }
   /* Sayfa açıkken çalar gizlenir; gizli çerçeve çalmayı sürdürür */
   body.in-room:has(.room.sp-open) #music-card { display: none; }
 }
