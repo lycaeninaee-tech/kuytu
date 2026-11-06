@@ -1627,3 +1627,9 @@ body.in-room .bp-jump { display: none; }
 .about .check-row { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 500 13px var(--font-body); color: var(--mute2); }
 .about .pl { justify-self: start; }
 :root[data-dark] .soc { background: rgba(255, 255, 255, .05); }
+/* Künye: yayınevi, yıl, sayfa, ISBN, çevirmen, özgün ad, tür (2026-11) */
+.bp-desc { margin: 0; font: 400 15px/1.55 var(--font-display); color: var(--ink2); }
+.kunye-dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 18px; margin: 0; border-top: 1px solid var(--line2); }
+.kunye-dl div { padding: 10px 0; border-bottom: 1px solid var(--line2); }
+.kunye-dl dt { font: 600 11px var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.kunye-dl dd { margin: 3px 0 0; font: 500 15px var(--font-display); color: var(--ink2); overflow-wrap: anywhere; }
